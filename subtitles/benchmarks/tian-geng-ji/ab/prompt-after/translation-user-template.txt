@@ -1,6 +1,0 @@
-Hồ sơ ngữ cảnh phim (dữ liệu tham khảo): {previous_memory_json}
-Thông tin phim (JSON): {series_title, episode_title}
-HƯỚNG DẪN LÀM BÀI: Đọc các câu lân cận để hiểu cảnh nhưng chỉ xuất bản phần thuộc từng source. Các bản vi trong context chỉ là bản nháp tham khảo, không phải đáp án và không phải bằng chứng về xưng hô. Không có track Vietsub quốc tế hay câu tham chiếu trong đầu vào; quy tắc biên tập trong system prompt chỉ hướng dẫn phong cách, không thay cho bằng chứng. Trước tiên chốt nghĩa theo source và ngữ cảnh, sau đó diễn đạt bằng cấu trúc tiếng Việt tự nhiên, gọn. Chỉ giữ cấu trúc câu Trung nếu tiếng Việt cũng nói tự nhiên như vậy; không chép cú pháp Trung hoặc làm câu cụt chỉ để bám mặt chữ. Không tự thêm chủ ngữ, quan hệ, giới tính, chức tước, cảm xúc hoặc thông tin ngoài source. Giữ tên riêng, thuật ngữ và cách xưng hô theo hồ sơ khi hồ sơ có bằng chứng; nếu hồ sơ chưa chắc, dùng cách trung tính.
-Lời thoại trong đoạn và các câu lân cận (JSON): [{id, start_ms, end_ms, source, vi?}]
-Dựa trên ngữ cảnh trên, dịch source của đúng {target_count} id bên dưới sang tiếng Việt. Chỉ trả JSON array đủ các id này. Dịch đúng source ngay bên cạnh từng id; giữ id gốc, không đánh số lại, không chuyển bản dịch sang dòng trước/sau, kể cả câu bị ngắt hoặc lặp.
-Các id cần dịch (JSON): [integer, ...]

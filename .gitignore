@@ -1,15 +1,19 @@
-backup-skin/
-backup-lwa/
-backup-ppstream.ini
+# --- Python ---
 __pycache__/
-*.pyc
+*.py[cod]
+.venv/
+venv/
+
+# --- Runtime data & local state ---
+# The subtitle library is created at runtime from the user's own account;
+# it is never packaged with the project.
+subtitles/library/
+subtitles/international/
 *.lock
 *.pid
 *.log
-youku-vi.log
-.venv/
-.env
-.ai-settings.json
+
+# Transient caches and per-run snapshots
 live-vietsub-cache.json
 vi-live.json
 subtitle-context-cache.json
@@ -17,10 +21,27 @@ dict-current.json
 native-caption-check.json
 subtitle-runtime-verified.json
 untranslated-strings.json
-subtitles/international/
-subtitles/benchmarks/tian-geng-ji/*
-!subtitles/benchmarks/tian-geng-ji/README.md
-subtitles/library/
-.iqiyi-vi-token
 watch-iqiyi-vi.disabled
+
+# --- Secrets & user configuration ---
+.env
+.ai-settings.json
+.iqiyi-vi-token
+
+# --- Local-only development assets ---
+# Translation bodies extracted from a licensed client, and override tables for
+# patches built against a specific install. Not part of the shipped project.
+.local/
+
+# --- Installed-app backups created by apply-vi.py while patching ---
+backup-skin/
+backup-lwa/
+backup-ppstream.ini
+versions/
+
+# --- Editor / OS noise ---
 .vs/
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

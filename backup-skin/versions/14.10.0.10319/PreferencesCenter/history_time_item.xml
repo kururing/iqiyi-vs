@@ -1,8 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<Window>
-	<HorizontalLayout height="16" padding="20,8,20,7">
-		<Label name="time_label" text="今天" textcolor="PreferencesCenter_history_time" align="left" padding ="0,3,0,0" indexfont="font_12" height="12"/>
-		<Control />
-		<CheckBox name="filterbtn" style="his_radio_style" width="80" text="过滤短视频" textpadding="20,-1,0,0"  indexfont="font_12" textcolor="PreferencesCenter_history_time" />
-    </HorizontalLayout>
-</Window>

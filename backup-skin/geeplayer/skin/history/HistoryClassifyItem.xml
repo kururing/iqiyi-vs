@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Window>
-<HorizontalLayout height="30">
-  <Control width ="12" />
-  <Label  name="label_tip" text="今天" textcolor="history_timetip_text" width="30" padding="0,9,3,0" indexfont="yahei_12b"/>
-  <Control bkimage="file='skinplan\public/ctrl/classify_spliter.png'" height="1" padding="0,19,5,0"/>
-</HorizontalLayout>
-</Window>

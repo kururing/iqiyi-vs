@@ -1,9 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<Window width="130" height="171">
-  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="yahei_14" />
-
-  <CxVerticalLayout name="root_lay" width="130" height="171" borderround="8,8" bkcolor="#e6111214" >
-	<Label text="用爱奇艺极简模式一键续播，发现更多精彩内容。可在主界面顶部菜单中开启/关闭本功能"
-	singleline="false" textcolor="#ffffffff" indexfont="yahei_14" width="106" height="147" align="left" lineheight="18" padding="12,33,0,0"/>
-  </CxVerticalLayout>
-</Window>

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Window >
-  <Font name="微软雅黑" size="12" bold="false" default="true" /> 
-  <Font name="微软雅黑" size="12" bold="true" indexfont="Font1" />
-  <Default name="Menu" value="inset=&quot;6,11,6,11&quot; itemtextpadding=&quot;10,0,0,0&quot; bkimage=&quot;file='skinplan\menu/default_menubk.png' corner='7,10,5,10'&quot; itemheight=&quot;28&quot; itemselectedbkcolor=&quot;color_meun_item_bk_sel&quot; itemtextcolor=&quot;color_meun_item_text_nor&quot; itemhottextcolor=&quot;color_meun_item_text_hot&quot; itemselectedtextcolor=&quot;color_meun_item_text_sel&quot; itemdisabledtextcolor=&quot;color_meun_item_text_disable&quot; itemhotbkcolor=&quot;color_meun_item_bk_hot&quot; itemdisabledbkcolor=&quot;color_meun_item_bk_disable&quot; itemselectedbkimage=&quot;file='player/AppPlayer/RightMenu/right_menu_main_butten' source='150,0,300,26'&quot; " />
-	<Menu name="default_menu" width="60" padding="6,0,6,0">
-		<MenuElement name="menu_notedel"  text="删除" height="26" textcolor="0xffffff00" indexfont="Font1"/>	
-	</Menu>
-</Window>

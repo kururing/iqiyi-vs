@@ -1,0 +1,8 @@
+# Runtime dependencies of the subtitle manager and the Việt hóa tooling.
+# Everything below is standard library only; the manager talks to any
+# OpenAI-compatible chat-completions endpoint over urllib.
+# This file exists so `pip install -r requirements.txt` is a valid no-op step.
+
+# Optional: screenshot helpers used by the manual test-*.py probe scripts
+# (Pillow.ImageGrab). Not needed to run the app itself.
+# pillow>=10
