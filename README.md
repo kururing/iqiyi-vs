@@ -52,9 +52,8 @@ node test-iqiyi-runtime.js
 node test-youku-subtitle.js
 ```
 
-Các script `test-*.py` còn lại (`test-open-iqiyi.py`, `test-click-play.py`, …) là
-probe thủ công có điều khiển trình duyệt và chụp màn hình, không thuộc bộ test
-tự động.
+Ba lệnh trên là toàn bộ bộ kiểm thử; chúng chạy offline và không cần dữ liệu
+phim thật.
 
 ## Cấu trúc
 
