@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+    <VerticalLayout name="vLayError" visible="false" bkimage="file='skinplan\list/list_bk.png' fade='21'" >
+      <Control />   <!--上2等分，下3等分 requirment by designer-->
+      <Control />
+      <HorizontalLayout height="278" minheight="278" >
+        <Control />     <!--左右居中-->
+        <VerticalLayout width="500" minwidth="500" >
+          <HorizontalLayout height="106">
+            <Control />
+
+            <FlashPNG name="gifError"  bordersize="0" bordercolor="0xFFFFFFFF" width="149" height="103" framecount="51" repeat="false"
+				 staticimage="file='frame/playerr/pngs/a(51).png'"
+                fps="18" maxwidth="149" maxheight="103" imagearray="file='frame/playerr/pngs/a(%02d).png'" />
+
+            <!--Gifcontrol name="gifError" width="168" height="106"  bkimage="player\miniplayer\middle\gif_playerr.gif" autoplay="true" playonce="true" /-->
+            <Control />
+          </HorizontalLayout>
+
+          <Label text="啊哦~播放失败了" height="60" name="errorLabel" align="centre" textcolor="0xFFCCCCCC" indexfont="yahei_20"/>
+
+
+          <HorizontalLayout height="20" >
+            <Label name="labFileInfo"  align="centre" wordellipsis="true" textcolor="0xFFCCCCCC" indexfont="yahei_12" userdata="%s (%s)" />      
+	    <Button name="btnCopyUrl" text="复制" tooltip="点击复制" indexfont="yahei_12" align="center" width="60" textcolor="wnd_fileattr_filepos_text"/>
+          </HorizontalLayout>
+		  
+		  <!--VerticalLayout height="80">
+		     <Label text="失败原因:" align="centre" textcolor="0xFFCCCCCC" indexfont="yahei_14" />
+			 <Label text="错误码:" name="errorCodeLabel" padding="0,10,0,0" align="centre" textcolor="0xFFCCCCCC" indexfont="yahei_14" />
+			 <Label text="说明:"   name="descriptionLabel"  align="centre" textcolor="0xFFCCCCCC" indexfont="yahei_14" />
+		  </VerticalLayout-->
+          <Control height="55" />
+         
+          <HorizontalLayout height="38">
+            <Control />
+            <Button name="btnPlayErrorReason" text="查看原因" width="112" height="38" indexfont="yahei_12"
+               textcolor="color_999999_cccccc" hottextcolor="color_45b000_eeeeee" pushedtextcolor="color_225900_666666"
+               normalimage="file='skinplan\player/miniplayer/middle/btn_play_error.png'  source='0,0,112,38'"
+				       hotimage="file='skinplan\player/miniplayer/middle/btn_play_error.png' source='0,38,112,76'"
+				       pushedimage="file='skinplan\player/miniplayer/middle/btn_play_error.png' source='0,76,112,114'"
+				       disabledimage="file='skinplan\player/miniplayer/middle/btn_play_error.png' source='0,76,112,114'"
+            />            
+            <Control width="18" />
+            <Button name="btnPlayErrorClose" text="关闭提示" width="112" height="38" indexfont="yahei_12"
+               textcolor="color_999999_cccccc" hottextcolor="color_45b000_eeeeee" pushedtextcolor="color_225900_666666"
+               normalimage="file='skinplan\player/miniplayer/middle/btn_play_error.png'  source='0,0,112,38'"
+				       hotimage="file='skinplan\player/miniplayer/middle/btn_play_error.png' source='0,38,112,76'"
+				       pushedimage="file='skinplan\player/miniplayer/middle/btn_play_error.png' source='0,76,112,114'"
+				       disabledimage="file='skinplan\player/miniplayer/middle/btn_play_error.png' source='0,76,112,114'"
+            />
+            <Control />
+          </HorizontalLayout>
+            
+        </VerticalLayout>
+        <Control />
+      </HorizontalLayout>
+      <Control />
+      <Control />
+      <Control />
+    </VerticalLayout>
+    
+    <VerticalLayout name="vLayReason" visible="false" bkimage="file='skinplan\list/list_bk.png' fade='21'">
+      <Control />
+      <Control />
+      <HorizontalLayout height="460" minheight="450" >
+        <Control />
+        <VerticalLayout width="511">          
+          <RichEdit name="richPlayErrorDetail" vscrollbar="false" autovscroll="false" multiline="true" readonly="true" />
+          <HorizontalLayout height="15" padding="0,5,0,0">
+            <Label text="如有疑问，您可以" width="96" align="leftmiddle" textcolor="0xFFCCCCCC" indexfont="yahei_12" />
+            <Button name="btnFeedback" text="点击这里" width="58" align="centre" textcolor="0xFF45B000" indexfont="yahei_12" />
+            <Label text="反馈。" align="leftmiddle" textcolor="0xFFCCCCCC" indexfont="yahei_12" />
+          </HorizontalLayout>
+          <HorizontalLayout height="75" inset="0,23,0,4">
+            <Control />
+            <Button name="btnPlayReasonClose" text="关闭提示" width="112" height="38" indexfont="yahei_12"
+               textcolor="color_999999_cccccc" hottextcolor="color_45b000_eeeeee" pushedtextcolor="color_225900_666666"
+               normalimage="file='skinplan\player/miniplayer/middle/btn_play_error.png'  source='0,0,112,38'"
+				       hotimage="file='skinplan\player/miniplayer/middle/btn_play_error.png' source='0,38,112,76'"
+				       pushedimage="file='skinplan\player/miniplayer/middle/btn_play_error.png' source='0,76,112,114'"
+				       disabledimage="file='skinplan\player/miniplayer/middle/btn_play_error.png' source='0,76,112,114'"
+            />
+            <Control />              
+          </HorizontalLayout>
+        </VerticalLayout>
+        <Control />
+      </HorizontalLayout>
+      <Control />
+      <Control />
+      <Control />
+    </VerticalLayout>
+</Window>
+

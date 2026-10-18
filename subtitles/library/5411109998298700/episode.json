@@ -1,0 +1,23 @@
+{
+  "title": "田耕纪第10集",
+  "order": 10,
+  "vid": "729348bdd9a20aebbc45e46725fcf99b",
+  "tvid": "5411109998298700",
+  "albumId": "7714930311098201",
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321734.2292964,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 857
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260518/f3/34/ccbda2bc72183f5ca3bf0a061e2d8ea2.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

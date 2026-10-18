@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="525,360" sizebox="8,8,8,8" caption="0,0,0,38" mininfo="650,410" >
+  <Include source="public\xml\default_font.xml" />
+  <Default name="VScrollBar" value="width=&quot;8&quot; padding=&quot;8,0,0,0&quot; button1normalimage=&quot;file='public\ctrl\scrollbar_v.png' 
+    source='0,0,8,8' mask='0xFFFF00FF'&quot; button1hotimage=&quot;file='public\ctrl\scrollbar_v.png' 
+    source='8,0,16,8' mask='0xFFFF00FF'&quot; button1pushedimage=&quot;file='public\ctrl\scrollbar_v.png' 
+    source='16,0,24,8' mask='0xFFFF00FF'&quot; button1disabledimage=&quot;file='public\ctrl\scrollbar_v.png' 
+    source='24,0,32,8' mask='0xFFFF00FF'&quot; button2normalimage=&quot;file='public\ctrl\scrollbar_v.png' 
+    source='0,22,8,30' mask='0xFFFF00FF'&quot; button2hotimage=&quot;file='public\ctrl\scrollbar_v.png' 
+    source='8,22,16,30' mask='0xFFFF00FF'&quot; button2pushedimage=&quot;file='public\ctrl\scrollbar_v.png' 
+    source='16,22,24,30' mask='0xFFFF00FF'&quot; button2disabledimage=&quot;file='public\ctrl\scrollbar_v.png'
+    source='24,22,32,30' mask='0xFFFF00FF'&quot; thumbnormalimage=&quot;file='public\ctrl\scrollbar_v.png' 
+    source='0,8,8,22' corner='0,3,0,3' mask='0xFFFF00FF'&quot; thumbhotimage=&quot;
+    file='public\ctrl\scrollbar_v.png' source='8,8,16,22' corner='0,3,0,3' mask='0xFFFF00FF'&quot; 
+    thumbpushedimage=&quot;file='public\ctrl\scrollbar_v.png' source='16,8,24,22' corner='0,3,0,3' 
+    mask='0xFFFF00FF'&quot; thumbdisabledimage=&quot;file='public\ctrl\scrollbar_v.png' 
+    source='24,8,32,22' corner='0,3,0,3' mask='0xFFFF00FF'&quot;" />
+  <VerticalLayout name="skinpeeler" bkcolor="0xFFEDEDED" bordersize="0" bordercolor="0xFFDBDBDB" inset="0,0,0,0">
+    <HorizontalLayout name="title" height="31" inset="1,1,1,0" bkimage="file='skinplan\public/dialog/border_title.png' corner='3,3,4,4'" >
+      <!--Control float="true" pos="0,0,525,31"  /-->
+      
+      <Label name="lab_caption" text="更换皮肤" align="leftmiddle" textcolor="wnd_title_text_nor" indexfont="yahei_14" textpadding="10,0,0,1" />
+      <Button name="btn_close"  tooltip="关闭" height="24" width="24" align="center" padding="0,3,4,0"
+		    normalimage="file='skinplan\public/ctrl/mainclose.png' source='0,0,24,24'"
+		    hotimage="file='skinplan\public/ctrl/mainclose.png' source='24,0,48,24'"
+		    pushedimage="file='skinplan\public/ctrl/mainclose.png' source='48,0,72,24'"
+		    disabledimage="file='skinplan\public/ctrl/mainclose.png' source='72,0,96,24'" />
+
+    </HorizontalLayout>
+
+    <VerticalLayout bkcolor="0xFFEEEEEE" >
+      <VerticalLayout inset="1,0,1,1" bkimage="file='skinplan\public/dialog/border_content.png' corner='3,3,4,4'">
+      
+      <TileLayout name="theme_panel" bordersize="0" bordercolor="0xFF000000" width="494" height="246" columns="4" itemsize="121，78" childpadding="1" vscrollbar="true" padding="20,20,10,0">
+        <PeelerOption name="ctrl_default" hottext="经典黑"  hottextcolor="0xFFFFFFFF" width="120" height="78" indexfont="yahei_12"
+          bordersize="0" bordercolor="0xFFFFFFFF" group="peelertheme"
+          bkimage="file='frame/peeler/default.png' "
+          hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+          selectedimage="file='frame/peeler/item_select_big_bk.png' "
+          userdata="skinDefault/skinplan/frame/root_bk.png"
+          />
+      </TileLayout>
+
+
+      <HorizontalLayout height="64" inset="20,19,18,20">
+        <Label text="列表透明度" name="transLabel" width="65" padding="0,5,5,0" align="leftmiddle" indexfont="yahei_12" textcolor="0xFF666666" />
+        <Button name="btn_list_alpha" width="16" height="16" tooltip="调节播放列表透明度（仅能调节非播放时的列表状态）" padding="2,5,20,0"
+            normalimage="file=&apos;frame/peeler/peeler_alpha.png&apos; source=&apos;0,0,16,16&apos;"
+            hotimage="file=&apos;frame/peeler/peeler_alpha.png&apos; source=&apos;16,0,32,16&apos;"
+            pushedimage="file=&apos;frame/peeler/peeler_alpha.png&apos; source=&apos;32,0,48,16&apos;"
+	      />
+
+        <!--Label text="控制区域透明度" width="85" align="leftmiddle" indexfont="yahei_12" textcolor="0xFF666666" padding="20,0,0,0" /-->
+        <!--Button name="btn_panel_alpha" width="28" height="28" tooltip="调节控制区域透明度" padding="6,25,0,0"
+            normalimage="file=&apos;frame/peeler/peeler_alpha.png&apos; source=&apos;0,0,28,28&apos;"
+            hotimage="file=&apos;frame/peeler/peeler_alpha.png&apos; source=&apos;28,0,56,28&apos;"
+            pushedimage="file=&apos;frame/peeler/peeler_alpha.png&apos; source=&apos;56,0,84,28&apos;"
+	    /-->
+
+        <Label text="纯色" name="colorLabel" width="25" padding="0,5,0,0" align="leftmiddle" indexfont="yahei_12" textcolor="0xFF666666" />
+        <PeelerOption name="btn_bkcolor_DIY" group="peelertheme_diy" width="16" height="16" padding="5,5,0,0"
+            bkimage="file='frame/peeler/peeler_diy_color.png' source='0,0,16,16'"
+            normalimage="file='frame/peeler/peeler_diy_color.png' source='0,0,16,16'"
+            hotimage="file='frame/peeler/peeler_diy_color.png' source='16,0,32,16'"
+            pushedimage="file='frame/peeler/peeler_diy_color.png' source='32,0,48,16'"
+            disabledimage="file='file='frame/peeler/peeler_diy_color.png' source='48,0,64,16'" />
+
+        <!--Label text="品牌图片" width="55" align="leftmiddle" indexfont="yahei_12" textcolor="0xFF666666" padding="20,0,0,0" />
+        <CheckBox name="chk_logo" width="32" height="18" animation="true" padding="4,30,0,17"
+           normalimage="file='skinPeeler/skinplan/public/ctrl/btn_switch.png' source='0,0,32,18' dest='0,0,32,18'"
+           hotimage="file='skinPeeler/skinplan/public/ctrl/btn_switch.png'  source='32,0,64,18' dest='0,0,32,18'"
+           pushedimage="file='skinPeeler/skinplan/public/ctrl/btn_switch.png'  source='64,0,96,18' dest='0,0,32,18'"
+           disabledimage="file='skinPeeler/skinplan/public/ctrl/btn_switch.png' source='96,0,128,18' dest='0,0,32,18'"
+           selectednormalimage="file='skinPeeler/skinplan/public/ctrl/btn_switch.png'  source='0,18,32,36' dest='0,0,32,18'"
+           selectedhotimage="file='skinPeeler/skinplan/public/ctrl/btn_switch.png' source='32,18,64,36' dest='0,0,32,18'"
+           selectedpushedimage="file='skinPeeler/skinplan/public/ctrl/btn_switch.png' source='64,18,96,36' dest='0,0,32,18'"
+           selecteddisabledimage="file='skinPeeler/skinplan/public/ctrl/btn_switch.png' source='96,18,128,36' dest='0,0,32,18'"
+        /-->
+        <Button name="btn_DIYBk" width="70" height="22" textpadding="5,0,5,0" text="自定义图片" bordersize="1" bordercolor="0xFF979797" padding="20,2,0,0" align="centre" indexfont="yahei_12" textcolor="0xFF666666" hottextcolor="0xFF008F02" pushedtextcolor="0x007502" />
+
+        <Control />
+        <Button name="btn_revert" width="80" text="恢复默认界面" padding="0,0,1,0" align="rightmiddle" indexfont="yahei_12" textcolor="0xFF666666" hottextcolor="0xFF008F02" pushedtextcolor="0x007502" />
+      </HorizontalLayout>
+
+
+      <Container name="ctrl_list_alpha" float="true" pos="75,143,119,291 " bkimage="frame/peeler/peeler_alpha_bk.png" inset="15,16,14,21" visible="false">
+        <Slider name="sld_list_alpha"  width="15" height="105" hor="false" min="0" max="254" value="254" enabled="true" forepadding="6,4,6,4"
+            bkimage="file='frame/peeler/peeler_slider_bk.png' source='0,0,3,105' dest='6,5,9,100' "
+            foreimage="file='frame/peeler/peeler_slider_bk.png' source='3,0,6,105' dest='6,5,9,100' "
+            thumbimage="file='frame/peeler/peeler_slider_thumb.png'"
+            thumbhotimage="file='frame/peeler/peeler_slider_thumb.png'"
+            thumbpushedimage="file='frame/peeler/peeler_slider_thumb.png'"
+            thumbsize="15,15"
+		  />
+      </Container>
+
+      <Container name="ctrl_panel_alpha" float="true" pos="363,219,396,356" bkimage="frame/peeler/peeler_alpha_bk.png" inset="10,16,9,16" visible="false">
+        <Slider name="sld_panel_alpha"  width="15" height="105" hor="false" min="0" max="254" value="254" enabled="true" forepadding="6,4,6,4"
+            bkimage="file='frame/peeler/peeler_slider_bk.png' source='0,0,3,105' dest='6,5,9,100' "
+            foreimage="file='frame/peeler/peeler_slider_bk.png' source='3,0,6,105' dest='6,5,9,100' "
+            thumbimage="file='frame/peeler/peeler_slider_thumb.png'"
+            thumbhotimage="file='frame/peeler/peeler_slider_thumb.png'"
+            thumbpushedimage="file='frame/peeler/peeler_slider_thumb.png'"
+            thumbsize="15,15"
+		  />
+      </Container>
+
+      <TileLayout name="lay_color_panel" width="235" height="106" float="true" pos="127,185,362,291"  inset="19,19,18,19" columns="6" itemsize="33，32" childpadding="1" 
+	              bkimage="file='frame/peeler/bk_color_panel.png' " visible="false" >
+        <PeelerOption name="btn_bkcolor_05" group="peelertheme" width="32" height="32" selectedbkcolor="0xFF317D95" bkcolor="0xFF317D95" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' " />
+        <PeelerOption name="btn_bkcolor_06" group="peelertheme" width="32" height="32" selectedbkcolor="0xFF7E8BAF" bkcolor="0xFF7E8BAF" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' " />
+        <PeelerOption name="btn_bkcolor_07" group="peelertheme" width="32" height="32" selectedbkcolor="0xFF5D9B93" bkcolor="0xFF5D9B93" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' " />
+        <PeelerOption name="btn_bkcolor_08" group="peelertheme" width="32" height="32" selectedbkcolor="0xFF008882" bkcolor="0xFF008882" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' " />
+        <PeelerOption name="btn_bkcolor_09" group="peelertheme" width="32" height="32" selectedbkcolor="0xFF22644B" bkcolor="0xFF22644B" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' " />
+        <PeelerOption name="btn_bkcolor_10" group="peelertheme" width="32" height="32" selectedbkcolor="0xFFAB9D80" bkcolor="0xFFAB9D80" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' " />
+
+        <PeelerOption name="btn_bkcolor_12" group="peelertheme" width="32" height="32" selectedbkcolor="0xFFB57886" bkcolor="0xFFB57886" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' " />
+        <PeelerOption name="btn_bkcolor_13" group="peelertheme" width="32" height="32" selectedbkcolor="0xFF895781" bkcolor="0xFF895781" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' "  />
+        <PeelerOption name="btn_bkcolor_14" group="peelertheme" width="32" height="32" selectedbkcolor="0xFF3C3266" bkcolor="0xFF3C3266" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' " />
+        <PeelerOption name="btn_bkcolor_15" group="peelertheme" width="32" height="32" selectedbkcolor="0xFF193050" bkcolor="0xFF193050" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' " />
+        <PeelerOption name="btn_bkcolor_16" group="peelertheme" width="32" height="32" selectedbkcolor="0xFF543837" bkcolor="0xFF543837" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' " />
+        <PeelerOption name="btn_bkcolor_17" group="peelertheme" width="32" height="32" selectedbkcolor="0xFF85621D"  bkcolor="0xFF85621D" bkcolorpadding="0,0,0,0"
+                      hotimage="file='frame/peeler/item_bk_hover.png' fade='155'"
+                      selectedimage="file='frame/peeler/item_select_small.png' dest='7,7,25,25' " />
+      </TileLayout>
+      
+    
+    </VerticalLayout>
+	</VerticalLayout>
+  </VerticalLayout>
+</Window>

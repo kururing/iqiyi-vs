@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+    <FollowugcVideoItem name="follow_video_container" height="66" >
+    	<Control name="pic" width="92" height="52" padding="20,7,0,0" bkcolor="list_logo_bk_color" bkimage="file='commonres/logo.svg' align='center,49,15' svg-fill-color='list_logo_fore_color'" />
+		<Label name="video_time" text="" float="true" width="80" height="24" pos="29,37,0,0" indexfont="font_13" align="right" textcolor="PreferencesCenter_ugc_time" />
+    	<VerticalLayoutX height="53" padding="6,13,10,0">
+			<Text name="video_name" text="主标题多行内容" height="53" textcolor="PreferencesCenter_title_normal" singleline="false" endellipsis="true" linespace="4"/>
+        </VerticalLayoutX>
+    </FollowugcVideoItem>
+
+</Window>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+    <VerticalLayout name="fileassoc_layout" height="290" width="400" >
+      <Control height="30" />
+      
+      <VerticalLayout height="290" >
+        <VerticalLayout width="120" height="14">
+        <Label text="关联" textcolor="setting_title" height="14" indexfont="yahei_14b"/>
+        <Control />
+        </VerticalLayout>
+
+        <VerticalLayout padding="15,12,0,0">
+          <CheckBox name="alfileassoccheck" animation="true" text="始终保持文件关联" width="135" height="16"
+          textpadding="22,-2,0,0" textcolor="setting_checkbox_text" hottextcolor="setting_checkbox_text" indexfont="yahei_12"
+          selectedtextcolor="setting_checkbox_text" selectedhottextcolor="setting_checkbox_text" selectedpushedtextcolor="setting_checkbox_text"
+          normalimage="file='skinplan\public/ctrl/checkboxpicture.png' source='0,0,14,14' dest='0,0,14,14'"
+          hotimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='14,0,28,14' dest='0,0,14,14'"
+          pushedimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='28,0,42,14' dest='0,0,14,14'"
+          disabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,0,56,14' dest='0,0,14,14'"
+          selectednormalimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='0,14,14,28' dest='0,0,14,14'"
+          selectedhotimage="file='skinplan\public/ctrl/checkboxpicture.png' source='14,14,28,28' dest='0,0,14,14'"
+          selectedpushedimage="file='skinplan\public/ctrl/checkboxpicture.png' source='28,14,42,28' dest='0,0,14,14'"
+          selecteddisabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,14,56,28' dest='0,0,14,14'" />
+
+          <!--CheckBox name="showassocctip" animation="true" text="自动文件关联后提示" width="135" height="16" padding="0,12,0,0"
+          textpadding="22,-2,0,0" textcolor="setting_checkbox_text" hottextcolor="setting_checkbox_text" indexfont="yahei_12"
+          selectedtextcolor="setting_checkbox_text" selectedhottextcolor="setting_checkbox_text" selectedpushedtextcolor="setting_checkbox_text"
+          normalimage="file='skinplan\public/ctrl/checkboxpicture.png' source='0,0,14,14' dest='0,0,14,14'"
+          hotimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='14,0,28,14' dest='0,0,14,14'"
+          pushedimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='28,0,42,14' dest='0,0,14,14'"
+          disabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,0,56,14' dest='0,0,14,14'"
+          selectednormalimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='0,14,14,28' dest='0,0,14,14'"
+          selectedhotimage="file='skinplan\public/ctrl/checkboxpicture.png' source='14,14,28,28' dest='0,0,14,14'"
+          selectedpushedimage="file='skinplan\public/ctrl/checkboxpicture.png' source='28,14,42,28' dest='0,0,14,14'"
+          selecteddisabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,14,56,28' dest='0,0,14,14'" /-->
+          
+          <Label text="您可通过勾选更改关联" height="14" algin="left" padding="0,24,0,0" textcolor="feedback_bottom_text" indexfont="yahei_12" />
+
+          <Button text="点击设置关联" name="btnassoc" width="97" height="26" padding="0,12,0,0" textpadding="10,0,10,0" textcolor="setting_checkbox_text" indexfont="yahei_12"
+                normalimage="file='skinplan\public/ctrl/commonbtn.png' source='0,0,68,26' corner='1,1,1,1'"
+				hotimage="file='skinplan\public/ctrl/commonbtn.png' source='68,0,136,26' corner='1,1,1,1'"
+				pushedimage="file='skinplan\public/ctrl/commonbtn.png' source='136,0,204,26' corner='1,1,1,1'"
+				disabledimage="file='skinplan\public/ctrl/commonbtn.png' source='204,0,272,26' corner='1,1,1,1'"/>
+
+          <Label name="label_feedback_bottom" text="您可以进入看图模式更改图片文件关联" height="14" algin="left" padding="0,26,0,0" textcolor="feedback_bottom_text" indexfont="yahei_12" />
+
+          <Button text="点击设置图片文件关联" name="btnimageassoc" width="145" height="26" padding="0,10,0,0" textpadding="10,0,10,0" textcolor="setting_checkbox_text" indexfont="yahei_12"
+                normalimage="file='skinplan\public/ctrl/commonbtn.png' source='0,0,68,26' corner='1,1,1,1'"
+				hotimage="file='skinplan\public/ctrl/commonbtn.png' source='68,0,136,26' corner='1,1,1,1'"
+				pushedimage="file='skinplan\public/ctrl/commonbtn.png' source='136,0,204,26' corner='1,1,1,1'"
+				disabledimage="file='skinplan\public/ctrl/commonbtn.png' source='204,0,272,26' corner='1,1,1,1'"/>
+        </VerticalLayout>
+        
+      </VerticalLayout>
+    </VerticalLayout>
+</Window>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+  <Font name="Segoe UI" size="16" bold="false" italic="false" indexfont="Segoe_UI_16"/>
+  <VerticalLayout name="parent_container" bkcolor="#FF27282A">
+  		<HorizontalLayout name="top_lay" height="46" padding="0,2,0,0" >
+			<Label name="title" width="200" height="21" text="爱奇艺" padding="18,11,0,0" fallbackfont="Segoe UI,Arial,微软雅黑,Microsoft Jhenghei,MS UI Gothic,Malgun Gothic,Segoe UI Emoji,Segoe UI Symbol" font="Segoe_UI_16" textcolor="#FFFFFFFF"/>
+			<Control />
+			<Button name="min_btn" width="24" height="24" normalimage="file='player\res\xplayer_minimize.svg' svg-fill-color='#40FFFFFF' hot-svg-fill-color='#FFFFFFFF' pushed-svg-fill-color='#80FFFFFF'" padding="0,9,0,0"/>
+			<Button name="max_btn" width="20" height="20" normalimage="file='player\res\max_btn_new.svg' svg-fill-color='#40FFFFFF' hot-svg-fill-color='#FFFFFFFF' pushed-svg-fill-color='#80FFFFFF'" padding="26,12,0,0"/>
+			<Button name="close_btn" width="24" height="24" normalimage="file='player\res\xplayer_close.svg' svg-fill-color='#40FFFFFF' hot-svg-fill-color='#FFFFFFFF' pushed-svg-fill-color='#80FFFFFF'" padding="27,9,16,0"/>
+		</HorizontalLayout>
+  </VerticalLayout>
+</Window>

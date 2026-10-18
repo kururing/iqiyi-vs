@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+    <Font name="HarmonyOS_Sans" size="24" charset="1" indexfont="HarmonyOS_Sans_24"/>
+  <VerticalLayout name="player_setting_con" height="352" width="644" >
+      <VerticalLayout height="316" >
+        <VerticalLayout width="96" height="34">
+          <Label text="窗口" textcolor="0xFFFFFFFF"  height="22"  textpadding="46,0,0,0" indexfont="yahei_16"
+                bkimage="file='geeIcon/windows.svg' dest='20,3,36,19'"/>
+        </VerticalLayout>
+        <VerticalLayout name="option_container" width="604" height="282" bkcolor="0x33000000" borderround="8,8,8,8" bordercolor="#1AFFFFFF" padding="20,0,20,0">
+          <HorizontalLayout  height="48" padding="20,0,20,0">
+            <Label text="启动应用时，窗口恢复上次大小及位置" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+            <CheckBox name="rememberposition" width="28" height="16" padding="0,16,0,16"
+                      normalimage="file='geeIcon/off.png'" hotimage="file='geeIcon/off.png' "
+                      pushedimage="file='geeIcon/off.png' " disabledimage="file='geeIcon/off.png'"
+                      selectednormalimage="file='geeIcon/open.png'" selectedhotimage="file='geeIcon/open.png'"
+                      selectedpushedimage="file='geeIcon/open.png'" selecteddisabledimage="file='geeIcon/open.png'"/>
+          </HorizontalLayout>
+          <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+          <HorizontalLayout  height="48" padding="20,0,20,0">
+            <Label text="播放视频时" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <Combo name="comb_play_video" animation="true" text="jpg" width="128" height="32" textpadding="8,1,30,1" itemtextpadding="8,0,0,0" itemfont="yahei_14"
+            padding="0,8,0,0" indexfont="yahei_14"   itemtextcolor="#F2FFFFFF"  itemhottextcolor="#FFFFFFFF" itemselectedtextcolor="#FF00D157"
+            itembkcolor="#FF28292A" itemhotbkcolor="#FF28292A" itemselectedbkcolor="#0F00C452" bordercolor="#1AFFFFFF" borderround="6,6,6,6"
+            normalimage="file='geeIcon/arrow_up.svg' dest='104,8,120,24' svg-fill-color='0xBFFFFFFF'"
+            hotimage="file='geeIcon/arrow_up.svg' dest='104,8,120,24'  svg-fill-color='0xFFFFFFFF'"
+            pushedimage="file='geeIcon/arrow_up.svg' dest='104,8,120,24'  svg-fill-color='0x80FFFFFF'"
+            selectedimage="file='geeIcon/arrow_down.svg' dest='104,8,120,24'  svg-fill-color='0xBFFFFFFF'"
+            selectedhotimage="file='geeIcon/arrow_down.svg' dest='104,8,120,24'  svg-fill-color='0xFFFFFFFF'"
+            selectedpushedimage="file='geeIcon/arrow_down.svg' dest='104,8,120,24'  svg-fill-color='0x80FFFFFF'"/>
+          </HorizontalLayout>
+          <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+          <Label text="窗口类型" textcolor="0xF2FFFFFF" align="left" font="yahei_14" padding="20,13,0,13"/>
+          <HorizontalLayout  height="92" padding="20,0,20,0">
+            <Button name="simple_pic" bkimage="file='geeIcon/simple.png'"  width="163" height="92" borderround="8,8,8,8" padding="0,0,0,0"/>
+            <Button name="normal_pic" bkimage="file='geeIcon/normal.png' " width="163" height="92" borderround="8,8,8,8" padding="16,0,0,0"/>
+          </HorizontalLayout>
+          <HorizontalLayout  height="36" padding="20,0,20,0">
+            <CheckBox name="simple" width="76" height="20" padding="42,10,0,0" font="yahei_14" textcolor="#F2FFFFFF"  hottextcolor="#FFFFFFFF" pushedtextcolor="#99FFFFFF" text="精简模式" textpadding="20,0,0,0"
+    bkimage="file='geeIcon/radio_not_check.svg' dest='0,2,16,18'  svg-fill-color='0x80FFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x59FFFFFF' " />
+            <CheckBox name="normal" width="76" height="20" padding="102,10,0,0" font="yahei_14" textcolor="#F2FFFFFF"  hottextcolor="#FFFFFFFF" pushedtextcolor="#99FFFFFF" text="经典模式" textpadding="20,0,0,0"
+          bkimage="file='geeIcon/radio_not_check.svg' dest='0,2,16,18'  svg-fill-color='0x80FFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x59FFFFFF'"/>
+          </HorizontalLayout>
+        </VerticalLayout>
+      </VerticalLayout>
+    </VerticalLayout>
+</Window>

@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+	<VerticalLayout>
+		<VerticalLayout name="empty_panel" visible="false">
+			<Label width="180" height="140" bkimage="file='PreferencesCenter\pic\empty_content.png' decode='render'" padding="70,45,0,0"/>
+			<Label name ="tipsText" text="还没有观看历史哟~" padding="0,18,0,0" height="24" align="center" textcolor ="PreferencesCenter_subtitle_normal" />
+		</VerticalLayout>
+		<VerticalLayout name="login_panel" padding="20,37,18,0" visible="false">
+			<HorizontalLayout height="140">
+				<Control />
+				<Label bkimage="PreferencesCenter\pic\empty_content.png" width="180" />
+				<Control />
+			</HorizontalLayout>
+			<Label name="login_lab" text="登录后可同步观看历史" align="center" textcolor="PreferencesCenter_login_lab" padding="0,20,0,0"/>
+			<HorizontalLayout height="38"  padding="0,15,0,0">
+				<Control />
+				<Button name="loginbtn" text="立即登录" width="152" gradient="preferencesCenter_login_green_btn_gradient" borderround="4,4" textcolor="#ffffffff"/>
+				<Control />
+			</HorizontalLayout>
+		</VerticalLayout>
+	</VerticalLayout>
+</Window>

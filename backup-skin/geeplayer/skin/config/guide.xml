@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Window size="551,389" caption="0,0,0,32" >
+  <Font name="微软雅黑" size="20" bold="false" italic="false" indexfont="yahei_20" />
+  <Font name="微软雅黑" size="14" bold="false" italic="false" indexfont="yahei_14" />
+  <Font name="微软雅黑" size="12" bold="false" italic="false" indexfont="yahei_12" />
+  <VerticalLayout name="guidedlg" bkcolor="#F51C1D1F" bordercolor="#26FFFFFF" borderround="12,12,12,12" >
+    <HorizontalLayout height="48" padding="519,0,16,0" >
+      <Button name="btn_close"  tooltip="关闭" height="16" width="16" padding="0,16,0,16" style="close_style"
+         bkimage="file='geeIcon/close.svg' align='center,16,16' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF'" />
+    </HorizontalLayout>
+    <Label text="请选择播放器窗口样式" height="28" align="middle" padding="176,0,175,0" textcolor="#FFFFFFFF" indexfont="yahei_20"/>
+    <HorizontalLayout  height="128" padding="38,24,38,0">
+      <Button name="simple_pic" bkimage="file='geeIcon/simple.png'"  width="228" height="128" borderround="8,8,8,8" padding="0,0,0,0"/>
+      <Button  name="normal_pic" bkimage="file='geeIcon/normal.png' " width="228" height="128" borderround="8,8,8,8" padding="16,0,0,0"/>
+    </HorizontalLayout>
+    <HorizontalLayout  height="20" padding="114,12,114,0">
+      <CheckBox name="simple" width="76" height="20" padding="0,0,0,0" font="yahei_14" textcolor="#F2FFFFFF"  hottextcolor="#FFFFFFFF" pushedtextcolor="#99FFFFFF" text="精简模式" textpadding="20,0,0,0"
+    bkimage="file='geeIcon/radio_not_check.svg' dest='0,2,16,18'  svg-fill-color='0x80FFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x59FFFFFF' " />
+      <CheckBox name="normal" width="76" height="20" padding="167,0,0,0" font="yahei_14" textcolor="#F2FFFFFF"  hottextcolor="#FFFFFFFF" pushedtextcolor="#99FFFFFF" text="经典模式" textpadding="20,0,0,0"
+    bkimage="file='geeIcon/radio_not_check.svg' dest='0,2,16,18'  svg-fill-color='0x80FFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x59FFFFFF'"/>
+    </HorizontalLayout>
+    <Button name="submitbtn"  text="确认" enable="false"  indexfont="yahei_14" width="220" height="40"  padding="164,32,165,12"
+            textcolor="#F2FFFFFF"  hottextcolor="#FFFFFFFF" pushedtextcolor="#99FFFFFF" disabledtextcolor="#66FFFFFF" textpadding="95,0,94,0"
+            style="gold_gradient_btn_style" gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff00a8e6, 0) (#ff00b84d,0.5) (#ff00b84d, 1.0))"
+            hot-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff1ac1ff, 0) (#ff00cc55, 0.5) (#ff00cc56, 1.0))"
+            pushed-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff0082b3, 0) (#ff009940,0.5) (#ff009940, 1.0))"
+            disabled-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff0082b3, 0) (#ff009940,0.5) (#ff009940, 1.0))" borderround="20,20,20,20"/>
+    <Label text="后续可在设置中更改" height="17" align="middle" padding="220,0,221,0" textcolor="#99FFFFFF" indexfont="yahei_12"/>
+
+  </VerticalLayout>
+</Window>
+

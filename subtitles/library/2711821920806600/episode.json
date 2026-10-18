@@ -1,0 +1,23 @@
+{
+  "title": "田耕纪第20集",
+  "order": 20,
+  "vid": "0e63e05a6bedf4cdcab0c8e336375e42",
+  "tvid": "2711821920806600",
+  "albumId": "7714930311098201",
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321734.234295,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 985
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260518/56/c1/47815e8e9191756143eeef50fa6e7c90.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

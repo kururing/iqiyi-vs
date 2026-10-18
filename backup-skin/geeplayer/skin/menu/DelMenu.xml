@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window  size="168,124" >
+  <Font name="微软雅黑" size="16" bold="false" default="true" />
+  <VerticalLayout width="168" height="124">
+    <Control height="12" bkcolor="#01000000"/>
+    <VerticalLayout width="168" height="112" bkcolor="#FF28292A" borderround="12,12,12,12" bordercolor="#33FFFFFF">
+      <VerticalLayout inset="6,8,6,8">
+        <Option name ="217093"  userdata="wn_tvg"  text="清空播放列表" width="156" height="48"  borderround="8,8,8,8"
+                                textcolor="#F2FFFFFF" hottextcolor="#FFFFFFFF"  hotbkcolor="0x0FFFFFFF"  textpadding="38,0,0,0" align="left"
+      normalimage="file='geeIcon/list/sub/del.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      hotimage="file='geeIcon/list/sub/del.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      pushedimage="file='geeIcon/list/sub/del.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+        <Option name="217094" userdata="wn_tvg" enabled="false" text="移除失效文件" width="156" height="48"  borderround="8,8,8,8"
+                                textcolor="#F2FFFFFF" hottextcolor="#FFFFFFFF" disabledtextcolor="#66FFFFFF" hotbkcolor="0x0FFFFFFF"  textpadding="38,0,0,0" align="left"
+      normalimage="file='geeIcon/list/sub/empty_list.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      hotimage="file='geeIcon/list/sub/empty_list.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      pushedimage="file='geeIcon/list/sub/empty_list.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"
+      disabledimage="file='geeIcon/list/sub/empty_list.svg' dest='14,16,30,32' svg-fill-color='0x40FFFFFF'"/>
+      </VerticalLayout>
+    </VerticalLayout>
+  </VerticalLayout>
+</Window>

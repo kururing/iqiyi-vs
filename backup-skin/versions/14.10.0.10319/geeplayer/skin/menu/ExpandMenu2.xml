@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window  size="168,264" roundcorner="8,8">
+  <Font name="微软雅黑" size="16" bold="false" default="true" />
+  <VerticalLayout width="168" height="264">
+  <VerticalLayout width="168" height="256" name="default_menu" bkcolor="#E61C1D1F" borderround="12,12,12,12" bordercolor="#33FFFFFF">
+    <VerticalLayout inset="6,8,6,8">
+      <Option name="menu_sub_play_sequence" id="2" text="顺序播放" width="156" height="48"  borderround="8,8,8,8" tag="1"
+      textcolor="#F2FFFFFF" hottextcolor="#FFFFFFFF"  selectedbkcolor="#0F00C452"  selectedtextcolor="#FF00D157" textpadding="38,0,0,0" align="left"
+      normalimage="file='geeIcon/list/sub/play_sequence.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      hotimage="file='geeIcon/list/sub/play_sequence.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      pushedimage="file='geeIcon/list/sub/play_sequence.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+      <Option name="menu_sub_play_loop" id="5" text="顺序循环" width="156" height="48"  borderround="8,8,8,8" tag="1"
+              textcolor="#F2FFFFFF" hottextcolor="#FFFFFFFF"  selectedbkcolor="#0F00C452"  selectedtextcolor="#FF00D157" textpadding="38,0,0,0" align="left"
+  normalimage="file='geeIcon/list/sub/play_loop.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+  hotimage="file='geeIcon/list/sub/play_loop.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+  pushedimage="file='geeIcon/list/sub/play_loop.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+      <Option name="menu_sub_play_single" id="1" text="单个播放" width="156" height="48" borderround="8,8,8,8" tag="1"
+              textcolor="#F2FFFFFF" hottextcolor="#FFFFFFFF"  selectedbkcolor="#0F00C452"  selectedtextcolor="#FF00D157" textpadding="38,0,0,0" align="left"
+      normalimage="file='geeIcon/list/sub/play_single.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      hotimage="file='geeIcon/list/sub/play_single.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      pushedimage="file='geeIcon/list/sub/play_single.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+      <Option name="menu_sub_play_single_loop" id="4" text="单个循环" width="156" height="48" borderround="8,8,8,8"  tag="1"
+              textcolor="#F2FFFFFF" hottextcolor="#FFFFFFFF"  selectedbkcolor="#0F00C452"  selectedtextcolor="#FF00D157" textpadding="38,0,0,0" align="left"
+      normalimage="file='geeIcon/list/sub/play_single_loop.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      hotimage="file='geeIcon/list/sub/play_single_loop.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      pushedimage="file='geeIcon/list/sub/play_single_loop.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+      <Option name="menu_sub_play_random" id="3" text="随机播放"  width="156" height="48" borderround="8,8,8,8"  tag="1"
+              textcolor="#F2FFFFFF" hottextcolor="#FFFFFFFF" selectedbkcolor="#0F00C452"  selectedtextcolor="#FF00D157" textpadding="38,0,0,0" align="left"
+      normalimage="file='geeIcon/list/sub/play_random.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      hotimage="file='geeIcon/list/sub/play_random.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      pushedimage="file='geeIcon/list/sub/play_random.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+    
+  </VerticalLayout>
+  </VerticalLayout>
+  <Control height="8" bkcolor="#01000000"/>
+  </VerticalLayout>
+</Window>

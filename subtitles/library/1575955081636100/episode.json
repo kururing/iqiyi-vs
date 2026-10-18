@@ -1,0 +1,23 @@
+{
+  "title": "雀骨第2集",
+  "order": 2,
+  "vid": "271c65765c8812588897789aa2e4f753",
+  "tvid": "1575955081636100",
+  "albumId": "3493131454654001",
+  "albumTitle": "雀骨",
+  "albumTotal": 28,
+  "discoveredAt": 1792344666.4012272,
+  "provider": "iqiyi",
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 867
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260827/0b/f7/c9f5b1ac43640366ef54a2dcdb8d1930.xml"
+    }
+  ]
+}

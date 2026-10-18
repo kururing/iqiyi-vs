@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="360,390" caption="0,0,0,38" roundcorner="3,3">
+    <VerticalLayout name="slider_inner" bkcolor="login_tip_bkcolor">		
+		<Label text="为保证您的账号安全，请完成一下认证" height="19" align="center" padding="0,50,0,0"  textcolor="login_normal_text_color" />
+		<HorizontalLayout name="slide_web_container" width="296" height="212" align="center" padding="32,16,0,0">
+			<Label name="loading" bordersize="1" text="正在为您加载..." padding="100,0,0,0" textcolor="login_normal_text_color" />
+			<Label name="load_error" bordersize="1" text="数据加载失败" padding="100,0,0,0"  textcolor="login_normal_text_color"  visible="false"/>
+		</HorizontalLayout>
+		<Button name="slider_close_btn" float="true" style="close_style" width="16" height="16" align="right" pos="332,12,348,28"/>
+    </VerticalLayout>
+</Window>

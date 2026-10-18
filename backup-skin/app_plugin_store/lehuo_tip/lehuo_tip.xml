@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<Window >
+<Font name="Microsoft YaHei" size="14" textcolor="#ff74360c" bold="false" italic="false" default="true" indexfont="tips_text"/>
+<VerticalLayout name="lehuo_tip" bkimage="file=&apos;skinplan/commonres/tips_bk.png&apos; corner=&apos;30,30,30,30&apos; "  >
+     <TileLayout name="lehuo_tip_plugin" padding="5,10,5,0"  itemsize="110,128"/>
+     <HorizontalLayout height="44" padding="0,0,0,0" >
+            <Button name="more" align="center" valign="center" text="查看更多" indexfont="total_price_text" textcolor="PreferencesCenter_btn_normal" hottextcolor="PreferencesCenter_btn_hover"    normalimage="file=&apos;skinplan/commonres/tips_btn_bk.png&apos; corner=&apos;10,10,10,10&apos; "  />
+     </HorizontalLayout>
+     
+</VerticalLayout>
+</Window>

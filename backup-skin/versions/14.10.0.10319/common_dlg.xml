@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="350,151" caption="0,0,0,22" roundcorner="-1,-1">
+	<Font name="Tahoma" size="14" bold="false" italic="false" indexfont="Title" />
+	<Font name="Microsoft YaHei" size="12" bold="false" italic="false" default="true" height="14"/>
+  <VerticalLayout name="commondlg" bkimage="file='ConfigRes/popdlg_bk.png' corner='5,28,5,5' "inset="0,0,0,0" >
+    <HorizontalLayout bordersize="1" height="38" >
+            <Control width="330" height="26" />
+            <VerticalLayout >
+            <Button name="btnClose" padding="0,10,10,0" width="11" height="11" disabledtextcolor="#FFAAA6A7" align="center"
+                    normalimage="file='ConfigRes/config_dlg_close.png' source='0,0,11,11'"
+                    hotimage="file='ConfigRes/config_dlg_close.png' source='11,0,22,11'"
+                    pushedimage="file='ConfigRes/config_dlg_close.png' source='22,0,33,11'" />
+            <HorizontalLayout height="8" />
+          </VerticalLayout>
+    </HorizontalLayout>
+    <Label name="icon"  float="true" pos="30,47,0, 0" width="43" height="43" bkimage="soft_txt_icon_2.png" />
+    <RichEdit name="ShowTest" width="240" height="50" text="" float="true" pos="83,42,0,0"  enabled="false" wantreturn="true" padding="15,5,10,5" textcolor="FF999999" />
+    <Button name="btnOK"  text="确定"    tooltip="" float="true"  pos="135,105,0,0"  height="28" width="80" textcolor="#FFFFFFFF" disabledtextcolor="#FF808080" align="center" normalimage="file='ConfigRes/btn_ok.png' source='0,0,80,28'" hotimage="file='ConfigRes/btn_ok.png' source='80,0,160,28'" pushedimage="file='ConfigRes/btn_ok.png' source='160,0,240,28'" disabledimage="file='ConfigRes/btn_ok.png' source='240,0,320,28'" />
+   <Label text="提示" float="true" pos="25,16,0,0" width="50" height="24" textcolor="#FF65b107" />
+  </VerticalLayout>
+</Window>

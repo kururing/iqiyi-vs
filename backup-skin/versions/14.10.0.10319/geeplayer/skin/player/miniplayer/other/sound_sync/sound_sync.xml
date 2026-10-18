@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="360,200" caption="0,0,360,28" roundcorner="0,0" >
+	<Font name="Microsoft YaHei" size="14" bold="true" italic="false" indexfont="yahei_14_bold" />
+	<Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="yahei_12" default="true"/>
+
+	<VerticalLayout bkimage="file='skinplan\public/dialog/wind_bk.png'" name="ROOT" >
+
+		<HorizontalLayout height="33" inset="1,1,1,0" bkimage="file='skinplan\public/dialog/border_title.png' corner='3,3,4,4'" >
+			<Label text="音频同步" algin="middle" width="70" textcolor="wnd_title_text_nor" indexfont="yahei_14_bold" padding="16,0,0,0" />
+			<Control />
+			<Button name="btn_sys_close" animation="true" width="24" height="24" padding="0,3,5,0"
+		   normalimage="file='skinplan\public/ctrl/public_close.png' source='0,0,24,24'"
+			 hotimage="file='skinplan\public/ctrl/public_close.png' source='24,0,48,24'"
+			 pushedimage="file='skinplan\public/ctrl/public_close.png' source='48,0,72,24'"
+			 disabledimage="file='skinplan\public/ctrl/public_close.png' source='72,0,96,24'"/>
+		</HorizontalLayout>
+		
+		<VerticalLayout bkimage="file='skinplan\public/dialog/main_bk.png' corner='1,1,1,1'">
+		 <VerticalLayout inset="1,0,1,1" bkimage="file='skinplan\public/dialog/border_content.png' corner='3,3,4,4'">
+			<Label text="音频同步（毫秒）：" padding="25,10,0,0" height="30" textcolor="wnd_label_text_title" indexfont="yahei_12"/>
+		
+			<HorizontalLayout padding="0,5,0,0" height="26" >
+				<Control  width="25"/>
+				<Button name="btn_sound_delay" animation="true" text="声音延后" width="66" height="24" indexfont="yahei_12"
+					textcolor="wnd_label_text_title" hottextcolor="wnd_label_text_title" pushedtextcolor ="wnd_label_text_title" disabledtextcolor="0xff444444"
+					normalimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='0,0,60,26' "
+					hotimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='60,0,120,26' "
+					pushedimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='120,0,180,26' "
+					disabledimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='180,0,240,26' "
+				/>
+				
+				<Combo name="combo_time" animation="true" width="82" height="24" textpadding="7,0,10,0" padding="10,0,0,0" indexfont="yahei_12"
+				  normalimage="file='skinplan\public/ctrl/combpicture.png' source='0,0,80,26' corner='2,2,23,2'"
+				  hotimage="file='skinplan\public/ctrl/combpicture.png' source='0,26,80,52' corner='2,2,23,2'"
+				  pushedimage="file='skinplan\public/ctrl/combpicture.png' source='0,52,80,78' corner='2,2,23,2'"
+			    disabledimage="file='skinplan\public/ctrl/combpicture.png' source='0,0,80,26' corner='2,2,23,2'"
+					textcolor="wnd_combo_text_nor" bkcolor="wnd_combo_bk" 
+					itemtextcolor="wnd_combo_item_text_nor" itembkcolor="wnd_combo_item_bk"
+					itemhottextcolor="wnd_combo_item_text_hot" itemhotbkcolor="wnd_combo_item_hot_bk"
+          dropdownlinecolor="wnd_combo_dropdown_line"
+					itemselectedtextcolor="wnd_combo_item_text_select" itemselectedbkcolor="wnd_combo_item_text_select_bk"
+				/>
+				
+				<Button name="btn_sound_advance" animation="true" text="声音提前" width="66" height="24" padding="10,0,0,0"  indexfont="yahei_12"
+					textcolor="wnd_label_text_title" hottextcolor="wnd_label_text_title" pushedtextcolor ="wnd_label_text_title" disabledtextcolor="0xff444444"
+					normalimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='0,0,60,26' "
+					hotimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='60,0,120,26' "
+					pushedimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='120,0,180,26' "
+					disabledimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='180,0,240,26' "
+				/>
+				
+				<Button name="btn_reset" animation="true" text="重置" width="48" height="24" padding="20,0,0,0"  indexfont="yahei_12"
+					textcolor="wnd_label_text_title" hottextcolor="wnd_label_text_title" pushedtextcolor ="wnd_label_text_title" disabledtextcolor="0xff444444"
+					normalimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='0,0,60,26' "
+					hotimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='60,0,120,26' "
+					pushedimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='120,0,180,26' "
+					disabledimage="file='skinplan\player/MiniPlayer/Other/subtitleadjust/button.png' source='180,0,240,26' "
+				/>
+				<Control  width="25"/>
+			</HorizontalLayout>
+			<HorizontalLayout height="26" padding="25,10,0,0" >
+				<Label text="当前状态：" width="66" textcolor="color_ffffff_333333" textpadding="0,6,0,0"  indexfont="yahei_12"/>
+				<Label name="label_state" text="未设置"  width="300"  textcolor="0xFF45B000" textpadding="0,6,0,0"  indexfont="yahei_12"/>
+				<Control />
+			</HorizontalLayout>
+			
+			<HorizontalLayout padding="0,10,0,0">
+				<Control  width="138"/>
+				<Button name="btn_close" animation="true" text="关闭" width="80" height="30" align="center" indexfont="yahei_12"
+					textcolor="wnd_btn_ok_text_nor" hottextcolor="wnd_btn_ok_text_nor"
+					pushedtextcolor="wnd_btn_ok_text_nor" disabledtextcolor="0xff4b4b4b"
+					normalimage="file='skinplan\public/ctrl/okbtn.png' source='0,0,80,28'" 
+					hotimage="file='skinplan\public/ctrl/okbtn.png' source='80,0,160,28'" 
+					pushedimage="file='skinplan\public/ctrl/okbtn.png' source='160,0,240,28'" 
+					disabledimage="file='skinplan\public/ctrl/okbtn.png' source='240,0,320,28'"
+				/>
+				<Control  width="138"/>
+			</HorizontalLayout>
+		</VerticalLayout>
+</VerticalLayout>
+	</VerticalLayout>
+</Window>

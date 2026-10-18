@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+  <Include source="public\xml\default_font.xml" />
+  
+  <VerticalLayout name="lyricsetting" height="332" width="388" >
+    <Control height="30" />
+
+    <VerticalLayout height="58">
+      <Label text="歌词" textcolor="setting_title" width="76" algin="leftmiddle" indexfont="yahei_14b"/>
+
+      <CheckBox name="show_lyric" text="显示歌词" width="80" animation="true" textpadding="22,-2,0,0" align="leftmiddle" padding="15,12,0,0"
+          textcolor="setting_checkbox_text" hottextcolor="setting_checkbox_text" selectedtextcolor="setting_checkbox_text" indexfont="yahei_12" itemfont="yahei_12"
+		      selectedhottextcolor="setting_checkbox_text" selectedpushedtextcolor="setting_checkbox_text" height="16" selected="false"
+          normalimage="file='skinplan\public/ctrl/checkboxpicture.png' source='0,0,14,14' dest='0,0,14,14'"
+          hotimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='14,0,28,14' dest='0,0,14,14'"
+          pushedimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='28,0,42,14' dest='0,0,14,14'"
+          disabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,0,56,14' dest='0,0,14,14'"
+          selectednormalimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='0,14,14,28' dest='0,0,14,14'"
+          selectedhotimage="file='skinplan\public/ctrl/checkboxpicture.png' source='14,14,28,28' dest='0,0,14,14'"
+          selectedpushedimage="file='skinplan\public/ctrl/checkboxpicture.png' source='28,14,42,28' dest='0,0,14,14'"
+          selecteddisabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,14,56,28' dest='0,0,14,14'"/>
+
+    </VerticalLayout>
+
+    <VerticalLayout height="116" padding="0,16,0,0" >
+      <VerticalLayout width="76" height="14">
+        <Label text="歌词路径" textcolor="setting_sub_title" height="14" align="leftmiddle" indexfont="yahei_12b"/>
+        <Control />
+      </VerticalLayout>
+
+      <VerticalLayout padding="15,12,0,0">
+        <CheckBox name="check_same_path_playfile" animation="true" text="与音乐文件同路径" group="lyric_save_path"
+          textcolor="setting_checkbox_text" align="left" height="14" width="120" indexfont="yahei_12"
+          textpadding="20,0,0,0" selected="false" selectedtextcolor="setting_checkbox_text"
+          selectedhottextcolor="setting_checkbox_text" selectedpushedtextcolor="setting_checkbox_text"
+          normalimage="file='skinplan\public/ctrl/radio.png' source='0,0,14,14' dest='0,0,14,14'"
+          hotimage="file='skinplan\public/ctrl/radio.png'  source='14,0,28,14' dest='0,0,14,14'"
+          pushedimage="file='skinplan\public/ctrl/radio.png'  source='28,0,42,14' dest='0,0,14,14'"
+          disabledimage="file='skinplan\public/ctrl/radio.png' source='42,0,56,14' dest='0,0,14,14'"
+          selectednormalimage="file='skinplan\public/ctrl/radio.png'  source='56,0,70,14' dest='0,0,14,14'"
+          selectedhotimage="file='skinplan\public/ctrl/radio.png' source='70,0,84,14' dest='0,0,14,14'"
+          selectedpushedimage="file='skinplan\public/ctrl/radio.png' source='84,0,98,14' dest='0,0,14,14'"
+          selecteddisabledimage="file='skinplan\public/ctrl/radio.png' source='98,0,112,14' dest='0,0,14,14'" />
+
+        <CheckBox name="check_self_define_path" animation="true" text="保存至指定路径" group="lyric_save_path"
+          align="left" textpadding="20,0,0,0" padding="0,12,0,0" height="14" width="110" indexfont="yahei_12"
+          textcolor="setting_checkbox_text" selectedtextcolor="setting_checkbox_text" selected="false"
+          selectedhottextcolor="setting_checkbox_text" selectedpushedtextcolor="setting_checkbox_text"
+          normalimage="file='skinplan\public/ctrl/radio.png' source='0,0,14,14' dest='0,0,14,14'"
+          hotimage="file='skinplan\public/ctrl/radio.png'  source='14,0,28,14' dest='0,0,14,14'"
+          pushedimage="file='skinplan\public/ctrl/radio.png'  source='28,0,42,14' dest='0,0,14,14'"
+          disabledimage="file='skinplan\public/ctrl/radio.png' source='42,0,56,14' dest='0,0,14,14'"
+          selectednormalimage="file='skinplan\public/ctrl/radio.png'  source='56,0,70,14' dest='0,0,14,14'"
+          selectedhotimage="file='skinplan\public/ctrl/radio.png' source='70,0,84,14' dest='0,0,14,14'"
+          selectedpushedimage="file='skinplan\public/ctrl/radio.png' source='84,0,98,14' dest='0,0,14,14'"
+          selecteddisabledimage="file='skinplan\public/ctrl/radio.png' source='98,0,112,14' dest='0,0,14,14'" /> 
+
+		<HorizontalLayout padding="0,12,0,0" height="26" >
+		  <Edit name="edit_lyric_path" animation="false" height="26" text="c:\user\" align="leftmiddle" width="264" textpadding="7,0,7,0"
+			textcolor="setting_comb_item_text" disabledtextcolor="color_444444_cccccc" nativebkcolor="setting_edit_native_bk" bkcolor="0x00ffffff" pathellipsis="true" indexfont="yahei_12"
+			normalimage="file='skinplan\public/ctrl/text.png' source='0,0,60,26' corner='2,2,2,2' " 
+			hotimage="file='skinplan\public/ctrl/text.png' source='60,0,120,26' corner='2,2,2,2' " 
+			focusedimage="file='skinplan\public/ctrl/text.png' source='120,0,180,26' corner='2,2,2,2' " 
+			disabledimage="file='skinplan\public/ctrl/text.png' source='180,0,240,26' corner='2,2,2,2' " />
+		  <Button name="btn_lyric_explore" animation="true" text="浏览" padding="0,0,0,0" 
+			width="48" height="26" align="center" textcolor="setting_checkbox_text" indexfont="yahei_12"
+			normalimage="file='skinplan\public/ctrl/commonbtn.png' source='0,0,68,26'"
+			hotimage="file='skinplan\public/ctrl/commonbtn.png' source='68,0,136,26'"
+			pushedimage="file='skinplan\public/ctrl/commonbtn.png' source='136,0,204,26'"
+			disabledimage="file='skinplan\public/ctrl/commonbtn.png' source='204,0,272,26'"/>
+       </HorizontalLayout>
+	</VerticalLayout> 
+    </VerticalLayout> 
+    
+     <VerticalLayout height="64" padding="0,12,0,0" >
+       <Label text="封面路径" textcolor="setting_sub_title" width="76" height="26" align="leftmiddle" indexfont="yahei_12b"/>
+	   <HorizontalLayout padding="15,12,0,0" height="26" >
+       <Edit name="edit_lyric_cover" animation="false" height="26" text="c:\user\" align="leftmiddle" width="264" indexfont="yahei_12"
+        textcolor="setting_comb_item_text" disabledtextcolor="color_444444_cccccc" nativebkcolor="setting_edit_native_bk" bkcolor="0x00ffffff" pathellipsis="true" textpadding="7,0,7,0"
+				normalimage="file='skinplan\public/ctrl/text.png' source='0,0,60,26' corner='2,2,2,2' "
+				hotimage="file='skinplan\public/ctrl/text.png' source='60,0,120,26' corner='2,2,2,2'"
+        focusedimage="file='skinplan\public/ctrl/text.png' source='120,0,180,26' corner='2,2,2,2' "
+        disabledimage="file='skinplan\public/ctrl/text.png' source='180,0,240,26' corner='2,2,2,2' "/>
+       <Button name="btn_cover_explore" animation="true" text="浏览" padding="0,0,0,0"
+        width="48" height="26" align="center" textcolor="setting_checkbox_text" indexfont="yahei_12"
+        normalimage="file='skinplan\public/ctrl/commonbtn.png' source='0,0,68,26'"
+        hotimage="file='skinplan\public/ctrl/commonbtn.png' source='68,0,136,26'"
+        pushedimage="file='skinplan\public/ctrl/commonbtn.png' source='136,0,204,26'"
+        disabledimage="file='skinplan\public/ctrl/commonbtn.png' source='204,0,272,26'"/>  
+		</HorizontalLayout>
+    </VerticalLayout>
+    
+	<Control bkimage="file='skinplan\menu/menu_line.png' source='5,0,15,1'" height="1" padding="0,30,0,0"/>
+  </VerticalLayout>
+</Window>

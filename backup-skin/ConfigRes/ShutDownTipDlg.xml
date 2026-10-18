@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="358,162" caption="0,0,0,34" alpha="250">
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" default="true"/>
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="Title"/>
+  <Font name="Tahoma" size="12" bold="false" italic="false" indexfont="show"/>
+    <VerticalLayout name="ShutDownTipCon" style="popwnd_bk_style" width="358" height="162">
+      <HorizontalLayout height="34">
+        <Label style="popwnd_title_style" text="定时设置"/>
+        <Control />
+        <Button name="closebtn" style="close_style" width="12" height="12" padding="0,10,10,10" visible="false"/>
+      </HorizontalLayout>
+
+      <VerticalLayout  bordersize="1" width="358">
+			<HorizontalLayout name="close_tip" padding="0,14,0,0" height="42">
+				<Label name="icon" padding="36,0,0,0" width="42" height="42" bkimage="commonres/warnning.svg" />
+				<Label name="showtip" width="185" text="您选择了定时关机，系统将在" height="16" padding="15,9,0,0" textcolor="shutdown_text" />
+				<Label name="showtime" width="21" text="30S" padding="0,11,0,0" height="12" textcolor="#fff15a24" indexfont="show" />
+				<Label name="showtip1" width="50" text="内关闭" padding="0,9,0,0" height="16" textcolor="shutdown_text"/>
+			</HorizontalLayout>
+	  
+			<Control />
+			<HorizontalLayout height="32" padding="0,0,0,20" >
+				<Control />
+				<Button  name="btnOK" style="green_gradient_btn_style" width="80" height="32" text="立即关机"/>
+				<Button  name="btnCancel" style="cancel_btn_style" width="80" height="32" padding="20,0,0,0" text="取消关机"/>
+				<Control />
+			</HorizontalLayout>
+			<!--bordercolor="#ffff0000"-->
+	  
+        </VerticalLayout>
+    </VerticalLayout>
+</Window>

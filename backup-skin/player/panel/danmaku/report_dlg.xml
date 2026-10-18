@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="316,142" caption="0,0,0,0" roundcorner="2,2">
+   	<Font name="微软雅黑" size="12" bold="false" italic="false" default="false" indexfont="yahei_12"/>
+    <WeakVerticalLayout name="reportdlg" width="316" height="142" bkcolor="#FF292A2D" >
+		<HorizontalLayout height="34" >
+			<Label text="请选择举报原因" padding="20,20,0,0" textcolor="#FFFFFFFF" width="90" height="14" indexfont="yahei_12"  />
+			<WeakControl />
+			<WeakButton name="close" width="12" height="12" padding="0,20,16,2"  textcolor="player_control_normal_color" 
+				normalimage="file='commonres/close_btn.svg' align='center,12,12' 
+						svg-fill-color='player_control_normal_color'
+						hot-svg-fill-color='close_hot_btn_color'
+						pushed-svg-fill-color='close_pushed_btn_color'
+						disabled-svg-fill-color='player_top_disable_color'"  />
+			
+		</HorizontalLayout>
+
+        <WeakVerticalLayout padding="36,12,36,0" name="vertiacal_root" >
+            
+        </WeakVerticalLayout>
+
+        <HorizontalLayout align="bottom" height="32" padding="36,0,36,30">
+            <WeakButton name="submit_btn" text="提 交" width="80"  borderround="2,2" enabled="false" indexfont="yahei_12"
+            	bkcolor="#FF23D41E" hotbkcolor="#FF0BBE06" pushedbkcolor="#CC0BB406" disabledbkcolor="#7F999999"
+            	textcolor="#FFFFFFFF"  hottextcolor="#FFFFFFFF"  pushedtextcolor="#CCFFFFFF" disabledtextcolor="#7FFFFFFF"/> 
+            <Control />
+            <WeakButton name="cancel_btn"  text="取 消" width="80" borderround="2,2" bkcolor="#19FFFFFF"  indexfont="yahei_12"
+            	textcolor="#99FFFFFF" />
+        </HorizontalLayout>
+    </WeakVerticalLayout>
+</Window>

@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window >
+    <VerticalLayout name="guide_inner" bkcolor="#ffffffff" borderround="4,4">
+		<ImageLabel name="guide_bk" width="360" height="180"/>
+		<HorizontalLayout bordersize="0" height="11" padding="0,-160,20,0">
+		  <Control />
+		  <Button name="close_btn" style="close_style" width="11" height="11"/>
+		</HorizontalLayout>
+		<Label name="text1_lab" height="20" text="开通会员享特权" padding="0,180,0,0"indexfont="yahei_16" align="center"/>
+		<Label name="text2_lab" text="超多特权一键解锁" align="center" padding="0,12,0,0" height="20"  indexfont="yahei_16" singleline="true" textcolor="#ff000000"/>
+		<HorizontalLayout padding="28,26,0,0" height="72">
+			<VerticalLayout width="72">
+				<ImageLabel name="icon_bk1" width="48" height="48" padding="12,0,0,0"/>
+				<Label name="icon_text1" text="广告特权" align="center" height="14"  indexfont="yahei_12" singleline="true"  padding="0,8,0,0" textcolor="#ff000000"/>
+			</VerticalLayout>
+			<VerticalLayout width="72">
+				<ImageLabel name="icon_bk2" width="48" height="48" padding="12,0,0,0"/>
+				<Label name="icon_text2" text="热剧抢先看" align="center" padding="0,8,0,0" height="14"  indexfont="yahei_12" singleline="true" textcolor="#ff000000"/>
+			</VerticalLayout>
+			<VerticalLayout width="72">
+				<ImageLabel name="icon_bk3" width="48" height="48" padding="12,0,0,0" />
+				<Label name="icon_text3" text="蓝光1080P" align="center" padding="0,8,0,0" height="14" indexfont="yahei_12" singleline="true" textcolor="#ff000000"/>
+			</VerticalLayout>
+			<VerticalLayout width="72">
+				<ImageLabel name="icon_bk4" width="48" height="48" padding="12,0,0,0"/>
+				<Label name="icon_text4" text="电影点播券" align="center" padding="0,8,0,0" height="14"  indexfont="yahei_12" singleline="true" textcolor="#ff000000"/>
+			</VerticalLayout>
+		</HorizontalLayout>
+
+	    <Button name="open_vip_btn" text="立即开通" style="gold_gradient_btn_style" padding="28,22,0,0" width="304" height="40" borderround="4,4"/>	
+    </VerticalLayout>
+</Window>

@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+    <HistoryDataItem name="history_item_container" height="78" padding ="0,0,0,0">
+		<VerticalLayout width="112" height="63" padding="20,7,0,7">
+			<Control name="pic" width="112" height="63" borderround="4,4" bkcolor="list_logo_bk_color" bkimage="file='commonres/logo.svg' align='center,49,15'
+			svg-fill-color='list_logo_fore_color'" />
+			<Control name="mark" visible1="false" float="true" width="61" height="14" pos="51,0,112,14"/>
+			<Label width="112" height="40" padding="0,-40,0,0" gradient="history_mask_gradient"/>
+			<Label name="update_info_lab" padding="0,-20,8,0" align="right" textcolor="history_tip_update_textcolor"  indexfont="font_12"/>
+			<Progress name="play_progress" forepadding="0,0,0,0" width="112" height="3" borderround="3,3" min="0" max="100" value="50" float="true" pos="0,60,112,63" bkcolor="#4dffffff" foregradient="tips_know_gradient"/>
+		</VerticalLayout>
+    	<VerticalLayoutX height="64" padding="12,7,0,7" width="174">
+			<VerticalLayout name="title_lay" width="152">
+				<Label name="video_name" text="主标题" maxwidth="152" height="20" singleline="false" align="left" singleline="false" textcolor="PreferencesCenter_title_normal" padding="0,0,0,0"  indexfont="font_14"/>
+				<Label name="video_name2" text="主标题" maxwidth="108" height="20" visible="false" singleline="true"  endellipsis="true" align="left" singleline="false" textcolor="PreferencesCenter_title_normal" padding="0,0,0,0"  indexfont="font_14"/>
+				<Label name="update_note" text="" width="44" height="18" float="true" align="left" borderround="2,2" endellipsis="true" bkcolor="history_tip_updatenote_bkcolor" textcolor="history_tip_updatenote_textcolor" padding="4,0,0,0" textpadding="4,3,4,3" visible="false" indexfont="font_12"/>
+			</VerticalLayout>
+    		<HorizontalLayoutX name="play_lay" height="14">
+    		    <Control name="platform_icon" width="12" height="13" padding="0,1,4,0"/>
+     			<Label name="rest_time" text="" width="100" indexfont="font_12" textcolor="PreferencesCenter_history_time"/>
+				<Control minwidth="10" name="space_ctrl" />
+                <Button name="next" text="下一集" align="left" padding="0,0,0,0" width="52" indexfont="font_12" textcolor="PreferencesCenter_history_time" hottextcolor="PreferencesCenter_title_hover" pushedtextcolor="PreferencesCenter_title_hover" normalimage="file='PreferencesCenter/pic/next.svg' svg-fill-color='PreferencesCenter_history_time' dest='40,1,52,13'" hotimage="file='PreferencesCenter/pic/next.svg' svg-fill-color='PreferencesCenter_title_hover' dest='40,1,52,13'" />
+				<Control width="20"/>
+            </HorizontalLayoutX>
+        </VerticalLayoutX>
+    </HistoryDataItem>
+
+</Window>

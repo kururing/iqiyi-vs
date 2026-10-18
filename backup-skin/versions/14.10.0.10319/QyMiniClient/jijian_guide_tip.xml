@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window >
+  <Font name="Microsoft YaHei" size="16" bold="false" italic="false" indexfont="yahei_16" />
+  <CxVerticalLayout name="root_lay" width="438" height="53">
+  	  <Label name="tip_text" text="一键追剧、快捷搜索、小窗刷视频，就用爱奇艺极简模式" align="left" height="47" width="438" textcolor="#ffffffff" indexfont="yahei_16" borderround="8,8" bkcolor="#FF464B60" textpadding="16,0,0,0"/>
+	  <HorizontalLayout>
+      <Control />
+	    <Label width="12"  height="6" bkimage="arrow.svg" svg-fill-color="#FF464B60"/>
+      <Control width="32"/>
+	  </HorizontalLayout>
+  </CxVerticalLayout>
+</Window>

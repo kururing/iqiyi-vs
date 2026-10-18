@@ -1,0 +1,485 @@
+/* iqiyi-vi */
+window.__iqiyiViDict = {"关闭":"Đóng","取消":"Hủy","提示":"Thông báo","设置":"Cài đặt","确定":"OK","确 定":"OK","取 消":"Hủy","确认":"Xác nhận","在线升级":"Cập nhật","恢复默认":"Mặc định","恢复默认设置":"Khôi phục mặc định","反馈与修复":"Phản hồi & sửa","退出":"Thoát","退出应用":"Thoát ứng dụng","点击刷新":"Bấm để tải lại","立即修复":"Sửa ngay","顺序播放":"Phát lần lượt","顺序循环":"Lặp danh sách","单个播放":"Phát một lần","单个循环":"Lặp một tập","随机播放":"Phát ngẫu nhiên","意见反馈":"Góp ý","最小化":"Thu nhỏ","最大化":"Phóng to","还原窗口":"Khôi phục cửa sổ","登录":"Đăng nhập","播放":"Phát","更改目录":"Đổi thư mục","爱奇艺":"iQIYI","爱奇艺-在线视频网站-海量正版高清视频在线观看":"iQIYI - Website video trực tuyến - Kho video HD bản quyền","爱奇艺-客户端下载":"iQIYI - Tải ứng dụng","爱奇艺,客户端下载,下载":"iQIYI, tải ứng dụng, tải xuống","爱奇艺客户端下载页面。":"Trang tải ứng dụng iQIYI.","快捷键":"Phím tắt","快捷键设置":"Cài đặt phím tắt","点击重试":"Bấm thử lại","打开URL":"Mở URL","打开":"Mở","画面调节":"Chỉnh hình","二维码已失效":"Mã QR hết hạn","扫码成功":"Quét mã thành công","主标题":"Tiêu đề","请更新显卡驱动":"Hãy cập nhật driver card đồ họa","非常抱歉，页面加载出错，请":"Trang lỗi, vui lòng","反馈":"Phản hồi","打开文件夹":"Mở thư mục","播放顺序":"Thứ tự phát","返回":"Quay lại","今日推荐":"Gợi ý hôm nay","在线客服":"Hỗ trợ online","或":"hoặc","不在提示":"Không nhắc nữa","不再提示":"Không nhắc nữa","完成":"Xong","音频设置：":"Âm thanh:","输出设备：":"Thiết bị ra:","（推荐）":"(nên dùng)","开启":"Bật","设置项重置":"Đặt lại cài đặt","截图":"Chụp màn hình","爱奇艺万能播放器":"Trình phát iQIYI","打开文件":"Mở tệp","音频":"Âm thanh","跳过片头片尾":"Bỏ qua intro/outro","字幕":"Phụ đề","内容":"Nội dung","请在手机上授权登录":"Xác nhận đăng nhập trên điện thoại","请在手机上确认":"Hãy xác nhận trên điện thoại","安全验证":"Xác minh bảo mật","扫码登录":"Quét mã đăng nhập","举报":"Báo cáo","关于":"Giới thiệu","正在下载...":"Đang tải...","请稍候...":"Vui lòng chờ...","更多":"Thêm","美女直播":"Livestream","后退":"Lùi","前进":"Tiến","刷新":"Tải lại","我知道了":"Đã hiểu","后自动关闭":" rồi tự đóng","音量":"Âm lượng","功能":"Tính năng","定时关机：":"Hẹn giờ tắt:","播放设置":"Cài đặt phát","保存":"Lưu","精简模式":"Chế độ gọn","极简模式":"Chế độ tối giản","点击复制":"Bấm để sao chép","置顶":"Ghim trên cùng","打开文件所在位置":"Mở vị trí tệp","从播放列表中删除":"Xóa khỏi danh sách phát","设置A点":"Đặt điểm A","设置B点":"Đặt điểm B","查看文件信息":"Xem thông tin tệp","字幕调节":"Chỉnh phụ đề","默认":"Mặc định","重置":"Đặt lại","《用户协议》":"Điều khoản","和":"và","爱奇艺手机APP":"App iQIYI điện thoại","获取验证码":"Lấy OTP","重试":"Thử lại","提 交":"Gửi","播放本地文件":"Phát tệp máy","帮助":"Trợ giúp","分享":"Chia sẻ","正在加载,请稍候...":"Đang tải, chờ chút...","哎呀,数据跑去火星啦,检查网络试试~":"Lỗi dữ liệu, hãy kiểm tra mạng.","菜单":"Menu","隐藏爱奇艺":"Ẩn iQIYI","打开爱奇艺":"Mở iQIYI","调试器":"Trình gỡ lỗi","资源管理器":"Trình quản lý","修复页面":"Sửa trang","首页":"Trang chủ","短视频":"Video ngắn","短剧":"Phim ngắn","云影院":"Rạp mây","漫剧":"Phim manga","知识":"Kiến thức","全部频道":"Mọi kênh","请输入影片或演员":"Nhập phim hoặc diễn viên","爱奇艺游戏":"Game iQIYI","会员俱乐部":"Câu lạc bộ VIP","应用":"Ứng dụng","浏览器":"Trình duyệt","爱奇艺文学":"Văn học iQIYI","游戏直播":"Livestream game","漫画":"Truyện tranh","爱奇艺知识":"Kiến thức iQIYI","查看更多":"Xem thêm","请检查网络连接是否正常，如果连接正常":"Hãy kiểm tra mạng. Nếu mạng ổn,","请刷新本页":"hãy tải lại trang","播放器模式":"Chế độ trình phát","网页模式":"Chế độ web","关闭网页":"Đóng trang","全选":"Chọn tất cả","开通VIP":"Mua VIP","我的下载":"Tải của tôi","立即观看":"Xem ngay","修复中…":"Đang sửa…","请选择具体问题出现的场景":"Chọn tình huống gặp lỗi","感谢你的反馈!":"Cảm ơn phản hồi!","我们会尽快为你解决问题!":"Chúng tôi sẽ xử lý sớm!","特别提示:":"Lưu ý:","为尽快解决问题，爱奇艺客服人员可能会联系你":"Để xử lý nhanh, CSKH iQIYI có thể liên hệ bạn","1.为尽快解决问题，爱奇艺客服人员可能会联系你":"1. Nhân viên hỗ trợ có thể liên hệ bạn","<c #999999>2.遇到问题，也可以联系</c><a http://cserver.iqiyi.com/index?e=9><c #23d41e>在线客服</c></a>":"<c #999999>2. Gặp vấn đề, liên hệ </c><a http://cserver.iqiyi.com/index?e=9><c #23d41e>hỗ trợ online</c></a>","继续反馈":"Tiếp tục góp ý","定时设置":"Hẹn giờ","一键修复":"Sửa một chạm","意见建议：":"Góp ý:","联系方式：":"Liên hệ:","修复":"Sửa","定时关机":"Hẹn giờ tắt máy","驱动修复":"Sửa driver","修复时可能出现多个弹窗，请选择当前设备驱动进行":"Có thể hiện nhiều cửa sổ, hãy chọn driver máy này","操作。":"để thao tác.","反馈。":"để phản hồi.","其他修复":"Sửa khác","下载管理":"Quản lý tải","举报原因":"Lý do báo cáo","其他原因":"Lý do khác","开启静音":"Bật tắt tiếng","授权登录":"Cho phép đăng nhập","切换账号登录":"Đổi tài khoản đăng nhập","进入全屏":"Vào toàn màn hình","看广告":"Xem quảng cáo","播放异常":"Lỗi phát","展示异常":"Lỗi hiển thị","声音异常":"Lỗi âm thanh","开启与关闭：":"Bật / tắt:","开机自动运行":"Chạy cùng Windows","开机自动运行极简模式":"Mở Windows bằng chế độ tối giản","当程序最小化后显示在":"Khi thu nhỏ thì hiện ở","任务栏":"Thanh tác vụ","托盘":"Khay hệ thống","点击关闭按钮时":"Khi bấm nút đóng","最小化到托盘":"Thu nhỏ xuống khay","点击关闭按钮时，极简模式将":"Khi đóng, chế độ tối giản sẽ","保持打开":"Giữ mở","下载管理:":"Quản lý tải:","下载文件存放路径（更改路径将于下次下载时生效）":"Thư mục tải (đổi path áp dụng lần tải sau)","自动下载未完成的任务":"Tự tải tiếp tác vụ dở","所有下载任务完成后自动关机":"Tắt máy khi tải xong hết","添加爱奇艺到桌面":"Ghim iQIYI ra desktop","基本设置":"Cơ bản","下载设置":"Tải xuống","其他设置":"Khác","对所有的设置进行设置":"Lưu mọi cài đặt","硬件加速：":"Tăng tốc phần cứng:","显卡选择：":"Chọn card đồ họa:","高帧率设置：":"Cài đặt FPS cao:","智能调节":"Tự động","根据电脑配置自动选择最合适的帧率设置":"Tự chọn FPS phù hợp máy","开启高帧率":"Bật FPS cao","默认开启高帧率，但部分设备可能会导致播放卡顿":"Bật FPS cao; máy yếu có thể giật","关闭高帧率":"Tắt FPS cao","当电脑性能不足时的最优选择":"Nên dùng khi máy yếu","本地视频：":"Video máy:","本地视频默认使用爱奇艺播放":"Mặc định phát video máy bằng iQIYI","退出应用时清理本地播放列表和播放记录":"Xóa playlist và lịch sử khi thoát","自动添加同路径相似文件到播放列表":"Tự thêm file cùng thư mục vào playlist","双击播放器：":"Nhấp đúp trình phát:","全屏/标准 模式切换":"Đổi toàn màn / chuẩn","小窗/标准 模式切换":"Đổi cửa sổ nhỏ / chuẩn","画质增强：":"Tăng chất lượng:","超分":"Siêu nét","（仅针对720P及以下清晰度生效）":"(chỉ với 720P trở xuống)","仅针对720P及以下清晰度生效）":"chỉ với 720P trở xuống)","超帧":"Siêu khung hình","（仅针对1080P清晰度生效）":"(chỉ với 1080P)","仅针对1080P清晰度生效）":"chỉ với 1080P)","显卡设置：":"Card đồ họa:","选择显卡：":"Chọn card:","解码设置：":"Cài đặt giải mã:","智能解码":"Giải mã thông minh","根据电脑配置自动选择最合适的解码方式":"Tự chọn cách giải mã phù hợp máy","软件解码":"Giải mã mềm","兼容性好，但高清晰度时内存占用较高":"Tương thích tốt, tốn RAM khi nét cao","硬件解码":"Giải mã phần cứng","启用硬件解码加速":"Bật giải mã phần cứng","性能更好，但在极少设备上可能会播放失败":"Mượt hơn; rất ít máy có thể lỗi phát","片尾视频推荐：":"Gợi ý cuối tập:","消息通知:":"Thông báo:","消息通知":"Thông báo","接收预约上线提醒":"Nhận nhắc lịch phát","接收内容推荐提醒":"Nhận gợi ý nội dung","版本更新:":"Cập nhật bản:","版本更新":"Cập nhật phiên bản","随时保持最新":"Luôn bản mới nhất","有更新时提醒我":"Nhắc khi có bản mới","顶导航:":"Thanh trên:","显示少儿模式":"Hiện chế độ trẻ em","显示天气":"Hiện thời tiết","创建视频专辑文件夹":"Tạo thư mục album","从列表删除时同时删除本地文件":"Xóa file máy khi xóa khỏi danh sách","缓存管理:":"Bộ nhớ đệm:","缓存管理":"Quản lý bộ nhớ đệm","缓存文件存放路径（更改路径将于下次重启系统后生效）":"Thư mục cache (đổi sau khi khởi động lại)","清理缓存":"Xóa cache","一键清理":"Xóa ngay","打开本地文件":"Mở file máy","全屏":"Toàn màn","小窗模式":"Cửa sổ nhỏ","窗口置顶":"Ghim cửa sổ","画面缩放":"Tỷ lệ hình","铺满(保持比例)":"Lấp đầy (giữ tỷ lệ)","铺满(拉伸画面)":"Lấp đầy (kéo giãn)","原始尺寸":"Kích thước gốc","倍速":"Tốc độ","截图分享":"Chụp & chia sẻ","每月6元":"6 tệ/tháng","弹幕发送设置":"Cài đặt gửi danmaku","设置屏蔽词":"Từ chặn","弹幕显示设置":"Hiện danmaku","重置弹幕显示设置":"Đặt lại danmaku","屏蔽设置":"Chặn","您的个人文件和系统设置":"Tệp cá nhân và cài đặt hệ thống","始终保持以上设置效果":"Luôn giữ hiệu ứng trên","未设置":"Chưa đặt","播放速度设置始终生效":"Giữ tốc độ phát","后续可在设置中更改":"Có thể đổi sau trong Cài đặt","设置快捷键":"Đặt phím tắt","快捷键（按退格键可取消设置）":"Phím tắt (Backspace để xóa)","设置片头":"Đặt intro","设置片尾":"Đặt outro","设置片头点":"Đặt điểm intro","设置片尾点":"Đặt điểm outro","自定义设置（推荐）":"Tùy chỉnh (khuyên dùng)","设置为默认本地播放器 简约易用不卡顿":"Đặt làm trình phát mặc định, gọn, ít giật","设置为默认本地播放器":"Đặt làm trình phát mặc định","简约易用不卡顿":"Gọn, dễ dùng, ít giật","缺少清晰度选项":"Thiếu tùy chọn độ nét","无4K":"Không có 4K","您的电脑使用4K码流，可能会出现卡顿、崩溃、花屏等问题":"Xem 4K trên máy này có thể giật, crash hoặc vỡ hình","正在修复":"Đang sửa","修复后仍存在问题？":"Sửa xong vẫn lỗi?","试试上传日志>":"Thử tải nhật ký lên>","试试上传日志&gt;":"Thử tải nhật ký lên&gt;","请写下您对我们产品的建议":"Viết góp ý về sản phẩm","添加":"Thêm","删除":"Xóa","搜索":"Tìm","历史":"Lịch sử","收藏":"Yêu thích","下载":"Tải","暂停":"Tạm dừng","继续":"Tiếp tục","下一集":"Tập sau","上一集":"Tập trước","清晰度":"Độ nét","音轨":"Âm thanh","画质":"Chất lượng","会员":"VIP","开通会员":"Mua VIP","账号":"Tài khoản","密码":"Mật khẩu","手机号":"Số điện thoại","邮箱":"Email","注册":"Đăng ký","忘记密码":"Quên mật khẩu","记住密码":"Nhớ mật khẩu","自动登录":"Tự đăng nhập","退出登录":"Đăng xuất","我的":"Của tôi","个人中心":"Tài khoản","观看历史":"Đã xem","预约":"Đặt lịch","稍后再看":"Xem sau","正在播放":"Đang phát","加载中":"Đang tải","加载中...":"Đang tải...","正在加载":"Đang tải","缓冲中":"Đang đệm","网络不稳定":"Mạng không ổn","播放失败":"Phát thất bại","重试播放":"Phát lại","复制":"Sao chép","粘贴":"Dán","剪切":"Cắt","全屏播放":"Xem toàn màn hình","退出全屏":"Thoát toàn màn","静音":"Tắt tiếng","取消静音":"Bật tiếng","下一首":"Bài sau","上一首":"Bài trước","播放列表":"Danh sách phát","添加文件":"Thêm tệp","清空列表":"Xóa danh sách","文件":"Tệp","文件夹":"Thư mục","名称":"Tên","大小":"Dung lượng","时间":"Thời gian","时长":"Độ dài","状态":"Trạng thái","成功":"Thành công","失败":"Thất bại","警告":"Cảnh báo","错误":"Lỗi","信息":"Thông tin","是":"Có","否":"Không","全部":"Tất cả","没有更多了":"Hết rồi","暂无数据":"Chưa có dữ liệu","暂无内容":"Chưa có nội dung","网络错误":"Lỗi mạng","请稍后重试":"Thử lại sau","提交":"Gửi","下一步":"Tiếp","上一步":"Trước","跳过":"Bỏ qua","开始":"Bắt đầu","结束":"Kết thúc","安装":"Cài","卸载":"Gỡ","更新":"Cập nhật","检查更新":"Kiểm tra cập nhật","已是最新版本":"Đã là bản mới nhất","发现新版本":"Có bản mới","立即更新":"Cập nhật ngay","稍后提醒":"Nhắc sau","同意":"Đồng ý","拒绝":"Từ chối","隐私政策":"Chính sách riêng tư","用户协议":"Điều khoản","版权":"Bản quyền","版本":"Phiên bản","语言":"Ngôn ngữ","简体中文":"Tiếng Trung giản thể","英语":"Tiếng Anh","越南语":"Tiếng Việt","高清":"HD","超清":"Siêu nét","蓝光":"Blu-ray","流畅":"Mượt","自动":"Tự động","原画":"Gốc","杜比":"Dolby","杜比视界":"Dolby Vision","杜比全景声":"Dolby Atmos","弹幕":"Danmaku","打开弹幕":"Bật danmaku","关闭弹幕":"Tắt danmaku","发送":"Gửi","发送弹幕":"Gửi danmaku","屏蔽":"Chặn","举报成功":"Đã báo cáo","收藏成功":"Đã lưu yêu thích","取消收藏":"Bỏ yêu thích","已添加":"Đã thêm","已删除":"Đã xóa","下载中":"Đang tải","下载完成":"Tải xong","下载失败":"Tải lỗi","暂停下载":"Tạm dừng tải","继续下载":"Tiếp tục tải","删除任务":"Xóa tác vụ","全部开始":"Bắt đầu tất cả","全部暂停":"Tạm dừng tất cả","正在缓冲":"Đang đệm","准备就绪":"Sẵn sàng","未开始":"Chưa bắt đầu","等待中":"Đang chờ","已完成":"Hoàn tất","已取消":"Đã hủy","选择全部":"Chọn hết","取消全选":"Bỏ chọn hết","添加爱奇艺":"Thêm iQIYI","播放本地":"Phát máy","在线帮助":"Trợ giúp online","问题修复":"Sửa sự cố","卡顿问题":"Giật / lag","黑屏":"Màn đen","花屏":"Vỡ hình","无声音":"Mất tiếng","无法播放":"Không phát được","缺少清晰度":"Thiếu độ nét","登录失败":"Đăng nhập thất bại","账号或密码错误":"Sai tài khoản hoặc mật khẩu","验证码错误":"Sai mã OTP","请输入验证码":"Nhập mã OTP","请输入手机号":"Nhập số điện thoại","请输入密码":"Nhập mật khẩu","请输入账号":"Nhập tài khoản","秒后重试":" giây thử lại","秒后重新获取":" giây lấy lại","始终保持最新":"Luôn bản mới","推荐":"Đề xuất","会员免费":"VIP miễn phí","学习时刻":"Học tập","播放量":"Lượt xem","完结":"Hết","独播":"Độc quyền","用户":"Người dùng","综合":"Tổng hợp","自制":"Tự sản xuất","连载":"Đang chiếu","限免":"Free tạm","热门":"Nổi bật","电影":"Phim","电视剧":"Phim bộ","综艺":"Variety","动漫":"Anime","纪录片":"Tài liệu","少儿":"Thiếu nhi","体育":"Thể thao","音乐":"Nhạc","直播":"Livestream","片库":"Kho phim","频道":"Kênh","排行榜":"Bảng xếp hạng","筛选":"Lọc","最新":"Mới","最热":"Hot","明星在追":"Star","二次创作":"Remix","参与讨论":"Bình luận","讨论":"Bàn","条回复":"trả lời","评分":"Điểm","年份":"Năm","地区":"Khu vực","类型":"Thể loại","全部剧集":"Mọi tập","更新至":"Cập nhật tới","全":"Tất cả","集":"tập","季":"mùa","简介":"Tóm tắt","详情":"Chi tiết","演职员":"Diễn viên","相关推荐":"Gợi ý liên quan","猜你喜欢":"Có thể bạn thích","正在热播":"Đang hot","即将上线":"Sắp ra","已预约":"Đã đặt lịch","取消预约":"Hủy đặt lịch","免费":"Miễn phí","付费":"Trả phí","用券":"Dùng vé","试看":"Xem thử","完整版":"Bản đầy đủ","预告":"Trailer","花絮":"Hậu trường","正片":"Phim chính","播放源":"Nguồn phát","线路":"Đường truyền","切换线路":"Đổi đường truyền","画质选择":"Chọn chất lượng","自动画质":"Chất lượng tự động","省流":"Tiết kiệm data","标准":"Chuẩn","高":"Cao","超高":"Rất cao","原画质":"Gốc","当前清晰度":"Độ nét hiện tại","切换成功":"Đã đổi","正在切换":"Đang đổi","投屏":"Chiếu TV","搜索设备":"Tìm thiết bị","未发现设备":"Không thấy thiết bị","连接成功":"Đã kết nối","断开连接":"Ngắt kết nối","亮度":"Độ sáng","对比度":"Tương phản","饱和度":"Bão hòa","色温":"Nhiệt màu","锐度":"Độ sắc","声道":"Kênh âm","立体声":"Stereo","左声道":"Kênh trái","右声道":"Kênh phải","同步":"Đồng bộ","音频延迟":"Trễ âm","字幕延迟":"Trễ phụ đề","字幕大小":"Cỡ phụ đề","字幕颜色":"Màu phụ đề","字幕位置":"Vị trí phụ đề","加载字幕":"Tải phụ đề","关闭字幕":"Tắt phụ đề","内置字幕":"Phụ đề có sẵn","外挂字幕":"Phụ đề ngoài","无字幕":"Không phụ đề","循环播放":"Phát lặp","单曲循环":"Lặp một bài","列表循环":"Lặp danh sách","随机":"Ngẫu nhiên","上一曲":"Trước","下一曲":"Sau","停止":"Dừng","快进":"Tua tới","快退":"Tua lui","上一帧":"Khung trước","下一帧":"Khung sau","截图成功":"Đã chụp","已保存到":"Đã lưu vào","打开目录":"Mở thư mục","始终":"Luôn","从不":"Không bao giờ","询问":"Hỏi","允许":"Cho phép","阻止":"Chặn","记住选择":"Nhớ lựa chọn","同时":"Đồng thời","秒":"giây","分钟":"phút","小时":"giờ","天":"ngày","今天":"Hôm nay","昨天":"Hôm qua","本周":"Tuần này","更早":"Cũ hơn","刚刚":"Vừa xong","清空":"Xóa hết","清空历史":"Xóa lịch sử","删除记录":"Xóa mục","编辑":"Sửa","完成编辑":"Xong","多选":"Chọn nhiều","已选择":"Đã chọn","项":"mục","移动":"Di chuyển","重命名":"Đổi tên","属性":"Thuộc tính","路径":"Đường dẫn","浏览":"Duyệt","更改":"Đổi","应用更改":"Áp dụng","未保存的更改":"Thay đổi chưa lưu","是否保存":"Lưu không?","是否退出":"Thoát không?","是否删除":"Xóa không?","此操作无法撤销":"Không hoàn tác được","请稍候":"Vui lòng chờ","正在处理":"Đang xử lý","操作成功":"Thành công","操作失败":"Thất bại","权限不足":"Không đủ quyền","文件不存在":"Không có tệp","磁盘空间不足":"Hết dung lượng","网络超时":"Hết thời gian mạng","服务器错误":"Lỗi máy chủ","未知错误":"Lỗi không rõ","开机启动":"Khởi động cùng máy","硬件加速":"Tăng tốc phần cứng","高级设置":"Cài đặt nâng cao","播放高级设置":"Phát nâng cao","通用":"Chung","外观":"Giao diện","通知":"Thông báo","隐私":"Riêng tư","安全":"Bảo mật","存储":"Lưu trữ","缓存":"Cache","日志":"Nhật ký","导出日志":"Xuất nhật ký","上传日志":"Tải nhật ký lên","问题类型":"Loại sự cố","描述问题":"Mô tả lỗi","联系邮箱":"Email liên hệ","可选":"Không bắt buộc","必填":"Bắt buộc","截图上传":"Tải ảnh chụp","附件":"Đính kèm","提交成功":"Đã gửi","提交失败":"Gửi thất bại","修复完成":"Đã sửa xong","修复失败":"Sửa thất bại","正在检查":"Đang kiểm tra","未发现问题":"Không thấy lỗi","发现问题":"Phát hiện lỗi","建议修复":"Nên sửa","忽略":"Bỏ qua","稍后":"Để sau","立即":"Ngay","手动":"Thủ công","智能":"Thông minh","兼容":"Tương thích","性能":"Hiệu năng","均衡":"Cân bằng","高质量":"Chất lượng cao","低延迟":"Độ trễ thấp","省电":"Tiết kiệm pin","高性能":"Hiệu năng cao","独立显卡":"Card rời","集成显卡":"Card onboard","默认设备":"Thiết bị mặc định","系统默认":"Mặc định hệ thống","当前设备":"Thiết bị hiện tại","未检测到设备":"Không thấy thiết bị","刷新设备":"Tải lại thiết bị","测试":"Thử","预览":"Xem trước","应用全部":"Áp dụng hết","仅此次":"Chỉ lần này","每次启动":"Mỗi lần mở","记住我":"Nhớ tôi","游客":"Khách","未登录":"Chưa đăng nhập","已登录":"Đã đăng nhập","切换账号":"Đổi tài khoản","绑定手机":"Gắn SĐT","绑定邮箱":"Gắn email","修改密码":"Đổi mật khẩu","注销账号":"Xóa tài khoản","会员中心":"Trung tâm VIP","我的会员":"VIP của tôi","到期时间":"Hết hạn","续费":"Gia hạn","自动续费":"Tự gia hạn","取消自动续费":"Hủy tự gia hạn","优惠券":"Phiếu giảm","积分":"Điểm","签到":"Điểm danh","福利":"Ưu đãi","活动":"Sự kiện","消息":"Tin nhắn","系统消息":"Tin hệ thống","全部已读":"Đọc hết","清空消息":"Xóa tin","设置成功":"Đã lưu","设置失败":"Lưu cài đặt thất bại","需要重启":"Cần mở lại app","重启后生效":"Có hiệu lực sau khi mở lại","立即重启":"Mở lại ngay","稍后重启":"Mở lại sau","正在退出":"Đang thoát","最小化到任务栏":"Thu nhỏ xuống taskbar","关闭主窗口":"Đóng cửa sổ chính","显示主窗口":"Hiện cửa sổ chính","隐藏主窗口":"Ẩn cửa sổ chính","打开主页":"Mở trang chủ","官方网站":"Trang chủ","检查修复":"Kiểm tra & sửa","一键加速":"Tăng tốc","清理完成":"Đã dọn xong","已释放":"Đã giải phóng","空间":"Không gian","播放记录":"Lịch sử xem","继续播放":"Xem tiếp","重新播放":"Phát lại từ đầu","从开头播放":"Phát từ đầu","上次看到":"Lần trước xem tới","已看完":"Đã xem xong","更新提醒":"Nhắc cập nhật","预约成功":"Đã đặt lịch","预约失败":"Đặt lịch lỗi","分享到":"Chia sẻ tới","复制链接":"Sao chép link","链接已复制":"Đã copy link","微信":"WeChat","微博":"Weibo","朋友圈":"Bạn bè","保存图片":"Lưu ảnh","保存视频":"Lưu video","禁止录屏":"Cấm quay màn hình","版权限制":"Hạn chế bản quyền","该视频暂不支持":"Video này chưa hỗ trợ","因版权原因":"Do bản quyền","当前地区不可播放":"Khu vực này không xem được","请登录后观看":"Đăng nhập để xem","开通VIP后观看":"Cần VIP để xem","试看已结束":"Hết phần xem thử","观看完整版":"Xem bản đầy đủ","青少年模式":"Chế độ trẻ em","进入青少年模式":"Vào chế độ trẻ em","退出青少年模式":"Thoát chế độ trẻ em","时间锁":"Khóa thời gian","家长验证":"Xác minh phụ huynh","天气":"Thời tiết","游戏":"Game","应用中心":"Kho ứng dụng","插件":"Tiện ích","已安装":"Đã cài","未安装":"Chưa cài","获取":"Tải","打开应用":"Mở app","详情页":"Trang chi tiết","相关":"Liên quan","评论":"Bình luận","写评论":"Viết bình luận","热门评论":"Bình luận hot","最新评论":"Bình luận mới","展开":"Mở","收起":"Thu","回复":"Trả","点赞":"Thích","已点赞":"Đã thích","踩":"Không thích","没有评论":"Chưa có bình luận","发布":"Đăng","发布成功":"Đã đăng","字":"ký tự","剩余":"Còn","加载更多":"Tải thêm","没有更多评论":"Hết bình luận","关注":"Theo dõi","已关注":"Đang theo dõi","取消关注":"Bỏ theo dõi","粉丝":"Fan","作品":"Tác phẩm","主页":"Trang","动态":"Nhật ký","私信":"Tin riêng","设置备注":"Đặt ghi chú","拉黑":"Chặn người","取消拉黑":"Bỏ chặn","举报用户":"Báo cáo người dùng","为什么举报":"Lý do báo cáo","色情低俗":"Nội dung 18+","垃圾广告":"Quảng cáo rác","辱骂攻击":"Lăng mạ","违法违规":"Vi phạm","其他":"Khác","补充说明":"Ghi chú thêm","提交举报":"Gửi báo cáo","感谢举报":"Cảm ơn đã báo cáo","播放器":"Trình phát","网页":"Trang web","新标签":"Tab mới","关闭标签":"Đóng tab","关闭其他":"Đóng tab khác","刷新页面":"Tải lại trang","停止加载":"Dừng tải","地址栏":"Thanh địa chỉ","书签":"Dấu trang","历史记录":"Lịch sử","开发者工具":"Công cụ dev","开启老板键":"Bật phím ẩn nhanh","视频加速：":"Tăng tốc video:","开启视频加速服务":"Bật dịch vụ tăng tốc video","开启GPU加速：":"Bật tăng tốc GPU:","更改后需要重启客户端":"Đổi xong cần mở lại app","立即开通":"Mở ngay","矩形工具":"Hình chữ nhật","圆形工具":"Hình tròn","箭头工具":"Mũi tên","马赛克工具":"Che mờ","文字工具":"Chữ","撤销":"Hoàn tác","退出截图":"Thoát chụp","字号":"Cỡ chữ","始终保持文件关联":"Luôn gắn loại tệp","去设置":"Tới cài đặt","设置文件关联":"Gắn loại tệp","窗口":"Cửa sổ","经典模式":"Cổ điển","列表":"Danh sách","退出时清空播放记录":"Xóa lịch sử khi thoát","立即升级":"Cập nhật ngay","升级失败，请稍候重试！":"Cập nhật lỗi, thử lại sau!","当前已是最新版本":"Đã là bản mới nhất","复制详情":"Sao chép chi tiết","另存为文本":"Lưu thành văn bản","，我们会有专人为您服务。":", sẽ có người hỗ trợ bạn.","当前系统时间":"Giờ hệ thống","向右旋转90度":"Xoay phải 90°","展开列表栏":"Mở cột danh sách","不再询问":"Không hỏi nữa","上一次播放的文件":"Tệp vừa phát","文件已失效":"Tệp không còn hiệu lực","从列表移除":"Gỡ khỏi danh sách","A-B循环播放":"Lặp A-B","取消A-B循环播放":"Tắt lặp A-B","跳过之前的片头内容":"Bỏ qua intro trước đó","跳过之后的片尾内容":"Bỏ qua outro sau đó","取消跳过片头片尾":"Không bỏ qua intro/outro","本次播放完成后":"Sau khi phát xong","无动作":"Không làm gì","关机":"Tắt máy","锁屏":"Khóa màn hình","睡眠":"Ngủ","退出播放器":"Thoát trình phát","最近播放":"Phát gần đây","删除选中项":"Xóa mục đã chọn","完整模式":"Chế độ đầy đủ","截图保存":"Lưu ảnh chụp","连拍截图":"Chụp liên tiếp","播放控制":"Điều khiển phát","音频调节":"Chỉnh âm","GIF截图":"Chụp GIF","关闭提示":"Tắt gợi ý","色相":"Hue","画面比例":"Tỷ lệ khung","水平翻转":"Lật ngang","垂直翻转":"Lật dọc","铺满":"Lấp đầy","<c #666666>打开</c><c #0ccc4c>爱奇艺手机APP</c>":"<c #666666>Mở </c><c #0ccc4c>app iQIYI điện thoại</c>","扫描二维码登录":"Quét QR để đăng nhập","请在手机上确认[授权登录]":"Xác nhận [cho phép đăng nhập] trên điện thoại","登录成功":"Đăng nhập thành công","使用其他账号登录":"Đăng nhập tài khoản khác","《隐私条款》":"Chính sách riêng tư","请阅读并勾选下方协议":"Hãy đọc và tick điều khoản bên dưới","主设备扫码验证":"Máy chính quét mã xác minh","当前会员账号已在多个设备上登录":"Tài khoản VIP đang đăng nhập nhiều máy","切换账号登录>":"Đổi tài khoản >","请打开":"Hãy mở","正在为您加载...":"Đang tải...","娱乐":"Giải trí","汽车":"Ô tô","军事":"Quân sự","母婴":"Mẹ và bé","健康":"Sức khỏe","WebView2组件":"Thành phần WebView2","，请稍候...":", vui lòng chờ...","不感兴趣":"Không quan tâm","提示文本":"Gợi ý","举报原因:":"Lý do báo cáo:","其他原因:":"Lý do khác:","推荐您安装以下软件":"Nên cài các phần mềm sau","用户协议与隐私保护":"Điều khoản và quyền riêng tư","同意并继续":"Đồng ý và tiếp tục","不同意":"Không đồng ý","热搜榜":"Tìm kiếm hot","页面加载失败，请重新加载！":"Tải trang lỗi, hãy thử lại!","刷新本页":"Tải lại trang","您的账号在多台设备同时播放视频，存在极高的盗号风险。":"Tài khoản đang phát trên nhiều máy, rủi ro bị chiếm cao.","为保护您的账号安全，请尽快退登其他设备或修改密码。":"Hãy đăng xuất máy khác hoặc đổi mật khẩu.","想继续观看？请关闭其他设备下的视频播放。":"Muốn xem tiếp? Hãy tắt phát trên máy khác.","然后点击":"Rồi bấm","<u><c #009F69>重试</c></u>":"<u><c #009F69>Thử lại</c></u>","如非本人操作，建议您立即修改密码。":"Nếu không phải bạn, hãy đổi mật khẩu ngay.","以非会员观看":"Xem không VIP","游戏中心":"Trung tâm game","开始游戏":"Chơi","爱奇艺短视频":"Video ngắn iQIYI","爱奇艺轮播台":"Kênh luân phiên iQIYI","奇秀插件":"Plugin Qixiu","新建下载任务":"Tác vụ tải mới","清晰度：":"Độ nét:","蓝光 ":"Blu-ray ","下载至：":"Tải vào:","下载你选中的视频，需要":"Tải video đã chọn cần","你选中了VIP清晰度，需要":"Bạn chọn độ nét VIP, cần","版权保护，下载视频请":"Bản quyền, muốn tải hãy","购买":"Mua","开通黄金VIP":"Mở VIP vàng","下载目录无效，请更改目录":"Thư mục tải không hợp lệ, hãy đổi","下载(0)":"Tải (0)","登录后下载(0)":"Đăng nhập rồi tải (0)","0级":"Cấp 0","上传中…":"Đang tải lên…","上方显示":"Hiện phía trên","下方显示":"Hiện phía dưới","下载加速":"Tăng tốc tải","不再弹出":"Không hiện lại","不删除":"Không xóa","不透明度":"Độ mờ","中国大陆":"Trung Quốc đại lục","产品质量":"Chất lượng sản phẩm","人像区域":"Vùng khuôn mặt","以后再说":"Để sau","保存路径":"lưu đường dẫn","修复声卡":"Sửa chữa card âm thanh","修复显卡":"Sửa chữa card đồ họa","修改":"Sửa đổi","全部删除":"Xóa tất cả","关联":"Liên kết","关闭显示":"Tắt hiển thị","其它":"Khác","内关闭":"đóng cửa bên trong","分享至:":"Chia sẻ tới:","分辨率:":"Nghị quyết:","列表设置":"Cài đặt danh sách","刷新重试":"Hãy làm mới và thử lại","副标题":"Phụ đề","升级秘籍":"Nâng cấp gian lận","原始":"Gốc","去玩游戏":"đi chơi game","取消执行":"Hủy thực thi","取消置顶":"Bỏ ghim","后关机":"tắt máy sau","品牌图片":"Ảnh thương hiệu","图片地址":"Địa chỉ ảnh","图片格式":"Định dạng ảnh","基本信息":"Thông tin cơ bản","基础设置":"Cài đặt cơ bản","声卡选择":"Chọn card âm thanh","声道数:":"Số kênh:","声道选择":"Chọn kênh âm","声音":"Âm thanh","声音延后":"Trễ âm","声音提前":"Sớm âm","声音调节":"Chỉnh âm","复古":"Cổ điển","好的":"Được","始终显示":"Luôn hiển thị","孙燕姿":"Sun Yanzi","定时":"Hẹn giờ","已播":"Đã phát","底部":"Bên dưới","彩色":"Màu","投屏码":"Mã chiếu","排序":"Sắp xếp","放大":"Phóng to","文件名":"Tên tệp","旋转":"Xoay","时":"giờ","明亮":"Sáng","更换":"Đổi","未播":"Chưa phát","柔和":"Mềm","歌词":"Lời bài hát","比例":"Tỷ lệ","状态:":"Trạng thái:","看正片":"Xem phim","类型:":"Loại:","纯色":"Màu đơn","经典黑":"Đen cổ điển","缩小":"Thu nhỏ","自定义":"Tùy chỉnh","视频":"Video","试试":"Thử","说明:":"Mô tả:","调试":"Gỡ lỗi","跳转":"Chuyển đến","透明度":"Độ trong suốt","速度":"Tốc độ","问题。":"sự cố.","顶部":"Bên trên","媒体文件":"tập tin đa phương tiện","字体大小":"cỡ chữ","字幕字体":"phông chữ phụ đề","字幕字号":"Kích thước phông chữ phụ đề","字幕描边":"đột quỵ phụ đề","封面路径":"con đường che chắn","展开更多":"Mở rộng thêm","左右翻转":"Lật sang trái và phải","常用地区":"Khu vực thường dùng","并行下载":"tải xuống song song","广告特权":"đặc quyền quảng cáo","广告问题":"Vấn đề quảng cáo","当前时间":"thời điểm hiện tại","彩色文字":"Văn bản màu","快进一次":"Chuyển nhanh một lần","快进快退":"Chuyển tiếp nhanh và tua lại nhanh","快退一次":"Tua lại một lần","快速登录":"Đăng nhập nhanh","恢复设置":"Khôi phục cài đặt","截取位置":"Vị trí chặn","截取时长":"Thời gian chặn","截取间隔":"khoảng thời gian đánh chặn","截图动画":"ảnh chụp màn hình hoạt hình","扫码投屏":"Quét mã để truyền màn hình","投屏播放":"Phát lại màn hình truyền","描边颜色":"màu đột quỵ","描述看点":"Miêu tả những điểm nổi bật","播放光盘":"chơi đĩa","播放卡顿":"Phát lại bị treo","播放调节":"Điều chỉnh phát lại","播放进度":"Tiến trình phát lại","播放速度":"tốc độ chơi","放大背景":"Phóng to trên nền","文件信息":"Thông tin tập tin","文件关联":"liên kết tập tin","文件无效":"Tệp không hợp lệ","无线投屏":"Quay màn hình không dây","时间定位":"định vị thời gian","显示区域":"khu vực trưng bày","显示时机":"Hiển thị thời gian","显示歌词":"hiển thị lời bài hát","显示界面":"giao diện hiển thị","显示边距":"hiển thị lề","更换皮肤":"Thay đổi làn da","更换设备":"Thay thế thiết bị","查看原因":"Xem lý do tại sao","歌词路径":"đường dẫn lời bài hát","步进定位":"định vị bước","注册账号":"Đăng ký tài khoản","添加字幕":"Thêm phụ đề","添加音轨":"Thêm bản âm thanh","清空全部":"Xóa tất cả","清除缓存":"xóa bộ nhớ đệm","点击这里":"bấm vào đây","点此了解":"Bấm vào đây để tìm hiểu","电池电量":"Nguồn pin","画刷工具":"công cụ cọ vẽ","画笔工具":"Công cụ cọ vẽ","画面旋转":"Xoay màn hình","短信登录":"đăng nhập qua tin nhắn SMS","确定退出":"Được rồi để thoát","窗口类型":"loại cửa sổ","立刻播放":"Chơi ngay","立即执行":"Thực hiện ngay lập tức","立即清空":"Xóa ngay bây giờ","系统时间":"thời gian hệ thống","紧贴边缘":"ôm lấy mép","继续登录":"Tiếp tục đăng nhập","编辑皮肤":"Chỉnh sửa da","缩小背景":"Thu nhỏ nền","网络异常":"Mạng bất thường","视频信息":"Thông tin video","视频帧率":"Tốc độ khung hình video","角色弹幕":"rào cản nhân vật","设备列表":"Danh sách thiết bị","输出模式":"Chế độ đầu ra","输出设备":"thiết bị đầu ra","边下边播":"Chơi trong khi tải xuống","退出投屏":"Thoát ghi màn hình","退出搜索":"Thoát tìm kiếm","  +订阅":"  +Đăng ký"," 声明信息 ":" Thông tin sao kê "," 版本信息 ":" Thông tin phiên bản ","10.0秒":"10,0 giây","100毫秒":"100 mili giây","2小时前更新":"Đã cập nhật 2 giờ trước","GIF尺寸":"kích thước GIF","《隐私政策》":"\"Chính sách quyền riêng tư\"","上一个文件":"tập tin trước","下一个文件":"tập tin tiếp theo","下次启动升级":"Bắt đầu nâng cấp vào lần tiếp theo","主菜单编辑":"Chỉnh sửa menu chính","仅全屏时显示":"Chỉ hiển thị ở chế độ toàn màn hình","分 后关机":"Tắt máy sau","分享到微博":"Chia sẻ lên weibo","列表透明度":"danh sách minh bạch","删除账号后":"Sau khi xóa tài khoản","刷新试试~":"Hãy thử làm mới ~","剩余时间：":"thời gian còn lại:","反馈与建议":"Phản hồi và đề xuất","发送到号码":"gửi đến số","右旋90度":"Quay phải 90 độ","同意并登录":"Đồng ý và đăng nhập","哈哈哈哈哈":"Hahahahaha","复制QQ群":"Sao chép nhóm QQ","失败原因:":"Lý do thất bại:","定时动作：":"Hành động theo thời gian:","尊敬的用户":"Kính gửi người dùng","左旋90度":"90 độ trái","已保存至:":"Đã lưu vào:","当前热点：":"Chủ đề nóng hiện nay:","当前状态：":"Tình trạng hiện tại:","您可以尝试":"Bạn có thể thử","我要投诉：":"Tôi muốn khiếu nại:","投屏已断开":"Truyền màn hình đã bị ngắt kết nối","按名称排序":"Sắp xếp theo tên","按大小排序":"Sắp xếp theo kích thước","按类型排序":"Sắp xếp theo loại","播放无画面":"Không có hình ảnh trong khi phát lại","播放视频时":"Trong khi phát video","收起列表栏":"Thu gọn thanh danh sách","文件位置:":"Vị trí tập tin:","文件大小:":"Kích thước tập tin:","文件时长:":"Thời lượng tập tin:","文件码率:":"Tốc độ bit của tệp:","文件类型:":"Loại tập tin:","无4K码流":"Không có luồng 4K","显示主界面":"Hiển thị giao diện chính","显示位置：":"Vị trí hiển thị:","显示信息：":"Hiển thị thông tin:","智能防剧透":"Chống spoiler thông minh","查看更新 ":"Xem thông tin cập nhật ","歌手再征途":"Ca sĩ bước vào một hành trình khác","正在下载至":"Đang tải xuống","添加URL":"Thêm URL","添加文件夹":"Thêm thư mục","热剧抢先看":"Xem phim truyền hình nóng đầu tiên","特别提示：":"Lời khuyên đặc biệt:","电影点播券":"Phiếu giảm giá phim theo yêu cầu","界面不美观":"Giao diện khó coi","自定义图片":"hình ảnh tùy chỉnh","艺起奔跑吧":"Hãy chạy vì nghệ thuật","观看至50":"Xem tới 50","视频帧率:":"Tốc độ khung hình video:","视频码率:":"Tốc độ bit video:","视频编码:":"Mã hóa video:","请编辑短信":"Vui lòng chỉnh sửa tin nhắn","请选择声卡":"Vui lòng chọn card âm thanh","跳过片头：":"Bỏ qua tiêu đề:","跳过片尾：":"Bỏ qua phần kết:","退出全屏 ":"Thoát toàn màn hình ","错误码:":"Mã lỗi:","隐藏工具栏":"Ẩn thanh công cụ","音乐模式":"chế độ âm nhạc","音频信息":"thông tin âm thanh","音频同步":"đồng bộ hóa âm thanh","音频码率:":"Tốc độ bit âm thanh:","音频编码:":"Mã hóa âm thanh:","预约下载":"Cuộc hẹn để tải về","默认布局":"bố cục mặc định","360安全卫士":"Nhân viên bảo vệ 360","hosts清空":"xóa máy chủ","主标题多行内容":"Tiêu đề chính nội dung nhiều dòng","以后不再提示":"Đừng nhắc lại trong tương lai","保存至指定路径":"Lưu vào đường dẫn đã chỉ định","保持原有比例":"Giữ tỷ lệ ban đầu","修复卡顿问题":"Khắc phục sự cố lag","修复音量问题":"Sửa lỗi âm lượng","关于...  ":"Về...  ","关闭极简模式：":"Tắt chế độ tối giản:","其他登录方式":"Các phương thức đăng nhập khác","减少0.1秒":"Giảm 0,1 giây","分享到QQ好友":"Chia sẻ với bạn bè QQ","分享到QQ空间":"Chia sẻ lên không gian QQ","分享到新浪微博":"Chia sẻ lên Sina weibo","删除无效文件":"Xóa các tập tin không hợp lệ","前往短信登录>":"Vào phần đăng nhập SMS >","加入QQ群:":"Tham gia nhóm QQ:","单击可进行复制":"Bấm để sao chép","发现新版本！":"Phiên bản mới được phát hiện!","发送短信验证":"Gửi xác minh qua SMS","发送错误报告":"Gửi báo cáo lỗi","取消A-B重复":"Hủy sao chép A-B","可至个人中心-":"Bạn có thể đến trung tâm cá nhân -","向左旋转90度":"Xoay 90 độ sang trái","图像声音不同步":"Hình ảnh và âm thanh không đồng bộ","增加0.1秒":"Thêm 0,1 giây","复制下载链接":"Sao chép liên kết tải xuống","字幕延迟(s)":"(Các) độ trễ phụ đề","已超时，请刷新":"Đã hết thời gian, vui lòng làm mới","开通会员享特权":"Trở thành thành viên và tận hưởng các đặc quyền","影片内容不丰富":"Nội dung video chưa phong phú","影片原始尺寸":"Kích thước video gốc","快传... ":"Vượt qua nhanh... ","恢复出厂设置":"Khôi phục cài đặt gốc","恢复默认界面":"Khôi phục giao diện mặc định","感谢您的反馈!":"Cảm ơn phản hồi của bạn!","我已经发送了":"tôi đã gửi","手机授权登录":"Đăng nhập được ủy quyền bằng điện thoại di động","打开所在文件夹":"Mở thư mục chứa nó","打开文件位置":"Mở vị trí tệp","扫码安装APP":"Quét mã QR để cài đặt APP","投屏设备名称：":"Tên thiết bị ghi màn hình:","按文件名升序":"Sắp xếp tăng dần theo tên tệp","按文件名降序":"Sắp xếp giảm dần theo tên tệp","捂脸求原谅~":"Hãy che mặt lại và cầu xin sự tha thứ ~","控制区域透明度":"Kiểm soát độ trong suốt của khu vực","搜索播放列表":"Tìm kiếm danh sách phát","播放不流畅，卡":"Phát lại không mượt, bị kẹt","播放信息显示":"Chơi hiển thị thông tin","播放遇到问题？":"Gặp khó khăn khi chơi?","数据加载失败":"Tải dữ liệu không thành công","文件名.avi":"tên tập tin.avi","无法打开文件":"Không thể mở tập tin","暂停时逐帧快进":"Chuyển tiếp nhanh từng khung hình trong khi tạm dừng","暂无相关内容":"Chưa có nội dung liên quan","本视频暂无字幕":"Video này chưa có phụ đề","本视频暂无音轨":"Video này chưa có bản âm thanh","极简模式介绍":"Giới thiệu về chế độ tối giản","欢迎来到爱奇艺":"Chào mừng đến với iQiyi","歌词字体放大":"Phóng to phông chữ lời bài hát","歌词字体缩小":"Kích thước phông chữ lời bài hát đã giảm","歌词时间延后":"Thời gian trễ của lời bài hát","歌词时间提前":"Lời bài hát tiến tới thời gian","正在加载...":"Đang tải...","正在解压微软":"Giải nén Microsoft","清空URL列表":"Xóa danh sách URL","清空播放列表":"Xóa danh sách phát","清除播放列表":"Xóa danh sách phát","清除本地缓存":"Xóa bộ nhớ đệm cục bộ","点击设置关联":"Nhấp vào Đặt liên kết","点此了解更多":"Bấm vào đây để tìm hiểu thêm","移除失效文件":"Xóa các tập tin đã hết hạn","请阅读并同意":"Vui lòng đọc và đồng ý","账号已被冻结":"Tài khoản đã bị đóng băng","载入歌词文件":"Tải tập tin lời bài hát","退出精简模式":"Thoát chế độ Lite","重新启动程序":"Khởi động lại chương trình","页面展示空白":"Hiển thị trang trống","默认开启弹幕":"Bật chặn theo mặc định","一直在缓冲，不能播放":"Tiếp tục bị giật và không thể chơi","下载最新版试试哦":"Tải về phiên bản mới nhất và thử nó","与音乐文件同路径":"Cùng đường dẫn với file nhạc","为了您的账号安全":"Để bảo mật tài khoản của bạn","使用主设备打开爱奇艺":"Mở iQiyi trên thiết bị chính của bạn","使用此账号一键登录":"Sử dụng tài khoản này để đăng nhập bằng một cú nhấp chuột","使用爱奇艺客户端播放":"Chơi bằng ứng dụng khách iQiyi","修复DRM播放错误":"Sửa lỗi phát lại DRM","允许多开程序运行":"Cho phép chạy nhiều chương trình","再次登录需重新验证":"Đăng nhập lại yêu cầu xác minh lại.","列表中暂时没有文件":"Hiện tại không có tập tin nào trong danh sách","双击可以复制截图":"Nhấp đúp chuột để sao chép ảnh chụp màn hình","发送短信进行验证":"Gửi SMS để xác minh","启用倍速设置全局生效":"Bật cài đặt tốc độ gấp đôi để có hiệu lực trên toàn cầu","启用播放信息显示":"Bật hiển thị thông tin phát lại","启用自动续播功能":"Kích hoạt chức năng phát lại tự động","和爱奇艺共同打造":"Được tạo cùng với iQiyi","啊哦~播放失败了":"Rất tiếc~Phát lại không thành công","如有疑问，您可以":"Nếu nghi ngờ, bạn có thể","如有问题请加QQ群：":"Nếu có thắc mắc gì hãy tham gia nhóm QQ:","定位到列表所在位置":"Đi đến vị trí của danh sách","屏蔽更多潜在剧透弹幕":"Chặn nhiều rào cản spoiler tiềm năng hơn","已有相同内容哦～":"Đã có nội dung tương tự rồi~","开启跳过片头片尾":"Bật bỏ qua phần tín dụng mở đầu và kết thúc","当前登录存在风险":"Thông tin đăng nhập hiện tại của bạn đang gặp rủi ro","当前速度:1.0倍":"Tốc độ hiện tại: 1.0x","影片播放完成后关机":"Tắt sau khi phát lại video hoàn tất","您可通过勾选更改关联":"Bạn có thể thay đổi liên kết bằng cách kiểm tra","您的系统缺少微软":"Hệ thống của bạn đang thiếu Microsoft","您的账号已开启设备锁":"Khóa thiết bị đã được bật cho tài khoản của bạn","您的账号开启了设备锁":"Khóa thiết bị được bật trên tài khoản của bạn","我们会尽快为您处理":"Chúng tôi sẽ xử lý nó cho bạn sớm nhất có thể","打开URL...  ":"Mở URL...  ","打开文件夹...  ":"Mở thư mục...  ","打开网盘...  ":"Mở đĩa mạng...  ","投屏镜像-云投屏":"Phản chiếu màn hình-Phản chiếu màn hình đám mây","投屏镜像-无线投屏":"Phản chiếu màn hình-Phản chiếu màn hình không dây","无声音或者音量过大。":"Không có âm thanh hoặc âm lượng quá lớn.","无法在当前设备登录":"Không thể đăng nhập trên thiết bị hiện tại","最小化时暂停播放":"Tạm dừng phát lại khi thu nhỏ","未找到当前电脑？":"Máy tính hiện tại không được tìm thấy?","未能正常连接网络！":"Không thể kết nối mạng đúng cách!","极简模式已永久关闭":"Chế độ tối giản đã bị tắt vĩnh viễn","查看错误报告详情":"Xem chi tiết báo cáo lỗi","正在搜索投屏设备…":"Đang tìm kiếm thiết bị phản chiếu màn hình…","没有更多了...":"Không còn nữa...","添加到系统右键菜单":"Thêm vào hệ thống menu chuột phải","点击头像快速登录":"Bấm vào avatar để đăng nhập nhanh","点击设置图片文件关联":"Bấm vào để thiết lập liên kết tập tin hình ảnh","电话/邮箱/QQ":"Điện thoại/email/QQ","登录后解锁更多功能":"Đăng nhập để mở khóa nhiều tính năng hơn","确定退出当前账号吗":"Bạn có chắc chắn muốn đăng xuất khỏi tài khoản hiện tại của mình không?","第三方授权验证":"Xác minh ủy quyền của bên thứ ba","精彩内容随时看":"Xem nội dung thú vị bất cứ lúc nào","组件加载中..":"Đang tải thành phần..","组件加载失败，":"Tải thành phần không thành công,","绑定其他手机号":"Liên kết các số điện thoại di động khác","自动文件关联后提示":"Nhắc sau khi liên kết tập tin tự động","蓝光1080P":"Blu-ray 1080P","记住账号下次快速登录":"Nhớ tài khoản để đăng nhập nhanh lần sau","设置...  ":"cài đặt...  ","请更新后重试。":"Vui lòng cập nhật và thử lại.","请输入正确的定位时间":"Vui lòng nhập đúng thời gian định vị","请选择举报原因":"Vui lòng chọn lý do báo cáo","请选择播放器窗口样式":"Vui lòng chọn kiểu cửa sổ trình phát","调节控制区域透明度":"Điều chỉnh độ trong suốt của vùng điều khiển","超多特权一键解锁":"Mở khóa nhiều đặc quyền chỉ bằng một cú nhấp chuột","跳转爱奇艺网页版":"Chuyển sang phiên bản web iQiyi","软件崩溃无反应":"Phần mềm gặp sự cố và không phản hồi","还没有播放记录":"Chưa có bản ghi phát lại nào","还没有观看历史哟~":"Chưa xem lịch sử~","退出时清空播放列表":"Xóa danh sách phát khi thoát","锁屏时暂停播放":"Tạm dừng phát lại khi màn hình bị khóa","错误报告详细信息：":"Chi tiết báo cáo lỗi:","问题诊断中，请稍候…":"Đang chẩn đoán sự cố, vui lòng đợi...","音轨延迟(s)":"Theo dõi độ trễ","音频同步（毫秒）：":"Đồng bộ hóa âm thanh (mili giây):","领取失败,请稍后重试":"Không thu thập được, vui lòng thử lại sau","频道列表无法展现":"Danh sách kênh không thể hiển thị","饱和度/鲜艳度":"Độ bão hòa/Sức sống","   抱歉，没找到歌词。":"   Xin lỗi, không tìm thấy lời bài hát.","《》等11个视频下载完成":"\"\" và 11 video khác đã được tải xuống","不小心数据加载失败了,请":"Vui lòng vô tình tải dữ liệu không thành công","与电视的链接断开了，请尝试重新投屏":"Liên kết tới TV bị hỏng, vui lòng thử truyền lại","为了会员权益和数据安全":"Đối với quyền thành viên và bảo mật dữ liệu","为了您的会员权益和数据安全":"Vì quyền thành viên và bảo mật dữ liệu của bạn","为了您的账号安全，请绑定一个手机号":"Để bảo mật tài khoản của bạn, vui lòng liên kết số điện thoại di động","为了您的账号安全，请设置手机号":"Để bảo mật tài khoản của bạn, vui lòng đặt số điện thoại di động","为了您的账户安全，请发送短信验证":"Để bảo mật tài khoản của bạn, vui lòng gửi xác minh SMS","为保证您的账号安全，请完成一下认证":"Để đảm bảo tính bảo mật cho tài khoản của bạn, vui lòng hoàn tất xác thực sau","享2-3个并行下载特权":"Tận hưởng đặc quyền tải xuống song song 2-3","你选中了xxxxxxxx，需要":"Bạn đã chọn xxxxxxxx và cần","使用手机已登录账号快捷登录":"Đăng nhập nhanh chóng bằng tài khoản đã đăng nhập trên điện thoại di động của bạn","修复完成（重启后生效）~":"Sửa chữa hoàn tất (sẽ có hiệu lực sau khi khởi động lại) ~","全屏模式 Alt + Enter":"Chế độ toàn màn hình Alt + Enter","刚才软件出了点小故障，现已自动修复":"Vừa rồi có một trục trặc trong phần mềm và nó đã được tự động sửa chữa.","删除超过30天未播放的文件":"Xóa các tập tin không được phát trong hơn 30 ngày","删除超过7天未播放的文件":"Xóa các tập tin không được phát trong hơn 7 ngày","加载异常，请点击返回首页！":"Đang tải ngoại lệ, vui lòng bấm vào để trở về trang chủ!","双击桌面图标可以立即播放哦":"Bấm đúp vào biểu tượng trên màn hình để chơi ngay","可解锁4-5个并行下载特权":"Mở khóa 4-5 đặc quyền tải xuống song song","启用长按右方向键倍速播放":"Cho phép phát lại tốc độ gấp đôi bằng cách nhấn và giữ phím mũi tên phải","启用鼠标悬停进度条预览画面":"Bật màn hình xem trước thanh tiến trình di chuột qua","安装完成，欢迎来到爱奇艺":"Quá trình cài đặt hoàn tất, chào mừng bạn đến với iQiyi","客户端内的部分页面需要该组件支持":"Một số trang trong client yêu cầu hỗ trợ từ thành phần này","客户端软件出现异常情况啦!T^T":"Đã xảy ra sự cố bất thường trong phần mềm máy khách! T^T","屏蔽后新出现的弹幕均为白色":"Các rào cản mới xuất hiện sau khi chặn đều có màu trắng.","建议您将系统升级到Win10":"Bạn nên nâng cấp hệ thống của mình lên Win10","开启后弹幕将不再遮挡人像区域":"Sau khi bật nó lên, rào chắn sẽ không còn chặn vùng chân dung nữa.","恢复所有配置成出厂时。":"Khôi phục tất cả các cấu hình về cài đặt gốc.","您接收的短信验证码次数已达上限":"Số lượng mã xác minh SMS bạn nhận được đã đạt đến giới hạn trên.","您选择了定时关机，系统将在":"Nếu bạn chọn tắt máy theo lịch trình, hệ thống sẽ","想了解更多信息? 请访问 ":"Muốn biết thêm thông tin? Thăm nom ","手动下载包含完整组件的客户端":"Tải xuống ứng dụng khách theo cách thủ công với các thành phần hoàn chỉnh","手机端如何使用投屏和镜像功能？":"Làm cách nào để sử dụng chức năng truyền và phản chiếu màn hình trên điện thoại di động?","打开爱奇艺客户端，畅享更多精彩":"Mở ứng dụng khách iQiyi và tận hưởng những giây phút thú vị hơn","扫描下方二维码，授权登录":"Quét mã QR bên dưới để ủy quyền đăng nhập","拨打24小时客服电话:":"Gọi tới đường dây nóng dịch vụ khách hàng 24/24:","搬家成功，是否重启客户端？":"Việc di chuyển đã thành công. Bạn có muốn khởi động lại máy khách không?","文件可能已损坏或文件格式不支持":"Tệp có thể bị hỏng hoặc định dạng tệp không được hỗ trợ","是否打开爱奇艺轮播台观看？":"Bạn có muốn mở băng chuyền iQiyi để xem không?","未检测到需要修复的问题~":"Không phát hiện thấy vấn đề nào cần khắc phục~","本地视频默认使用爱奇艺视频播放":"Các video cục bộ được phát bằng iQiyi Video theo mặc định.","欢迎使用爱奇艺万能播放":"Chào mừng đến với iQiyi Universal Play","正在上传日志 请稍等…":"Đang tải nhật ký lên, vui lòng đợi...","正在修复相关问题 请稍等…":"Các vấn đề liên quan đang được khắc phục. Vui lòng chờ...","正在加载，请稍候...":"Đang tải, vui lòng đợi...","正在升级，请稍候 1%":"Đang nâng cấp, vui lòng đợi 1%","正在搜索歌词，请稍候...":"Đang tìm kiếm lời bài hát, vui lòng đợi...","正在检测新版本，请稍候.":"Đang phát hiện phiên bản mới, vui lòng đợi.","正在检测新版本，请稍候...":"Đang phát hiện phiên bản mới, vui lòng đợi...","添加同路径相似文件到列表":"Thêm các tệp tương tự có cùng đường dẫn vào danh sách","添加后将看不到含此词的弹幕哦～":"Sau khi thêm nó, bạn sẽ không thể nhìn thấy các rào cản có chứa từ này ~","清空URL列表中的历史数据":"Xóa dữ liệu lịch sử trong danh sách URL","清空错误的hosts设置。":"Xóa cài đặt máy chủ sai.","清除本地缓存的图片、数据等文件。":"Xóa hình ảnh, dữ liệu và các tập tin khác được lưu trong bộ nhớ đệm cục bộ.","点击立即修复解决卡顿问题。":"Nhấp vào Repair Now để giải quyết vấn đề lag.","爱奇艺PC客户端已准备就绪":"Máy khách iQiyi PC đã sẵn sàng","爱奇艺Windows客户端":"Máy khách Windows iQiyi","由于版权限制，视频不允许下载！":"Do hạn chế về bản quyền nên video không được phép tải xuống!","离线任务下载完成后关机":"Tắt máy tính sau khi tải tác vụ offline","程序出错前您所做的操作：":"Những gì bạn đã làm trước khi xảy ra lỗi chương trình:","窗口置顶 Alt + Z":"Giữ cửa sổ ở trên cùng Alt + Z","精简模式 Ctrl + M":"Chế độ thu gọn Ctrl + M","自动添加同路径下的相似文件到列表":"Tự động thêm các tệp tương tự theo cùng một đường dẫn vào danh sách","自动添加相似文件至播放列表":"Tự động thêm các tệp tương tự vào danh sách phát","花屏、闪屏、黑屏、白屏、屏幕抖动":"Màn hình nhấp nháy, màn hình nhấp nháy, màn hình đen, màn hình trắng, màn hình giật hình","视频看累了吗？再来玩会儿游戏吧！":"Bạn chán xem video? Hãy chơi lại vài trò chơi nhé!","请使用以下方式进行验证登录":"Vui lòng sử dụng phương pháp sau để xác minh đăng nhập","请将以下地址告知我们:":"Vui lòng thông báo cho chúng tôi địa chỉ sau:","请尽快联系您的运营商！":"Vui lòng liên hệ với nhà cung cấp dịch vụ của bạn càng sớm càng tốt!","请确保显卡驱动为最新。":"Hãy đảm bảo trình điều khiển card đồ họa được cập nhật.","请输入您想要添加的URL地址":"Vui lòng nhập địa chỉ URL bạn muốn thêm","请输入手机号、QQ或邮箱（选填）":"Vui lòng nhập số điện thoại di động, QQ hoặc email của bạn (tùy chọn)","轻巧快速免打扰，强力杀毒不卡机":"Nhẹ, nhanh, không gián đoạn, diệt virus mạnh mẽ không lag","退出时清空播放列表和播放记录":"Xóa danh sách phát và lịch sử phát khi thoát","重新选择截图区域        ":"Chọn lại vùng ảnh chụp màn hình        ","需要咨询问题？请加QQ群：":"Cần một câu hỏi? Hãy tham gia nhóm QQ:","首次打开需要下载组件，请耐心等候":"Bạn cần tải các thành phần khi mở lần đầu tiên, hãy kiên nhẫn chờ đợi.","，正在为您下载安装，请稍候...":", đang tải và cài đặt cho bạn, bạn vui lòng đợi nhé...","启动应用时，窗口恢复上次大小及位置":"Khi ứng dụng được khởi chạy, cửa sổ sẽ khôi phục kích thước và vị trí cuối cùng của nó","您可以进入看图模式更改图片文件关联":"Bạn có thể vào chế độ xem ảnh để thay đổi liên kết tệp ảnh","播放有声音无画面、无播放界面等问题":"Các vấn đề như có âm thanh nhưng không có hình ảnh khi phát lại, không có giao diện phát lại, v.v.","正在拼命加载中，请稍候......":"Đang tải khó, vui lòng đợi...","每天玩5分钟，集满15天可兑换月卡":"Chơi 5 phút mỗi ngày và đổi thẻ tháng sau 15 ngày.","点击页面右上角“+”-“扫一扫” ":"Nhấp vào \"+\" ở góc trên bên phải của trang - \"Quét\" ","联系方式（QQ/手机/Email）":"Thông tin liên hệ (QQ/di động/Email)","超前解锁剧集需要会员购买后才可下载":"Mở khóa sớm các tập yêu cầu mua tư cách thành viên trước khi tải xuống","，快速解决播放、展示、崩溃相关问题":", giải quyết nhanh chóng các vấn đề liên quan đến phát, hiển thị, treo máy","允许启用开机自动运行 新热内容随时看":"Cho phép kích hoạt hoạt động tự động khi khởi động. Xem nội dung nóng mới bất cứ lúc nào.","后续可在爱奇艺菜单中重新打开极简模式":"Bạn có thể mở lại chế độ tối giản trong menu iQiyi sau.","完成前可能会影响爱奇艺PC客户端启动":"Trước khi hoàn thành, nó có thể ảnh hưởng đến việc khởi động máy khách iQiyi PC","开机自动运行极简模式 一键开播速上手":"Tự động chạy ở chế độ tối giản khi khởi động, chỉ cần một cú nhấp chuột để bắt đầu phát sóng và bắt đầu nhanh chóng","当前问题可能是未更新到最新版造成的，":"Sự cố hiện tại có thể xảy ra do không cập nhật lên phiên bản mới nhất.","每日观影满60分钟成长值最高+10点":"Sau khi xem phim 60 phút mỗi ngày, giá trị tăng trưởng tối đa là +10 điểm","版权保护，暂不支持下载会员加更礼选集":"Do bảo vệ bản quyền, việc tải xuống bộ sưu tập quà tặng thành viên hiện không được hỗ trợ.","未注册过的手机号，我们将自动帮您注册账号":"Đối với số điện thoại di động chưa đăng ký, chúng tôi sẽ tự động đăng ký tài khoản cho bạn.","点击立即修复页面空白、内容无法展示的问题。":"Nhấn vào đây để khắc phục ngay tình trạng trang trống không hiển thị được nội dung.","目前支持http,mms,rtsp三种协议":"Hiện hỗ trợ ba giao thức http, mms, rtsp","退出应用时自动清理播放列表和最新的播放记录":"Tự động xóa danh sách phát và bản ghi phát lại mới nhất khi thoát khỏi ứng dụng","将手机连入当前热点，投屏视频时选择本设备即可":"Kết nối điện thoại với điểm phát hiện tại; khi chiếu video, chọn thiết bị này.","爱奇艺PC客户端已准备就绪，正在启动中...":"Ứng dụng iQIYI PC đã sẵn sàng, đang khởi động...","由于您的系统缺少微软应用组件，正在为您下载中":"Hệ thống thiếu thành phần ứng dụng Microsoft, đang tải xuống...","1.为了解决问题，爱奇艺的工作人员可能会联系您":"1. Để xử lý vấn đề, nhân viên iQIYI có thể liên hệ với bạn","使用iOS最新版扫描二维码或输入投屏码即可投屏":"Dùng iOS mới nhất quét mã QR hoặc nhập mã chiếu để chiếu.","如果投屏失败，可能是连接的设备不支持该文件格式":"Nếu chiếu thất bại, thiết bị kết nối có thể không hỗ trợ định dạng này.","当前电脑暂未安装，安装后即可正常使用，不会影响":"Máy tính hiện chưa cài đặt; cài xong có thể dùng bình thường, không ảnh hưởng.","因版权原因，Win7及以下系统暂不支持该音频解码":"Vì lý do bản quyền, Win7 trở xuống tạm chưa hỗ trợ giải mã âm thanh này.","对产品功能或使用体验上有任何问题或建议，欢迎随时":"Nếu có vấn đề hoặc góp ý về chức năng hay trải nghiệm, hãy liên hệ bất cứ lúc nào.","请检查网络连接是否正常，如果连接正常，请关闭重试":"Hãy kiểm tra kết nối mạng; nếu bình thường, hãy đóng rồi thử lại.","调节播放列表透明度（仅能调节非播放时的列表状态）":"Chỉnh độ trong suốt danh sách phát (chỉ chỉnh được khi không phát).","一键追剧、快捷搜索、小窗刷视频，就用爱奇艺极简模式":"Theo dõi phim, tìm nhanh và xem video cửa sổ nhỏ với chế độ tối giản iQIYI.","修复播放花屏(仅在播放时出现花屏，可尝试此项修复)":"Sửa lỗi vỡ hình khi phát (chỉ lỗi khi phát, có thể thử cách sửa này).","您的电脑使用4K码流,可能会出现卡顿、崩溃、花屏等":"Máy tính dùng luồng 4K có thể bị giật, crash hoặc vỡ hình.","由于运营商劫持，您的爱奇艺客户端暂时无法正常运行。":"Do nhà mạng can thiệp, app iQIYI tạm thời không chạy bình thường.","程序遇到问题需要关闭，我们对此引起的不便深表歉意。":"Ứng dụng gặp sự cố và cần đóng. Chúng tôi xin lỗi vì sự bất tiện này.","WebView2是微软提供的页面显示组件，爱奇艺PC":"WebView2 là thành phần hiển thị trang của Microsoft, dùng cho iQIYI PC.","及时获取最新视频（允许开机自启、今日推荐、资讯热点）":"Nhận video mới kịp thời (cho phép tự chạy cùng máy, gợi ý hôm nay và tin nóng).","如需帮助，请加QQ群联系我们，QQ群号：48328857":"Cần trợ giúp? Hãy tham gia nhóm QQ để liên hệ: 48328857","<u>点击此处跳转微软官网下载WebView2组件</u>":"<u>Bấm vào đây để tới trang Microsoft tải thành phần WebView2</u>","如果您在使用过程中出现故障或错误，可以点击修复按钮进行修复":"Nếu gặp lỗi trong quá trình sử dụng, hãy bấm nút Sửa để khắc phục.","检测到以下问题，请选择需要修复的内容，然后点击「开始修复」":"Đã phát hiện các vấn đề sau; hãy chọn mục cần sửa rồi bấm «Bắt đầu sửa».","确保当前设备与投屏接收方 (电视等设备) 处于同一WiFi下":"Đảm bảo thiết bị hiện tại và thiết bị nhận chiếu (TV...) dùng cùng Wi‑Fi.","我们已经产生了一个关于此错误的报告，请您填写下方信息帮助我们改善":"Chúng tôi đã tạo báo cáo lỗi; hãy điền thông tin bên dưới để giúp cải thiện sản phẩm.","检测到播放时其他应用程序占用较多资源，请手动关闭其他非必要的程序":"Phát hiện ứng dụng khác đang dùng nhiều tài nguyên khi phát; hãy đóng các ứng dụng không cần thiết.","糟糕！检测到爱奇艺客户端文件损坏，已完成修复，请重新打开爱奇艺。":"Ôi! Phát hiện tệp iQIYI bị hỏng và đã sửa xong. Hãy mở lại iQIYI.","爱奇艺PC客户端依赖该组件，安装完成后即可正常使用，且仅需安装一次":"Ứng dụng iQIYI PC cần thành phần này; cài xong có thể dùng bình thường và chỉ cần cài một lần.","手机号已被微信账号绑定，仅可作为本账号的登录身份验证，不能绑定本账号。":"Số điện thoại đã liên kết với tài khoản WeChat, chỉ dùng để xác minh đăng nhập tài khoản này, không thể liên kết lại.","点击&quot;立即升级&quot;按钮将开始升级，之后程序会自动重启。":"Bấm nút &quot;Cập nhật ngay&quot; để bắt đầu; sau đó ứng dụng sẽ tự khởi động lại.","播放列表文件过多，可能导致程序启动变慢，<n><p 5>是否需要清理？</p>":"Danh sách phát có quá nhiều tệp, có thể khiến app khởi động chậm.<n><p 5>Có muốn dọn dẹp không?</p>","Copyright © 2023 爱奇艺 All Rights Reserved":"Copyright © 2023 iQIYI. Bảo lưu mọi quyền","Copyright © 2026 爱奇艺 All Rights Reserved":"Copyright © 2026 iQIYI. Bảo lưu mọi quyền","用爱奇艺极简模式一键续播，发现更多精彩内容。可在主界面顶部菜单中开启/关闭本功能":"Dùng chế độ tối giản iQIYI để tiếp tục phát chỉ với một lần bấm và khám phá thêm nội dung hay. Có thể bật/tắt ở menu trên cùng.","当前windows系统版本过低，无法使用云投屏功能，请将系统升级到win7及以上版本":"Windows hiện tại quá cũ nên không dùng được chiếu mây; hãy nâng cấp lên Win7 hoặc mới hơn.","<c #979798>将</c><c #e7e7e8> 爱奇艺PC客户端</c><c #979798>一并添加至桌面快捷方式</c>":"<c #979798>Thêm </c><c #e7e7e8>ứng dụng iQIYI PC</c><c #979798> vào lối tắt trên desktop</c>","<c #999999>遇到问题，可以联系</c><a http://cserver.iqiyi.com/index?e=9><c #00CC36>在线客服</c></a><c #999999> 或 拨打24小时客服电话：</c><c #00CC36>400-923-7171</c>":"<c #999999>Nếu gặp vấn đề, hãy liên hệ </c><a http://cserver.iqiyi.com/index?e=9><c #00CC36>hỗ trợ online</c></a><c #999999> hoặc gọi CSKH 24 giờ: </c><c #00CC36>400-923-7171</c>","<c #999999>遇到问题，可以联系</c><a http://cserver.iqiyi.com/index?e=9><c #45b000>在线客服</c></a><c #999999> 或 拨打24小时客服电话：</c><c #45b000><y -15>400-923-7171</c>":"<c #999999>Nếu gặp vấn đề, hãy liên hệ </c><a http://cserver.iqiyi.com/index?e=9><c #45b000>hỗ trợ online</c></a><c #999999> hoặc gọi CSKH 24 giờ: </c><c #45b000><y -15>400-923-7171</c>","<c #ffffff>感谢您选择爱奇艺PC客户端！</c><c #ffffff><n><n> </c><c #ffffff><n ><n>我们非常重视您的个人信息和隐私保护。为了更好地保障您的个人权益，在您使用我们的产品前，请务必审慎阅读</c><a https://www.iqiyi.com/user/register/protocol.html><c #00b909>《爱奇艺服务协议》</c></a><c #ffffff>与</c><a https://privacy.iqiyi.com/policies><c #00b909>《爱奇艺隐私政策》</c></a><c #ffffff>内的所有条款，尤其是:</c><c #ffffff><n> </c>\n\n<c #ffffff><n>1. 我们对您的个人信息的收集/保存/使用/对外提供/保护等规则条款，以及您的用户权利等条款；</c>\n\n<c #ffffff><n>2. 约定我们的限制责任、免责条款；</c><c #ffffff><n>3. 其他以颜色或加粗进行标识的重要条款。<n></c><c #ffffff><n> </c><c #ffffff><n>如您对以上协议有任何疑问，可通过人工客服或发邮件至 privacy＠qiyi.com与我们联系。您点击“同意并继续”的行为即表示您已阅读完毕并同意以上协议的全部内容。</c><c #ffffff><n> <n>如您同意以上协议内容，请点击“同意并继续”，开始使用我们的产品和服务！</c>":"<c #ffffff>Cảm ơn bạn đã chọn ứng dụng iQIYI PC!</c><c #ffffff><n><n> </c><c #ffffff><n ><n>Chúng tôi rất coi trọng việc bảo vệ thông tin cá nhân và quyền riêng tư. Trước khi sử dụng sản phẩm, hãy đọc kỹ</c><a https://www.iqiyi.com/user/register/protocol.html><c #00b909>《Điều khoản dịch vụ iQIYI》</c></a><c #ffffff> và </c><a https://privacy.iqiyi.com/policies><c #00b909>《Chính sách riêng tư iQIYI》</c></a><c #ffffff>, đặc biệt là:</c><c #ffffff><n> </c>\n\n<c #ffffff><n>1. Quy định về thu thập/lưu trữ/sử dụng/cung cấp/bảo vệ thông tin cá nhân và quyền của người dùng;</c>\n\n<c #ffffff><n>2. Các điều khoản giới hạn trách nhiệm và miễn trừ;</c><c #ffffff><n>3. Các điều khoản quan trọng khác được đánh dấu bằng màu hoặc chữ đậm.<n></c><c #ffffff><n> </c><c #ffffff><n>Nếu có thắc mắc về các điều khoản trên, bạn có thể liên hệ CSKH hoặc gửi email đến privacy＠qiyi.com. Việc bấm “Đồng ý và tiếp tục” nghĩa là bạn đã đọc và đồng ý toàn bộ điều khoản.</c><c #ffffff><n> <n>Nếu đồng ý, hãy bấm “Đồng ý và tiếp tục” để bắt đầu sử dụng sản phẩm và dịch vụ!</c>","了解详情":"Xem chi tiết","极速":"Siêu nhanh","清流":"Nét thấp","爱奇艺HDR":"iQIYI HDR","请使用爱奇艺客户端观看":"Hãy xem bằng app iQIYI","播放出错了，请稍后刷新重试":"Lỗi phát, hãy tải lại","试试更稳定、流畅的爱奇艺客户端":"Dùng app iQIYI cho mượt hơn","视频准备中...":"Đang chuẩn bị video...","秒后自动播放下一个内容":" giây sẽ phát nội dung kế","点击一下，快速跳过广告":"Bấm để bỏ qua quảng cáo","完成加速任务":"Xong nhiệm vụ tăng tốc","返回继续体验":"Quay lại xem tiếp","点击或扫码继续体验":"Bấm hoặc quét mã để xem tiếp","帮助反馈":"Trợ giúp","硬解密":"Giải mã cứng","软解密":"Giải mã mềm","标清 480P":"SD 480P","准高清 720P":"HD 720P","高清 1080P":"Full HD 1080P","高清 1080P50":"Full HD 1080P50","超高清 4K":"4K","可跳过广告":"Có thể bỏ QC","呃，播放失败啦~":"Phát lỗi rồi","小朋友,先看看别的内容吧":"Bạn nhỏ, xem nội dung khác nhé","发现更多精彩":"Khám phá thêm","立刻刷新":"Tải lại ngay","使用客户端观看":"Xem bằng app","清屏":"Ẩn giao diện","连播":"Phát tiếp","退出网页全屏":"Thoát toàn màn web","看广告，结束后继续看正片":"Xem QC rồi xem phim","观看广告":"Xem quảng cáo","广告溜走了，继续观看正片":"QC xong, xem phim tiếp","看广告 即可继续免费看正片":"Xem QC để xem phim miễn phí","获取加速机会！":"Nhận tăng tốc!","点击并浏览可加速看正片":"Bấm xem để tăng tốc","我要加速看正片":"Tăng tốc xem phim","恭喜你成功看正片":"Đã mở phim","成功看正片":"Đã mở phim","温馨提示":"Lưu ý","下载爱奇艺客户端":"Tải app iQIYI","管理设备":"Quản lý thiết bị","向左旋转":"Xoay trái","向右旋转":"Xoay phải","更多频道":"Thêm kênh","搜索一下":"Tìm kiếm","搜一搜":"Tìm","热播":"Hot","已收藏":"Đã lưu","热播榜":"Bảng hot","热门搜索":"Tìm hot","历史搜索":"Đã tìm","猜你想搜":"Gợi ý tìm","儿童模式":"Chế độ trẻ em","开通VIP会员":"Mở VIP","+10秒":"+10 giây","-10秒":"-10 giây","快退中":"Đang tua lui","当前已静音":"Đã tắt tiếng","当前音量过低":"Âm lượng thấp","自动调节画质":"Tự chỉnh chất lượng","即可退出全屏模式":"để thoát toàn màn","播放问题反馈":"Góp ý lỗi phát","播放快捷键":"Phím tắt phát","播放 / 暂停":"Phát / tạm dừng","快退5秒":"Tua lui 5 giây","进入全屏 / 退出全屏":"Toàn màn / thoát","开启静音 / 取消静音":"Tắt / bật tiếng","重播":"Phát lại","加载速度":"Tốc độ tải","缓冲时长":"Thời gian đệm","分辨率":"Độ phân giải","视频尺寸":"Kích thước video","音量大小":"Âm lượng","播放器版本":"Phiên bản player","封装格式":"Định dạng","解码格式":"Giải mã","点击下载":"Bấm để tải","打开爱奇艺客户端":"Mở app iQIYI","继续观看":"Xem tiếp","关闭广告，放大暂停画面":"Đóng QC, phóng hình tạm dừng","黄金关闭此广告":"VIP vàng đóng QC này","会员关闭此广告":"VIP đóng QC này","升级会员":"Nâng VIP","首月特惠":"Ưu đãi tháng đầu","爱奇艺VIP":"iQIYI VIP","仍然无法观看？戳这里":"Vẫn không xem được? Bấm đây","退登其他设备":"Đăng xuất máy khác","升级设备数":"Tăng số máy","限时优惠":"Ưu đãi có hạn","继续观看广告解锁正片":"Xem QC để mở phim","安装客户端，视频不卡顿":"Cài app để hết giật","立即下载":"Tải ngay","该视频已下线，看看其他视频吧":"Video đã gỡ, xem cái khác nhé","普通话":"Phổ thông","搜视频...":"Tìm video...","数据正在加载中......":"Đang tải dữ liệu...","网络加载超时，请":"Hết thời gian mạng, hãy","重新试试":"Thử lại","查看列表":"Xem danh sách","蓝光4K":"Blu-ray 4K","已加入下载列表":"Đã thêm vào danh sách tải","查看":"Xem","快来观看吧~":"Vào xem ngay","加入播单稍后看":"Thêm vào xem sau","自动修复":"Tự sửa","开始修复":"Bắt đầu sửa","后台运行":"Chạy nền","历史反馈":"Góp ý cũ","升级客户端":"Cập nhật app","其他问题或建议":"Góp ý khác","立即反馈":"Góp ý ngay","建议更新版本":"Nên cập nhật bản","仍要反馈":"Vẫn góp ý","立即关机":"Tắt máy ngay","取消关机":"Hủy tắt máy","重置定时":"Đặt lại hẹn giờ","确 认":"Xác nhận","下载新版客户端":"Tải bản mới","会员尊享":"Đặc quyền VIP","已是会员？":"Đã là VIP?","立即登录>":"Đăng nhập ngay >","限时特惠":"Ưu đãi có hạn","升级至V5":"Nâng lên V5","直接离开":"Rời luôn","玩游戏领VIP":"Chơi game nhận VIP","玩游戏":"Chơi game","领VIP":"Nhận VIP","查看全部消息":"Xem mọi tin","查看全部未读消息":"Xem tin chưa đọc","经典版登录":"Đăng nhập bản cũ","随刻热点":"Tin nóng","搞笑":"Hài","资讯":"Tin tức","全网榜单":"Bảng toàn mạng","登录后可同步观看历史":"Đăng nhập để đồng bộ lịch sử","立即登录":"Đăng nhập ngay","查看更新":"Xem cập nhật","过滤短视频":"Ẩn video ngắn","查看更多观看历史":"Xem thêm lịch sử","+订阅":"+Theo dõi","查更新":"Xem cập nhật","小游戏":"Game nhỏ","新片":"Mới","仅本次关闭":"Chỉ lần này","永久关闭":"Đóng vĩnh viễn","立即进入":"Vào ngay","立即重启（5s）":"Mở lại ngay (5s)","安装完成":"Cài xong","立即体验":"Dùng ngay","精选":"Tinh chọn","为你推荐":"Gợi ý cho bạn","今日必看":"Hôm nay nên xem","今日热点":"Tin nóng hôm nay","新热":"Mới hot","新热综艺":"Variety mới","新片速递":"Phim mới về","即将开播":"Sắp chiếu","即将上映":"Sắp chiếu rạp","正在热映":"Đang chiếu rạp","爱奇艺出品":"iQIYI sản xuất","爱奇艺号":"Kênh iQIYI","出品":"Sản xuất","高分电影":"Phim điểm cao","高分好剧":"Phim bộ điểm cao","高分":"Điểm cao","免费专区":"Khu miễn phí","免费剧场":"Rạp miễn phí","会员专享":"Độc quyền VIP","会员专区":"Khu VIP","用券专区":"Khu dùng vé","热门综艺":"Variety hot","热门电视剧":"Phim bộ hot","热门电影":"Phim hot","热门动漫":"Anime hot","热门短剧":"Phim ngắn hot","少儿精选":"Thiếu nhi chọn lọc","知识精选":"Kiến thức chọn lọc","体育赛事":"Giải thể thao","直播精选":"Live chọn lọc","短剧精选":"Phim ngắn chọn lọc","漫剧精选":"Manga chọn lọc","纪录片精选":"Tài liệu chọn lọc","风云榜":"Bảng phong vân","飙升榜":"Bảng tăng nhanh","完结榜":"Bảng đã hết","预约榜":"Bảng đặt lịch","热搜":"Tìm hot","热点":"Tin nóng","生活":"Đời sống","时尚":"Thời trang","科技":"Công nghệ","旅游":"Du lịch","财经":"Tài chính","教育":"Giáo dục","舞蹈":"Nhảy","美食":"Ẩm thực","小品":"Tiểu phẩm","脱口秀":"Talkshow","晚会":"Gala","真人秀":"Reality","选秀":"Tuyển chọn","情感":"Tình cảm","青春":"Thanh xuân","古装":"Cổ trang","都市":"Đô thị","爱情":"Tình yêu","悬疑":"Bí ẩn","犯罪":"Tội phạm","科幻":"Khoa học viễn tưởng","奇幻":"Kỳ ảo","战争":"Chiến tranh","传记":"Tiểu sử","喜剧":"Hài kịch","动作":"Hành động","冒险":"Phiêu lưu","恐怖":"Kinh dị","惊悚":"Giật gân","动画":"Hoạt hình","家庭":"Gia đình","校园":"Học đường","职场":"Công sở","穿越":"Xuyên không","重生":"Trùng sinh","宫斗":"Cung đấu","权谋":"Quyền mưu","武侠":"Võ hiệp","仙侠":"Tiên hiệp","玄幻":"Huyền huyễn","年代":"Thời đại","农村":"Nông thôn","军旅":"Quân ngũ","谍战":"Điệp chiến","律政":"Luật pháp","医疗":"Y khoa","偶像":"Thần tượng","时装":"Thời trang","甜宠":"Ngọt ngào sủng ái","虐恋":"Tình yêu bi thương","霸总":"Tổng tài","萌宝":"Bé cưng","神医":"Thần y","战神":"Chiến thần","豪门":"Nhà giàu","民国":"Dân quốc","现代":"Hiện đại","当代":"Đương đại","未来":"Tương lai","大陆":"Đại lục","香港":"Hồng Kông","台湾":"Đài Loan","欧美":"Âu Mỹ","日韩":"Nhật Hàn","东南亚":"Đông Nam Á","其他地区":"Khu vực khác","全部剧情":"Mọi cốt truyện","筛选条件":"Bộ lọc","已选":"Đã chọn","清空筛选":"Xóa bộ lọc","相关影片":"Phim liên quan","相关明星":"Sao liên quan","主演":"Diễn viên chính","导演":"Đạo diễn","编剧":"Biên kịch","制片人":"Nhà sản xuất","嘉宾":"Khách mời","主持人":"MC","声优":"Lồng tiếng","又名":"Tên khác","上映":"Công chiếu","首播":"Phát sóng lần đầu","粤语":"Quảng Đông","韩语":"Tiếng Hàn","日语":"Tiếng Nhật","泰语":"Tiếng Thái","国语":"Quốc ngữ","原声":"Gốc","配音":"Lồng tiếng","中字":"Phụ đề Trung","英字":"Phụ đề Anh","关弹幕":"Tắt danmaku","开弹幕":"Bật danmaku","弹幕设置":"Cài danmaku","小窗":"Cửa sổ nhỏ","画中画":"Hình trong hình","自动播放":"Tự phát","相关视频":"Video liên quan","评论区":"Bình luận","从上次观看":"Xem từ lần trước","重新开始":"Xem từ đầu","试看中":"Đang xem thử","开通即可观看":"Mở VIP để xem","用券观看":"Dùng vé xem","付费观看":"Trả phí để xem","黄金VIP":"VIP vàng","白金VIP":"VIP bạch kim","星钻VIP":"VIP kim cương","学生VIP":"VIP học sinh","连续包月":"Gói tháng tự gia hạn","连续包季":"Gói quý tự gia hạn","连续包年":"Gói năm tự gia hạn","优惠":"Ưu đãi","首月":"Tháng đầu","搜索历史":"Lịch sử tìm","清除历史":"Xóa lịch sử","暂无结果":"Không có kết quả","综合排序":"Tổng hợp","最新发布":"Mới đăng","最多播放":"Xem nhiều","播单":"Danh sách phát","稍后看":"Xem sau","取消添加":"Bỏ thêm","追更":"Theo dõi tập mới","已追更":"Đang theo dõi","追剧":"Theo dõi phim","已追剧":"Đang theo phim","预约直播":"Đặt lịch live","进入直播":"Vào live","直播中":"Đang live","已结束":"Đã kết thúc","回看":"Xem lại","人气":"Độ hot","热度":"Độ nóng","豆瓣":"Douban","想看":"Muốn xem","看过":"Đã xem","在看":"Đang xem","人正在看":" người đang xem","次播放":" lượt xem","万次播放":"0k lượt xem","亿次播放":"00 triệu lượt xem","刚刚看过":"Vừa xem","继续看":"Xem tiếp","看过的人还在看":"Người xem cũng thích","同类热播":"Cùng loại đang hot","系列作品":"Cùng series","周边视频":"Video quanh đây","花絮片段":"Hậu trường","预告片":"Trailer","精彩看点":"Điểm hay","高能":"Cao trào","彩蛋":"Easter egg","独家":"Độc quyền","首发":"Ra mắt trước","超前点播":"Xem sớm","加更":"Thêm tập","会员加更":"VIP thêm tập","免费看":"Xem miễn phí","整点":"Đúng giờ","全天":"Cả ngày","本月":"Tháng này","今年":"Năm nay","往年":"Năm trước","周一":"T2","周二":"T3","周三":"T4","周四":"T5","周五":"T6","周六":"T7","周日":"CN","星期一":"Thứ hai","星期二":"Thứ ba","星期三":"Thứ tư","星期四":"Thứ năm","星期五":"Thứ sáu","星期六":"Thứ bảy","星期日":"Chủ nhật","前天":"Hôm kia","明天":"Ngày mai","分钟前":" phút trước","小时前":" giờ trước","天前":" ngày trước","周前":" tuần trước","个月前":" tháng trước","年前":" năm trước","暂无简介":"Chưa có tóm tắt","展开全部":"Xem hết","收起全部":"Thu gọn","没有更多内容":"Hết nội dung","加载失败":"Tải lỗi","点击重新加载":"Bấm để tải lại","网络未连接":"Chưa có mạng","请检查网络":"Hãy kiểm tra mạng","刷新试试":"Thử tải lại","去登录":"Đăng nhập","去开通":"Mở VIP","去看看":"Xem thử","再看看":"Xem thêm","换一批":"Đổi lô","左滑查看更多":"Vuốt trái xem thêm","点击进入":"Bấm để vào","进入频道":"Vào kênh","频道首页":"Trang kênh","片库筛选":"Lọc kho phim","全部作品":"Mọi tác phẩm","代表作":"Tác phẩm nổi","关注数":"Số theo dõi","作品数":"Số tác phẩm","个人简介":"Giới thiệu","他的作品":"Tác phẩm của họ","她的作品":"Tác phẩm của họ","TA的作品":"Tác phẩm","相关人物":"Người liên quan","合作演员":"Diễn viên hợp tác","消息中心":"Trung tâm tin","系统通知":"Thông báo hệ thống","互动消息":"Tin tương tác","赞了你":"đã thích","回复了你":"đã trả lời","关注了你":"đã theo dõi bạn","全部标记已读":"Đánh dấu đã đọc","我的预约":"Lịch đã đặt","我的收藏":"Yêu thích","我的评论":"Bình luận của tôi","观看记录":"Lịch sử xem","清除全部":"Xóa hết","管理":"Quản lý","完成管理":"Xong","批量删除":"Xóa hàng loạt","确认删除":"Xóa?","删除成功":"Đã xóa","请先登录":"Hãy đăng nhập","登录过期":"Hết phiên đăng nhập","重新登录":"Đăng nhập lại","扫码":"Quét mã","账号登录":"Tài khoản","手机登录":"Số điện thoại","验证码登录":"Mã OTP","密码登录":"Mật khẩu","还没有账号":"Chưa có tài khoản","立即注册":"Đăng ký ngay","我已阅读并同意":"Tôi đã đọc và đồng ý","服务协议":"Điều khoản","标清":"SD","准高清":"HD","超高清":"Siêu nét","全景声":"Atmos","帧绮映画":"Frame cinema","臻享视听":"Hình đẹp","自动档":"Tự động","畅快":"Mượt","高能进度条":"Thanh cao trào","跳过片头":"Bỏ intro","跳过片尾":"Bỏ outro","下一集预告":"Trailer tập sau","即将播放":"Sắp phát","自动连播":"Tự phát tập sau","已开启":"Đã bật","已关闭":"Đã tắt","开启成功":"Đã bật","关闭成功":"Đã tắt","复制成功":"Đã sao chép","分享成功":"Đã chia sẻ","取消收藏成功":"Đã bỏ yêu thích","取消预约成功":"Đã hủy lịch","关注成功":"Đã theo dõi","取消关注成功":"Đã bỏ theo dõi","发送成功":"Đã gửi","发送失败":"Gửi lỗi","评论成功":"Đã đăng","请输入弹幕":"Nhập danmaku","请输入评论":"Nhập bình luận","说点什么":"Viết gì đó","善语结善缘":"Nói lời hay","点击输入":"Bấm để nhập","搜索影片、演员、综艺":"Tìm phim, diễn viên, variety","搜影片/电视剧/综艺/动漫":"Tìm phim / bộ / variety / anime","输入关键词":"Nhập từ khóa","猜你想看":"Có thể bạn muốn xem","大家都在看":"Mọi người đang xem","今日热搜":"Tìm hot hôm nay","实时热搜":"Tìm hot realtime","上升最快":"Tăng nhanh","搜索无结果":"Không có kết quả","换个词试试":"Thử từ khác","相关搜索词":"Từ liên quan","单剧":"Phim lẻ","剧集":"Phim bộ","网络电影":"Phim mạng","院线":"Rạp","微短剧":"Phim siêu ngắn","竖屏":"Dọc","横屏":"Ngang","合集":"Tuyển tập","专题":"Chuyên đề","榜单":"Bảng xếp hạng","频道馆":"Kênh","发现":"Khám phá","关注的人":"Đang theo dõi","推荐关注":"Gợi ý theo dõi","热门创作者":"Tác giả hot","刚刚发布":"Vừa đăng","赞":"Thích","投币":"Tặng xu","不喜欢":"Không thích","选择举报原因":"Chọn lý do","人身攻击":"Tấn công cá nhân","保存到本地":"Lưu máy","投屏到电视":"Chiếu TV","正在连接":"Đang kết nối","投屏中":"Đang chiếu","音效":"Hiệu ứng âm","取消全屏":"Thoát toàn màn","网页全屏":"Toàn trang","剧院模式":"Chế độ rạp","宽屏":"Màn rộng","原始比例":"Tỷ lệ gốc","无信号":"Mất tín hiệu","加载超时":"Hết thời gian tải","版权原因":"Do bản quyền","该视频无法播放":"Video này không phát được","因版权限制无法观看":"Không xem được vì bản quyền","地区限制":"Hạn chế khu vực","请开通会员":"Hãy mở VIP","会员到期":"VIP hết hạn","续费会员":"Gia hạn VIP","开通会员免费看":"Mở VIP xem miễn phí","非会员":"Không VIP","个人主页":"Trang cá nhân","账号设置":"Cài tài khoản","我的订单":"Đơn của tôi","我的卡券":"Vé của tôi","我的钱包":"Ví","成长值":"Điểm trưởng thành","等级":"Cấp","签到领金币":"Điểm danh nhận xu","已签到":"Đã điểm danh","连续签到":"Điểm danh liên tiếp","领取":"Nhận","已领取":"Đã nhận","去完成":"Làm ngay","任务中心":"Nhiệm vụ","福利中心":"Ưu đãi","活动中心":"Sự kiện","邀请好友":"Mời bạn","青少年":"Thiếu nhi","开启青少年模式":"Bật chế độ trẻ em","关闭青少年模式":"Tắt chế độ trẻ em","输入密码":"Nhập mật khẩu","设置密码":"Đặt mật khẩu","确认密码":"Xác nhận mật khẩu","℃":"°C","晴":"Nắng","多云":"Nhiều mây","阴":"U ám","雨":"Mưa","雪":"Tuyết","广告":"Quảng cáo","关闭广告":"Đóng QC","跳过广告":"Bỏ QC","后可跳过":" nữa mới bỏ được","会员免广告":"VIP không QC","了解会员特权":"Xem quyền VIP","特权":"Đặc quyền","选台":"Chọn kênh","节目单":"Lịch chương trình","回看列表":"Danh sách xem lại","当前节目":"Chương trình hiện tại","下个节目":"Chương trình sau","更多操作":"Thêm thao tác","倍速播放":"Phát nhanh","正常速度":"Tốc độ thường","0.5倍":"0.5x","0.75倍":"0.75x","1.0倍":"1.0x","1.25倍":"1.25x","1.5倍":"1.5x","2.0倍":"2.0x","3.0倍":"3.0x","快进中":"Đang tua tới","3.0X 快进中":"3.0x tua tới","2.0X 快进中":"2.0x tua tới","空格":"Space","正常":"Bình thường","未知原因":"Không rõ lý do","初始化":"Khởi tạo","地域受限":"Hạn chế khu vực","禁止站外观看":"Cấm xem ngoài site","无法在网页端播放":"Không phát được trên web","您没有权限观看此视频":"Bạn không có quyền xem","视频调度错误":"Lỗi điều phối video","视频下载错误":"Lỗi tải video","视频基本信息加载失败":"Tải thông tin video lỗi","请稍后重试或更换其它视频，也可通过帮助反馈联系我们。":"Thử lại, đổi video, hoặc gửi phản hồi.","该内容暂不支持在当前环境播放，请尝试其它视频或通过帮助反馈联系我们。":"Nội dung này chưa phát được ở đây. Thử video khác hoặc gửi phản hồi.","由于版权限制，您所在的地区无法观看该视频":"Khu vực này không xem được vì bản quyền","很抱歉，由于版权问题该视频已下线。感谢您使用爱奇艺":"Video đã gỡ vì bản quyền.","很抱歉，该视频已被删除，感谢您使用爱奇艺":"Video đã bị xóa.","当前内容暂未上线，先看看其他精彩内容吧":"Chưa lên sóng, xem nội dung khác nhé","该视频为私密视频，仅发布者可见哦~":"Video riêng, chỉ người đăng xem được","内存分配失败，请关闭部分其它程序后再试。":"Hết RAM, hãy đóng app khác rồi thử.","尝试重启爱奇艺客户端或稍后重试":"Hãy mở lại app hoặc thử sau","重启爱奇艺客户端或稍后重试":"Mở lại app hoặc thử sau","重启爱奇艺客户端":"Mở lại app iQIYI","您可稍后重试或切换其它内容":"Thử lại hoặc xem nội dung khác","请关闭部分其它程序释放内存，":"Hãy đóng app khác để trống RAM,","页面加载异常，请检查网络连接或者更换浏览器，重新打开页面":"Trang lỗi, kiểm tra mạng hoặc mở lại","登录后查看":"Đăng nhập để xem","请输入搜索词":"Nhập từ khóa","暂无搜索结果":"Không có kết quả","相关搜索":"Tìm liên quan","大家都在搜":"Mọi người đang tìm","新消息":"Tin mới","金币":"Xu","本地文件":"Tệp máy","儿童":"Thiếu nhi","知道了":"Đã hiểu","字节":"byte","爱奇艺-在线视频网站-播放器":"iQIYI - Trình phát video trực tuyến","说一句":"Bình luận","看点":"Điểm nổi bật","选集":"Chọn tập","爆":"Bùng nổ","昨日更新":"Cập nhật hôm qua","豆瓣高分":"Điểm Douban cao","古装爱情":"Tình yêu cổ trang","飞天奖":"Giải Phi Thiên","新客专享":"Ưu đãi khách mới","热播总榜":"BXH phát sóng hot","最新转免！":"Mới chuyển sang miễn phí!","等免费看！":"và nhiều phim khác được xem miễn phí!","选择不考虑观看的原因：":"Chọn lý do bạn không muốn xem:","已看过":"Đã xem","重复推荐":"Đề xuất trùng lặp","就是不想看":"Chỉ là không muốn xem","反特谍战":"Phản gián","刑侦破案":"Điều tra hình sự","偶像爱情":"Tình yêu thần tượng","言情":"Ngôn tình","警匪罪案":"Cảnh sát và tội phạm","甜虐爱情":"Tình yêu ngọt ngược","搭档破案":"Đồng đội phá án","罪案":"Tội phạm","律政题材":"Đề tài pháp luật","怀旧情感":"Tình cảm hoài niệm","强者回归":"Cường giả trở lại","男频":"Dành cho nam","女频":"Dành cho nữ","逆袭":"Lội ngược dòng","总裁":"Tổng tài","先婚后爱":"Cưới trước yêu sau","修仙":"Tu tiên","打脸虐渣":"Trả đũa kẻ xấu","架空":"Giả tưởng","复仇":"Báo thù","系统":"Hệ thống","乡村":"Nông thôn","女性成长":"Hành trình trưởng thành của phụ nữ","大女主":"Nữ chính mạnh mẽ","家庭伦理":"Đạo lý gia đình","亲情":"Tình thân","航海王":"One Piece","一瓯春":"Chén Xuân","深渊无间":"Vực Sâu Vô Gian","生逢其时":"Sinh Đúng Thời","狂飙":"Cuồng Phong","醒来":"Tỉnh Dậy","生万物":"Sinh Vạn Vật","目之所及":"Trong Tầm Mắt","定风波":"Định Phong Ba","铁血英魂":"Anh Hồn Sắt Máu","师兄太稳健":"Sư Huynh Quá Thận Trọng","大哥小助理":"Đại Ca và Trợ Lý Nhỏ","最后一个道士":"Đạo Sĩ Cuối Cùng","我不是大师":"Tôi Không Phải Đại Sư","重案六组：消失的警号":"Trọng Án Tổ Sáu: Cảnh Hiệu Biến Mất","天才，女友":"Thiên Tài, Bạn Gái","雀骨":"Tước Cốt","招摇":"Chiêu Diêu","云边不打烊":"Mây Bên Trời Không Ngủ","未尽之言":"Lời Chưa Nói Hết","草帽路飞伟大冒险":"Cuộc phiêu lưu vĩ đại của Luffy Mũ Rơm","许凯对周也又争又抢！":"Hứa Khải vừa tranh vừa giành Châu Dã!","许凯 周也 | 双强联手 入局复仇":"Hứa Khải, Châu Dã | Hai cao thủ hợp sức báo thù","一起把日子过出花":"Cùng nhau sống những ngày rực rỡ","罗晋王子文疯批互斗":"La Tấn và Vương Tử Văn đối đầu quyết liệt","他也爱她？醋王当场急眼":"Anh ấy cũng yêu cô? Cơn ghen bùng nổ","冷宫弃妃她权倾朝野":"Khí Phi Lãnh Cung Khuynh Đảo Triều Dã","冷宫弃妃逆袭成女帝":"Khí phi lãnh cung trở thành nữ đế","东北抗联精神永不褪色":"Tinh thần kháng chiến Đông Bắc không bao giờ phai","“苟王”敖瑞鹏误闯洪荒":"Ngao Thụy Bằng lạc vào thế giới Hồng Hoang","胡军李乃文谁也离不开谁":"Hồ Quân và Lý Nãi Văn không thể rời nhau","破邪镇龙，诛倭护脉":"Trừ tà trấn long, diệt giặc bảo vệ long mạch","任嘉伦x秦俊杰连载小说牵出尘封旧案":"Tiểu thuyết dài kỳ của Nhậm Gia Luân và Tần Tuấn Kiệt hé lộ án cũ","李现李一桐局中局骗中骗":"Lý Hiện và Lý Nhất Đồng trong âm mưu chồng âm mưu","胡军李乃文打工历险记":"Chuyến phiêu lưu làm thuê của Hồ Quân và Lý Nãi Văn","登录后可查看消息":"Đăng nhập để xem tin nhắn","在追":"Đang theo dõi","登录同步多设备":"Đồng bộ nhiều thiết bị","登录同步多设备历史":"Đồng bộ lịch sử xem","新朋友会员特惠":"Ưu đãi VIP mới","黄金会员首月低至12元":"VIP Vàng từ 12 tệ/tháng","钱包":"Ví","进入":"Vào ","上传":"Tải lên","播放问题诊断":"Chẩn đoán lỗi phát video","奇幻爱情":"Tình yêu kỳ ảo","仙侠玄幻":"Tiên hiệp huyền huyễn","东方玄幻":"Huyền huyễn phương Đông","都市爱情":"Tình yêu đô thị","暗恋":"Yêu thầm","励志":"Truyền cảm hứng","探险寻宝":"Phiêu lưu tìm kho báu","情感悬疑":"Bí ẩn tình cảm","奇幻冒险":"Phiêu lưu kỳ ảo","乱世情缘":"Tình duyên thời loạn","扫黑缉毒":"Trấn áp tội phạm và ma túy","警匪":"Cảnh sát và tội phạm","超能力":"Siêu năng lực","古装神话":"Thần thoại cổ trang","双强联手":"Hai cao thủ hợp sức","入局复仇":"Bước vào cuộc báo thù","风云榜总榜":"BXH Phong Vân tổng","查看完整风云榜":"Xem toàn bộ BXH Phong Vân","查看完整短剧榜":"Xem toàn bộ BXH phim ngắn","短剧热播榜":"BXH phim ngắn hot","模式":" - Chế độ","日本":"Nhật Bản","正在看：":"Đang xem:","签到赚金币，可提现":"Điểm danh nhận xu, có thể rút tiền","赚钱":"Kiếm tiền","推理":"Suy luận","恋爱":"Tình yêu","无限流":"Vòng lặp vô hạn","古风":"Cổ phong","古言脑洞":"Ngôn tình cổ đại sáng tạo","暗恋成真":"Yêu thầm thành đôi","姐弟恋":"Tình chị em","豪门恩怨":"Ân oán hào môn","许凯":"Hứa Khải","周也":"Châu Dã","欧豪":"Âu Hào","娜扎":"Na Trát","任嘉伦":"Nhậm Gia Luân","秦俊杰":"Tần Tuấn Kiệt","王子奇":"Vương Tử Kỳ","关晓彤":"Quan Hiểu Đồng","张译":"Trương Dịch","张颂文":"Trương Tụng Văn","张一山":"Trương Nhất Sơn","李沐宸":"Lý Mộc Thần","田曦薇":"Điền Hi Vi","胡一天":"Hồ Nhất Thiên","艾米":"Amy","侯明昊":"Hầu Minh Hạo","汪佳辉":"Uông Giai Huy","张楚寒":"Trương Sở Hàn","彭乙航":"Bành Ất Hàng","周博宇":"Châu Bác Vũ","王梓薇":"Vương Tử Vi","张雯":"Trương Văn","吴博威":"Ngô Bác Uy","段星羽":"Đoàn Tinh Vũ","王皓轩":"Vương Hạo Hiên","白鹿":"Bạch Lộc","迪丽热巴":"Địch Lệ Nhiệt Ba","金世佳":"Kim Thế Giai","王楚然":"Vương Sở Nhiên","张凌赫":"Trương Lăng Hách","黄景瑜":"Hoàng Cảnh Du","蒋奇明":"Tưởng Kỳ Minh","鞠婧祎":"Cúc Tịnh Y","郭俊辰":"Quách Tuấn Thần","李一桐":"Lý Nhất Đồng","曾舜晞":"Tăng Thuấn Hy","阿空":"A Không","阎魔":"Diêm Ma","陈开来杜黄桥终极对决":"Trận quyết đấu cuối cùng giữa Trần Khai Lai và Đỗ Hoàng Kiều","六组集结！暗流剧场新作":"Tổ sáu tập hợp! Tác phẩm mới từ rạp Ám Lưu","江逾白永远支持林知夏":"Giang Du Bạch luôn ủng hộ Lâm Tri Hạ","陈春丽反杀揭开旧案疑点":"Trần Xuân Lệ phản công, hé lộ nghi vấn vụ án cũ","欢喜冤家先婚后爱":"Oan gia vui vẻ, cưới trước yêu sau","白鹿许凯肖燕仙侠蜜恋":"Bạch Lộc, Hứa Khải và Tiêu Yến trong chuyện tình tiên hiệp","努力生活的人终会团圆~":"Người nỗ lực sống rồi sẽ được đoàn viên","团圆的灯火永不熄灭":"Ánh đèn đoàn viên không bao giờ tắt","张凌赫王楚然旧爱重逢":"Trương Lăng Hách và Vương Sở Nhiên gặp lại tình cũ","年代法治群像大剧":"Phim chính luận pháp trị thời đại","鞠婧祎郭俊辰虐心追爱":"Cúc Tịnh Y và Quách Tuấn Thần theo đuổi tình yêu đầy day dứt","围观欢乐逗趣九城修罗场":"Chuyện tình hỗn loạn và hài hước tại Cửu Thành","天降少女情定寒潭":"Thiếu nữ từ trời xuống, kết duyên bên hàn đàm","只为占有你":"Chỉ Muốn Có Em","主母归来：嫡庶颠倒定侯门":"Chủ Mẫu Trở Về: Chấn Chỉnh Hầu Môn","大婚当日，我陷入了循环":"Ngày Đại Hôn, Tôi Rơi Vào Vòng Lặp","灾年，我家肉满仓":"Năm Mất Mùa, Nhà Tôi Đầy Kho Thịt","九爷的小玫瑰又野又撩":"Đóa Hồng Nhỏ Của Cửu Gia","分手八年后我和前男友闪婚了":"Tám Năm Sau Chia Tay, Tôi Kết Hôn Chớp Nhoáng Với Bạn Trai Cũ","利剑·玫瑰":"Lợi Kiếm và Hoa Hồng","这一秒过火":"Quá Lửa Trong Khoảnh Khắc Này","重器":"Trọng Khí","花戎":"Hoa Nhung","云秀行":"Vân Tú Hành","阎魔的宠妃":"Sủng Phi Của Diêm Ma","地图无等级限制！无隐藏！小怪都能爆神装，刀刀光柱，刀刀切割！":"Bản đồ không giới hạn cấp, quái nhỏ cũng rơi trang bị thần!","2026高爆传奇":"Huyền thoại bùng nổ 2026","散人好发展，爆率+999，一晚回收80w元宝！":"Dễ phát triển, tỉ lệ rơi đồ +999, thu hồi 800 nghìn nguyên bảo mỗi đêm!","道士打金服":"Máy chủ đạo sĩ săn vàng","开局十倍攻速，刀刀必爆极品！":"Khởi đầu tốc đánh gấp mười, mỗi đòn đều rơi cực phẩm!","刀刀切割真打金":"Mỗi đòn đều có sát thương cắt, săn vàng thật","【终身返利】新游开服，开区福利拿到手软！":"[Hoàn tiền trọn đời] Game mới mở máy chủ, nhận quà mỏi tay!","福利领取入口":"Nhận ưu đãi tại đây","附带9999+增伤效果！大怪一刀秒！要爽趁现在！":"Tăng hơn 9999 sát thương, hạ quái lớn trong một đòn!","内部福利服":"Máy chủ ưu đãi nội bộ","狂暴鬼服":"Máy chủ cuồng bạo","删除该条播放记录":"Xóa mục lịch sử phát này","分集视频标题":"Tiêu đề video theo tập","常用快捷键":"Phím tắt thường dùng","速看":"Xem nhanh","加追":"Theo dõi","新朋友，开通享精彩内容":"Bạn mới, mở VIP để xem nội dung hấp dẫn","精彩短视频":"Video ngắn nổi bật","轻喜剧":"Hài kịch nhẹ","古偶榜No.2":"BXH phim cổ trang số 2","民国传奇":"Truyền kỳ Dân quốc","灾难":"Thảm họa","社会问题":"Vấn đề xã hội","枪战":"Đấu súng","宫廷":"Cung đình","热":"Hot","预":"Trailer","四":"4","换VIP":"Đổi gói VIP","买外设":"Mua phụ kiện","开张吉日变擂台":"biến ngày khai trương thành võ đài","闫妮举牌抵制":"Yến Ni giơ bảng phản đối","骚扰":"quấy rối","李现":"Lý Hiện","于小彤":"Vu Tiểu Đồng","王智勇":"Vương Trí Dũng","数到三":"Đếm đến ba","花点":"Hoa Điểm"};
+/* iqiyi-vi */
+(function () {
+  var ENGINE_VERSION = 18;
+  if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
+    if (window.__iqiyiViReload) window.__iqiyiViReload(window.__iqiyiViDict);
+    return;
+  }
+  var D = window.__iqiyiViDict || {};
+  function keysOf() {
+    return Object.keys(D)
+      .filter(function (k) { return k.length >= 2; })
+      .sort(function (a, b) { return b.length - a.length; });
+  }
+  var KEYS = keysOf();
+  var LONG = KEYS;
+  var SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, NOSCRIPT: 1, CODE: 1 };
+  // V4 contained mixed-language results caused by translating already-translated DOM text.
+  var AUTO_KEY = "__iqiyiViAutoV5";
+  var AUTO_CACHE = {};
+  var AUTO_PENDING = {};
+  var AUTO_QUEUE = [];
+  var AUTO_ACTIVE = false;
+  try { AUTO_CACHE = JSON.parse(localStorage.getItem(AUTO_KEY) || "{}"); } catch (e) {}
+
+  function cjkCount(s) {
+    var m = String(s || "").match(/[\u3400-\u9fff]/g);
+    return m ? m.length : 0;
+  }
+
+  function saveAutoCache() {
+    try { localStorage.setItem(AUTO_KEY, JSON.stringify(AUTO_CACHE)); } catch (e) {}
+  }
+
+  function applyAuto(text, translated) {
+    var waiting = AUTO_PENDING[text] || [];
+    delete AUTO_PENDING[text];
+    for (var i = 0; i < waiting.length; i++) {
+      var item = waiting[i];
+      var node = item && item.node ? item.node : item;
+      if (!node || !node.isConnected) continue;
+      if (item && item.set) {
+        item.set(translated);
+        continue;
+      }
+      if (!cjkCount(node.nodeValue)) continue;
+      var lead = node.nodeValue.match(/^\s*/)[0];
+      var tail = node.nodeValue.match(/\s*$/)[0];
+      node.nodeValue = lead + translated + tail;
+    }
+  }
+
+  function pumpAuto() {
+    if (AUTO_ACTIVE || !AUTO_QUEUE.length || !window.fetch) return;
+    AUTO_ACTIVE = true;
+    var batch = [];
+    var url = "https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=zh-CN&tl=vi";
+    while (AUTO_QUEUE.length && batch.length < 8) {
+      var part = "&q=" + encodeURIComponent(AUTO_QUEUE[0]);
+      if (batch.length && url.length + part.length > 5000) break;
+      batch.push(AUTO_QUEUE.shift());
+      url += part;
+    }
+    Promise.race([
+      fetch(url),
+      new Promise(function (_, reject) {
+        setTimeout(function () { reject(new Error("timeout")); }, 8000);
+      })
+    ])
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)); })
+      .then(function (data) {
+        for (var i = 0; i < batch.length; i++) {
+          var text = batch[i];
+          var translated = data && data[i];
+          if (translated && cjkCount(translated) === 0) {
+            AUTO_CACHE[text] = translated;
+            applyAuto(text, translated);
+          } else {
+            delete AUTO_PENDING[text];
+          }
+        }
+        saveAutoCache();
+      })
+      .catch(function () {
+        for (var i = 0; i < batch.length; i++) delete AUTO_PENDING[batch[i]];
+      })
+      .then(function () {
+        AUTO_ACTIVE = false;
+        setTimeout(pumpAuto, 250);
+      });
+  }
+
+  function mostlyCjk(s) {
+    var t = String(s || "").replace(/\s/g, "");
+    if (!t) return false;
+    return cjkCount(t) >= Math.max(2, t.length * 0.6);
+  }
+
+  function autoTranslateMixed(node, value, setter) {
+    var text = String(value || "");
+    var matches = text.match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]{2,}/g) || [];
+    var seen = {};
+    var current = text;
+    for (var i = 0; i < matches.length; i++) {
+      (function (part) {
+        if (seen[part]) return;
+        seen[part] = true;
+        autoTranslate(node, part, function (translated) {
+          current = current.split(part).join(translated);
+          if (setter) {
+            setter(current);
+          } else if (node && node.isConnected && node.nodeType === 3) {
+            node.nodeValue = node.nodeValue.split(part).join(translated);
+          }
+        });
+      })(matches[i]);
+    }
+  }
+
+  function autoTranslate(node, value, setter) {
+    if (!node || !value) return;
+    var text = String(value).trim();
+    // Only translate source text that is predominantly Chinese. This keeps
+    // dictionary/pattern output from being translated a second time.
+    if (!text || text.length > 180 || !mostlyCjk(text)) return;
+    var item = { node: node, set: setter || null };
+    if (AUTO_CACHE[text]) {
+      AUTO_PENDING[text] = [item];
+      applyAuto(text, AUTO_CACHE[text]);
+      return;
+    }
+    if (AUTO_PENDING[text]) {
+      var known = AUTO_PENDING[text].some(function (entry) { return entry.node === node; });
+      if (!known) AUTO_PENDING[text].push(item);
+      return;
+    }
+    AUTO_PENDING[text] = [item];
+    AUTO_QUEUE.push(text);
+    pumpAuto();
+  }
+
+  window.__iqiyiViAutoStatus = function () {
+    return {
+      active: AUTO_ACTIVE,
+      queued: AUTO_QUEUE.length,
+      pending: Object.keys(AUTO_PENDING).length,
+      cached: Object.keys(AUTO_CACHE).length
+    };
+  };
+
+  function trPatterns(s) {
+    return s
+      .replace(/展开\s*(\d+)\s*条回复/g, "$1 trả lời")
+      .replace(/收起\s*(\d+)\s*条回复/g, "$1 trả lời")
+      .replace(/展开\s*(\d+)\s*条/g, "$1")
+      .replace(/(\d+)\s*条回复/g, "$1 trả lời")
+      .replace(/更新至第(\d+)集/g, "Cập nhật tới tập $1")
+      .replace(/更新至(\d+)集/g, "Cập nhật tới tập $1")
+      .replace(/更新至第(\d+)/g, "Cập nhật tới tập $1")
+      .replace(/全(\d+)集/g, "$1 tập")
+      .replace(/^第(\d+)集$/g, "Tập $1")
+      .replace(/(\d+)集全/g, "$1 tập")
+      .replace(/第(\d+)-(\d+)集/g, "Tập $1-$2")
+      .replace(/限免第?(\d+)-(\d+)集/g, "Miễn phí tập $1-$2")
+      .replace(/限免第?(\d+)集/g, "Miễn phí tập $1")
+      .replace(/今日(\d{1,2}:\d{2})更新/g, "Cập nhật hôm nay lúc $1")
+      .replace(/明日(\d{1,2}:\d{2})更新/g, "Cập nhật ngày mai lúc $1")
+      .replace(/今日(\d{1,2}:\d{2})上线/g, "Phát hành hôm nay lúc $1")
+      .replace(/明日(\d{1,2}:\d{2})上线/g, "Phát hành ngày mai lúc $1")
+      .replace(/近(\d+)月上新/g, "Mới trong $1 tháng qua")
+      .replace(/近(\d+)月转免/g, "Miễn phí trong $1 tháng qua")
+      .replace(/近(\d+)周上新/g, "Mới trong $1 tuần qua")
+      .replace(/弹幕破(\d+)万/g, "Bình luận vượt $10 nghìn")
+      .replace(/(\d+) 部新片/g, "$1 phim mới")
+      .replace(/(\d+) 部短剧/g, "$1 phim ngắn")
+      .replace(/(\d{2}-\d{2})期/g, "Kỳ $1")
+      .replace(/(\d+)分钟/g, "$1 phút")
+      .replace(/(\d+(?:\.\d+)?)分(?!钟)/g, "$1 điểm")
+      .replace(/(\d{4})年/g, "Năm $1")
+      .replace(/观看至第(\d+)集/g, "Đã xem tới tập $1")
+      .replace(/第(\d+)集/g, "Tập $1")
+      .replace(/剧榜No\.(\d+)/g, " - BXH phim số $1")
+      .replace(/短剧榜No\.(\d+)/g, " - BXH phim ngắn số $1")
+      .replace(/最高热度破(\d+)/g, "Độ hot cao nhất vượt $1")
+      .replace(/最高热度破万/g, "Độ hot cao nhất vượt 10 nghìn")
+      .replace(/不看：/g, "Không xem: ")
+      .replace(/(\d+)人正在看/g, "$1 người đang xem")
+      .replace(/(\d+\.?\d*)万人正在看/g, "$10k người đang xem")
+      .replace(/(\d+)万次播放/g, "$10k lượt xem")
+      .replace(/(\d+)亿次播放/g, "$100 triệu lượt xem")
+      .replace(/(\d+)次播放/g, "$1 lượt xem")
+      .replace(/(\d+)分钟前/g, "$1 phút trước")
+      .replace(/(\d+)小时前/g, "$1 giờ trước")
+      .replace(/(\d+)天前/g, "$1 ngày trước")
+      .replace(/(\d+)秒后可/g, "$1 giây nữa có thể ")
+      .replace(/(\d+)秒后/g, "$1 giây nữa")
+      .replace(/会员专享/g, "Độc quyền VIP")
+      .replace(/用券解锁/g, "Mở bằng vé");
+  }
+
+  var COMPACT_FIX = [
+    ["Ngôi sao đang đến", "Star"],
+    ["Ngôi sao đang", "Star"],
+    ["Sáng tạo thứ hai", "Remix"],
+    ["bàn luận", "Bàn"],
+    ["Bàn luận", "Bàn"],
+    ["Hot nhất", "Hot"],
+    ["Mới nhất", "Mới"],
+    ["Trả lời", "Trả"],
+    ["Mở rộng", "Mở"],
+    ["Openwidth", "Mở"]
+  ];
+
+  function trCompactFix(s) {
+    var t = s;
+    for (var i = 0; i < COMPACT_FIX.length; i++) t = t.split(COMPACT_FIX[i][0]).join(COMPACT_FIX[i][1]);
+    return t;
+  }
+
+  function tr(s) {
+    if (!s) return s;
+    var orig = String(s);
+    var lead = orig.match(/^\s*/)[0];
+    var tail = orig.match(/\s*$/)[0];
+    var t = orig.slice(lead.length, orig.length - tail.length);
+    if (!t) return orig;
+    if (D[t]) return lead + trCompactFix(D[t]) + tail;
+    var p = trPatterns(t);
+    if (p !== t && !/[\u4e00-\u9fff]/.test(p)) return lead + trCompactFix(p) + tail;
+    if (p !== t) t = p;
+    if (t.length <= 180 && /[\u4e00-\u9fff]/.test(t)) {
+      for (var i = 0; i < LONG.length; i++) {
+        if (t.indexOf(LONG[i]) !== -1) t = t.split(LONG[i]).join(D[LONG[i]]);
+      }
+    }
+    t = trCompactFix(t);
+    return lead + t + tail;
+  }
+
+  function injectCSS() {
+    if (!document.documentElement || document.getElementById("iqiyi-vi-css")) return;
+    var s = document.createElement("style");
+    s.id = "iqiyi-vi-css";
+    s.textContent =
+      'html[lang="vi"] { overflow-wrap:normal; }' +
+      'html[lang="vi"] [class*="tabName"],' +
+      'html[lang="vi"] [class*="tagName"],' +
+      'html[lang="vi"] [class*="tagHeader"],' +
+      'html[lang="vi"] [class*="mainTabs"] span,' +
+      'html[lang="vi"] [class*="comments_filter"],' +
+      'html[lang="vi"] [class*="comments_replyBtn"],' +
+      'html[lang="vi"] [class*="comments_expandBtn"],' +
+      'html[lang="vi"] [class*="tabMenu_title"],' +
+      'html[lang="vi"] [class*="tabMenu_tabItem"],' +
+      'html[lang="vi"] [class*="side_item"],' +
+      'html[lang="vi"] [class*="side_sideText"],' +
+      'html[lang="vi"] [class*="filterTab"],' +
+      'html[lang="vi"] [class*="sortTab"],' +
+      'html[lang="vi"] [data-iqiyi-vi-fit="1"]{' +
+      "white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis;word-break:keep-all;}" +
+      "#pcaSubtitleContainer,.XPlayer_subtitleContainer__Nzz3v," +
+      "#iqiyi-vi-sub{" +
+      "font-weight:700;text-align:center;pointer-events:none;text-shadow:0 1px 2px #000,0 0 6px #000;}";
+    (document.head || document.documentElement).appendChild(s);
+  }
+
+  function setDirectText(el, next) {
+    var node;
+    var texts = [];
+    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    while ((node = walker.nextNode())) {
+      if (String(node.nodeValue).replace(/\s+/g, "")) texts.push(node);
+    }
+    if (!texts.length) {
+      el.appendChild(document.createTextNode(next));
+      return;
+    }
+    texts[0].nodeValue = next;
+    for (var i = 1; i < texts.length; i++) texts[i].nodeValue = "";
+  }
+
+  function compactTranslate(el) {
+    if (!el || el.nodeType !== 1 || el.id === "pcaSubtitleContainer") return false;
+    if (el.childElementCount) return false;
+    var all = (el.textContent || "").replace(/\s+/g, " ").trim();
+    if (!all || all.length > 36) return false;
+    if (!/[\u3400-\u9fff]/.test(all)) return false;
+    var next = tr(all);
+    if (next === all) return false;
+    setDirectText(el, next);
+    fitCompact(el);
+    return true;
+  }
+
+  function installClock() {
+    window.__iqiyiViReadClock = function () {
+      var t = 0;
+      try {
+        var video = document.querySelector("video");
+        if (video && isFinite(video.currentTime) && video.currentTime > 0) t = video.currentTime;
+      } catch (e) {}
+      var nodes = document.querySelectorAll('[class*="progressBar"],[class*="progressEx"]');
+      var best = 0;
+      for (var i = 0; i < nodes.length; i++) {
+        var raw = String(nodes[i].textContent || "").replace(/\s+/g, "");
+        if (!raw) continue;
+        var re = /(\d{1,2}):(\d{2})(?::(\d{2}))?/g;
+        var times = [];
+        var m;
+        while ((m = re.exec(raw))) {
+          times.push(m[3] ? (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) : (+m[1]) * 60 + (+m[2]));
+        }
+        if (times.length >= 2 && times[0] > best) best = times[0];
+      }
+      if (best) t = best;
+      if (t) window.__iqiyiViPlayTime = t;
+    };
+    if (window.__iqiyiViClockInstalled) {
+      window.__iqiyiViReadClock();
+      return;
+    }
+    window.__iqiyiViClockInstalled = true;
+    window.__iqiyiViPlayTime = 0;
+    window.__iqiyiViReadClock();
+    setInterval(function () {
+      if (window.__iqiyiViReadClock) window.__iqiyiViReadClock();
+    }, 250);
+  }
+
+  function translateDocumentTitle() {
+    var title = document.querySelector("title");
+    if (!title) return;
+    var raw = title.textContent || "";
+    var next = tr(raw);
+    if (next !== raw) title.textContent = next;
+    if (cjkCount(next) && title.firstChild) {
+      autoTranslateMixed(title.firstChild, next, function (translated) {
+        if ((title.textContent || "") === next) title.textContent = translated;
+      });
+    }
+  }
+
+  function fitCompact(node) {
+    var el = node && node.nodeType === 3 ? node.parentElement : node;
+    if (!el || el.nodeType !== 1 || el.childElementCount) return;
+    if (el.id === "pcaSubtitleContainer") return;
+    var text = (el.innerText || "").replace(/\s+/g, " ").trim();
+    if (!text || text.length > 120) return;
+    var fs = parseFloat((window.getComputedStyle(el).fontSize) || "12") || 12;
+    var parent = el.parentElement;
+    if (parent && parent.clientWidth > 0 && el.clientWidth > parent.clientWidth + 2) {
+      el.style.maxWidth = "100%";
+      el.style.boxSizing = "border-box";
+    }
+    if (el.clientHeight > 4 && el.clientHeight <= fs * 1.85 && el.scrollWidth <= el.clientWidth + 2) return;
+    if (el.scrollHeight <= el.clientHeight + 2 && el.scrollWidth <= el.clientWidth + 2) return;
+    el.setAttribute("data-iqiyi-vi-fit", "1");
+    el.style.whiteSpace = "nowrap";
+    el.style.overflow = "hidden";
+    var size = fs;
+    while (size > 9 && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1)) {
+      size -= 0.5;
+      el.style.fontSize = size + "px";
+    }
+    if (el.scrollWidth > el.clientWidth + 1) {
+      el.style.textOverflow = "ellipsis";
+      if (!el.title) el.title = text;
+    }
+  }
+
+  function walk(node) {
+    if (!node) return;
+    if (node.nodeType === 3) {
+      var next = tr(node.nodeValue);
+      if (next !== node.nodeValue) node.nodeValue = next;
+      if (cjkCount(next)) autoTranslateMixed(node, next);
+      else fitCompact(node);
+      return;
+    }
+    if (node.nodeType !== 1 || SKIP[node.tagName]) return;
+    if (node.shadowRoot) walk(node.shadowRoot);
+    if (node.tagName === "HTML" && node.getAttribute("lang") === "zh") node.setAttribute("lang", "vi");
+    var cls = String(node.className || "");
+    var joined = (node.textContent || "").replace(/\s+/g, "");
+    var chipLike = node.childElementCount > 0 && node.childElementCount <= 6 &&
+      ((node.clientHeight > 0 && node.clientHeight <= 48) ||
+        /tabName|tagName|tagHeader|chip|sort|filter|reply|hot/i.test(cls) ||
+        /展开\d+条|条回复|最热|最新|明星在追|二次创作/.test(joined));
+    if (chipLike && compactTranslate(node)) return;
+    ["title", "placeholder", "aria-label", "alt", "value"].forEach(function (a) {
+      if (a === "value" && node.tagName !== "INPUT" && node.tagName !== "BUTTON") return;
+      var v = node.getAttribute && node.getAttribute(a);
+      if (!v && a === "value" && node.value) v = node.value;
+      if (!v) return;
+      var n = tr(v);
+      if (n !== v) {
+        if (a === "value" && "value" in node) node.value = n;
+        else node.setAttribute(a, n);
+      } else if (cjkCount(v)) {
+        autoTranslateMixed(node, v, function (translated) {
+          if (node.getAttribute(a) === v) {
+            if (a === "value" && "value" in node) node.value = translated;
+            else node.setAttribute(a, translated);
+          }
+        });
+      }
+    });
+    if (node.tagName === "META" && /^(description|keywords)$/i.test(node.getAttribute("name") || "")) {
+      var content = node.getAttribute("content");
+      if (content) {
+        var translatedContent = tr(content);
+        if (translatedContent !== content) node.setAttribute("content", translatedContent);
+      }
+    }
+    var kids = node.childNodes;
+    var hasEl = false;
+    for (var i = 0; i < kids.length; i++) {
+      if (kids[i].nodeType === 1) { hasEl = true; break; }
+    }
+    if (!hasEl && kids.length) {
+      var all = node.textContent;
+      var t = tr(all);
+      if (t !== all) node.textContent = t;
+      if (cjkCount(t) && node.firstChild && node.firstChild.nodeType === 3) {
+        autoTranslateMixed(node.firstChild, t);
+      } else {
+        fitCompact(node);
+      }
+      return;
+    }
+    for (var j = 0; j < kids.length; j++) walk(kids[j]);
+  }
+
+  window.__iqiyiViSetSub = function (text) {
+    var box = document.getElementById("iqiyi-vi-sub");
+    if (box) box.remove();
+    if (!text) return;
+    var caption = document.querySelector("#pcaSubtitleContainer .caption-main");
+    if (caption && /[\u3400-\u9fff]/.test(caption.getAttribute("data-content") || caption.textContent || "")) {
+      caption.textContent = text;
+    }
+  };
+
+  function run() {
+    try {
+      injectCSS();
+      installClock();
+      translateDocumentTitle();
+      document.querySelectorAll('[data-iqiyi-vi-fit="1"]').forEach(function (el) {
+        if (!el.childElementCount) return;
+        el.removeAttribute("data-iqiyi-vi-fit");
+        if (String(el.className).indexOf("settingBtnAnchor") !== -1) el.removeAttribute("title");
+        ["whiteSpace", "overflow", "fontSize", "textOverflow", "maxWidth", "boxSizing"].forEach(function (key) {
+          el.style[key] = "";
+        });
+      });
+      walk(document.documentElement || document.body);
+    } catch (e) {}
+  }
+
+  window.__iqiyiVi = true;
+  window.__iqiyiViVersion = ENGINE_VERSION;
+  window.__iqiyiViReload = function (next) {
+    if (next) {
+      D = next;
+      window.__iqiyiViDict = next;
+      KEYS = keysOf();
+      LONG = KEYS;
+    }
+    run();
+  };
+
+  if (document.body) run();
+  else document.addEventListener("DOMContentLoaded", run);
+  setInterval(run, 500);
+  try {
+    var obs = new MutationObserver(function () {
+      if (run._t) cancelAnimationFrame(run._t);
+      run._t = requestAnimationFrame(run);
+    });
+    obs.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+  } catch (e) {}
+})();
+

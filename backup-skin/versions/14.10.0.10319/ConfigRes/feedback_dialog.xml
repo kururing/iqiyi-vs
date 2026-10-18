@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window size="570,440" caption="0,0,0,0" >
+    <Font name="Microsoft YaHei" size="16" bold="true" italic="false" default="false" indexfont="yahei_bold_16"/>
+    <Font name="Microsoft YaHei" size="12" bold="false" italic="false" default="true" indexfont="default"/>
+    <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="yahei_14"/>
+    <Font name="Microsoft YaHei" size="10" bold="false" italic="false" indexfont="yahei_10"/>
+    <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="yahei_12"/>
+
+    <Default name="VScrollBar" value="showbutton1=&quot;false&quot; showbutton2=&quot;false&quot; width=&quot;4&quot; thumbnormalimage=&quot;file='skinplan/PreferencesCenter/scrollbar.png' source='0,0,4,40' corner='0,6,0,6'&quot; thumbhotimage=&quot;file='skinplan/PreferencesCenter/scrollbar.png' source='4,0,8,40' corner='0,6,0,6'&quot; thumbpushedimage=&quot;file='skinplan/PreferencesCenter/scrollbar.png' source='8,0,12,40' corner='0,6,0,6'&quot; " />
+
+    <WeakHorizontalLayout name="root" bkcolor="config_right_bk" bordersize="1" bordercolor="config_border_solid" padding="1,1,0,1">
+        <WeakVerticalLayout width="117" height="438" padding="0,1,0,1" bkcolor="config_left_bk"	>
+            <Label text="反馈与修复" width="117" height="70" textcolor="pop_title_text_clolor" textpadding="0,27,0,27" align="center" indexfont="yahei_bold_16"/>
+            <WeakVerticalLayout name="tabulation">
+            </WeakVerticalLayout>
+            <WeakOption name="option" visible="false" float="true" maxwidth="117" minwidth="70" minheight="30" maxheight="60"
+                        userstyle="feedback_config_option" padding="0,0,0,8"
+                        textpadding="23,0,23,0" doubleLineTextPadding="23,8,23,8" userlinespace="4"
+                        numberoflines="2" endellipsis="true" font="yahei_14" />
+        </WeakVerticalLayout>
+
+        <WeakVerticalLayout width="420" height="438" padding="32,0,0,0">
+            <HorizontalLayout width="420" height="38" >
+                <Control />
+                <WeakButton name="close" style="close_style" width="12" height="12" padding="0,10,10,0" />
+            </HorizontalLayout>
+
+            <WeakVerticalLayout name="scene" width="420" height="215" maxheight="215" minheight="30" >
+                <WeakLabel name="guide" text="请选择具体问题出现的场景" textcolor="pop_title_text_clolor" align="leftbottom"
+                       width="420" height="15" indexfont="yahei_12"
+                       text="请选择具体问题出现的场景" userdata="请写下您对我们产品的建议" />
+                <Control height="10" />
+                <WeakVerticalLayout name="box" width="420" height="190" >
+                </WeakVerticalLayout>
+                <WeakCheckBox name="item" visible="false" style="feedback_radio_style" userstyle="feedback_radio_style" group="feedback_box_item"
+                              maxwidth="210" minwidth="160" maxheight="36" minheight="15"
+                              indexfont="yahei_12" textcolor="pop_title_text_clolor" textpadding="20,0,30,0"  />
+                <WeakVerticalLayout name="container" visible="false" minwidth="420" minheight="190" vscrollbar="true" >
+                </WeakVerticalLayout>
+            </WeakVerticalLayout>
+
+            <WeakVerticalLayout name="handle" visible="false" width="392" height="185" minheight="185" maxheight="370">
+                <WeakVerticalLayout name="preconditioning" visible="false" width="392" height="185"
+                                    usergroup="feedback_dialog_submit_or_preconditioning" event="GroupEventVisibleOpposite" >
+                    <Control />
+                    <WeakLabel name="warning" width="265" height="12" indexfont="yahei_10" padding="63,0,63,0"
+                               text="您的电脑使用4K码流，可能会出现卡顿、崩溃、花屏等问题"
+                               textcolor="pop_title_text_clolor" align="center" />
+                    <Control height="20" />
+                    <WeakButton name="repair" text="立即修复" disabledtext="正在修复" padding="148,0,148,0"
+                                textpadding="18,6,18,6" disabledtextpadding="30,6,12,6"
+                                style="feedback_config_button_style" indexfont="yahei_14"
+                                disabledimage="file='ConfigRes/feedback/ing.svg' dest='12,10,22,20'" />
+                    <Control height="8" />
+                    <WeakHorizontalLayout width="392" height="14"  >
+                        <Control />
+                        <HorizontalLayout width="195" height="14" >
+                            <Label text="修复后仍存在问题？" width="110" textcolor="pop_title_text_clolor" align="right" indexfont="yahei_12" />
+                            <WeakButton name="upload" text="试试上传日志&gt;" width="85" textcolor="#FF0CCC4C" disabledtextcolor="#80F3F4F7" align="left" indexfont="yahei_12" />
+                        </HorizontalLayout>
+                        <Control />
+                    </WeakHorizontalLayout>
+                    <Control height="40" />
+                </WeakVerticalLayout>
+
+                <WeakVerticalLayout name="submit" width="392" height="185" minheight="185" maxheight="370"
+                                    usergroup="feedback_dialog_submit_or_preconditioning" event="GroupEventVisibleOpposite" >
+                    <Control />
+                    <WeakRichEdit name="context" style="feedback_rich_edit_style" inset="0,1,1,1" width="392" height="68" minheight="68" maxheight="256"
+                                  singleline="false" vscrollbar="true" autovscroll="true" />
+                    <Control height="10" />
+                    <WeakEditor name="contact" style="feedback_edit_style" width="392" height="30" text="请输入手机号、QQ或邮箱（选填）"
+                                userdata="请输入手机号、QQ或邮箱（选填）" textpadding="6,0,8,0" indexfont="yahei_12"/>
+                    <Control height="20" />
+                    <WeakButton name="feedback" text="立即反馈" padding="148,0,148,0" style="feedback_config_button_style" indexfont="yahei_14" />
+                    <Control height="19" />
+                </WeakVerticalLayout>
+            </WeakVerticalLayout>
+        </WeakVerticalLayout>
+    </WeakHorizontalLayout>
+</Window>

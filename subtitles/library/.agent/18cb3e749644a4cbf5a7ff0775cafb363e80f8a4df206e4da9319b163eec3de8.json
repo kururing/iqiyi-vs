@@ -1,0 +1,135 @@
+{
+  "memory": {
+    "setting": "mixed",
+    "summary": "Phim hoạt hình xuyên không kết hợp bối cảnh hiện đại và cung đình cổ trang trong tiểu thuyết. Các cảnh nghị sự, cung yến cổ trang xen kẽ với những cuộc bàn mưu riêng bằng ngôn ngữ hiện đại giữa các nhân vật xuyên không.",
+    "characters": [
+      {
+        "name": "庾晚音",
+        "translation": "Dũ Vãn Âm",
+        "role": "nhân viên văn phòng hiện đại xuyên không vào tiểu thuyết, ban đầu là Dũ tần sau được sắc phong Dũ phi",
+        "address": "Dũ Vãn Âm ↔ Hạ Hầu Đạm: khi nói chuyện riêng xưng hô ngang hàng hiện đại (tôi - cậu/anh), trêu đùa gọi người đàn ông - người phụ nữ; trước mặt người ngoài xưng thần thiếp, gọi bệ hạ; Dũ Vãn Âm → cung nhân: xưng ta; cung nhân → Dũ Vãn Âm: xưng nô tài/lão nô, gọi nương nương/Dũ tần nương nương/Dũ phi nương nương",
+        "evidence": "#121-126: độc thoại xuyên không; #139: cung nhân gọi Dũ tần nương nương; #298-305: nói chuyện riêng với Hạ Hầu Đạm; #423: được phong phi; #546: Đoan vương gọi Dũ phi nương nương; #809-815: gọi nhau là người đàn ông, người phụ nữ"
+      },
+      {
+        "name": "夏侯澹",
+        "translation": "Hạ Hầu Đạm",
+        "role": "hoàng đế trong tiểu thuyết, cũng do người hiện đại xuyên không vào vai bạo quân mắc chứng đau nửa đầu",
+        "address": "Hạ Hầu Đạm ↔ Dũ Vãn Âm: khi nói chuyện riêng xưng tôi - cậu/cô; trước mặt người ngoài xưng trẫm; Hạ Hầu Đạm → Tạ Vĩnh Nhi: xưng trẫm, gọi Tạ tần",
+        "evidence": "#298: Dũ Vãn Âm gọi tên; #300: em trai của Đoan vương; #534-536: xưng trẫm và khen Tạ tần; #802-815: bàn bạc kế hoạch với Dũ Vãn Âm"
+      },
+      {
+        "name": "谢永儿",
+        "translation": "Tạ Vĩnh Nhi",
+        "role": "nữ chính trong tiểu thuyết gốc, thực chất cũng là người hiện đại xuyên không vào thân phận Tạ tần",
+        "address": "Tạ Vĩnh Nhi → Hạ Hầu Đạm: xưng thần thiếp, gọi bệ hạ; Tiểu Lăng → Tạ Vĩnh Nhi: gọi tiểu thư/người; Tạ Vĩnh Nhi → Tiểu Lăng: gọi tên, xưng ta/cô",
+        "evidence": "#438: phi tần gọi tên; #535-537: được hoàng đế gọi Tạ tần, đáp tạ bệ hạ; #550-560: nói với Tiểu Lăng rằng Tạ Vĩnh Nhi nguyên tác đã chết"
+      },
+      {
+        "name": "夏侯泊",
+        "translation": "Hạ Hầu Bạc",
+        "role": "Đoan vương, ca ca của Hạ Hầu Đạm, nam chính trong nguyên tác tiểu thuyết",
+        "address": "Hạ Hầu Bạc → Hạ Hầu Đạm: xưng vi thần, gọi bệ hạ; Hạ Hầu Bạc → Dũ Vãn Âm: xưng vi thần, gọi Dũ phi nương nương",
+        "evidence": "#298-300: được xác nhận là ca ca của Hạ Hầu Đạm; #539-546: bái kiến hoàng đế và Dũ phi"
+      },
+      {
+        "name": "胥尧",
+        "translation": "Tư Nghiêu",
+        "role": "mưu sĩ của Đoan vương Hạ Hầu Bạc",
+        "address": "chưa rõ",
+        "evidence": "#812: Hạ Hầu Đạm nhắc tới việc đi lôi kéo mưu sĩ này"
+      },
+      {
+        "name": "魏贵妃",
+        "translation": "Ngụy quý phi",
+        "role": "quý phi trong cung, con gái của Ngụy thái phó",
+        "address": "các phi tần khác → Ngụy quý phi: gọi là Ngụy tỷ tỷ; Ngụy quý phi xưng ta",
+        "evidence": "#431-436: được xưng tụng là quý phi, con gái Ngụy thái phó, được phi tần gọi là Ngụy tỷ tỷ"
+      },
+      {
+        "name": "小菱",
+        "translation": "Tiểu Lăng",
+        "role": "nha hoàn thân cận phục vụ Tạ Vĩnh Nhi",
+        "address": "Tiểu Lăng → Tạ Vĩnh Nhi: gọi tiểu thư, tôn xưng người; Tạ Vĩnh Nhi → Tiểu Lăng: gọi tên ngốc Tiểu Lăng",
+        "evidence": "#550-559: hầu hạ bên hồ và khuyên nhủ Tạ Vĩnh Nhi"
+      },
+      {
+        "name": "小顺子",
+        "translation": "Tiểu Thuận Tử",
+        "role": "thái giám trong cung",
+        "address": "chưa rõ",
+        "evidence": "#405: được gọi tên khi theo hầu"
+      }
+    ],
+    "glossary": [
+      {
+        "source": "夏侯澹",
+        "translation": "Hạ Hầu Đạm"
+      },
+      {
+        "source": "庾晚音",
+        "translation": "Dũ Vãn Âm"
+      },
+      {
+        "source": "谢永儿",
+        "translation": "Tạ Vĩnh Nhi"
+      },
+      {
+        "source": "夏侯泊",
+        "translation": "Hạ Hầu Bạc"
+      },
+      {
+        "source": "胥尧",
+        "translation": "Tư Nghiêu"
+      },
+      {
+        "source": "端王",
+        "translation": "Đoan vương"
+      },
+      {
+        "source": "庾嫔",
+        "translation": "Dũ tần"
+      },
+      {
+        "source": "庾妃",
+        "translation": "Dũ phi"
+      },
+      {
+        "source": "谢嫔",
+        "translation": "Tạ tần"
+      },
+      {
+        "source": "魏贵妃",
+        "translation": "Ngụy quý phi"
+      },
+      {
+        "source": "魏太傅",
+        "translation": "Ngụy thái phó"
+      },
+      {
+        "source": "穿书",
+        "translation": "xuyên sách"
+      },
+      {
+        "source": "社畜",
+        "translation": "dân công sở"
+      },
+      {
+        "source": "小顺子",
+        "translation": "Tiểu Thuận Tử"
+      },
+      {
+        "source": "小菱",
+        "translation": "Tiểu Lăng"
+      }
+    ],
+    "uncertainties": [
+      "Chưa rõ thân phận đời thực của Hạ Hầu Đạm ngoài đời trước khi xuyên không.",
+      "Chưa rõ Hạ Hầu Bạc (Đoan vương) là người nguyên tác hay cũng là người xuyên không."
+    ]
+  },
+  "episodes": {
+    "7171864034925400": "b8c906083596c59ef7851c984071a718369eeb368dc51187ea0136de4e6372a4"
+  },
+  "updatedAt": 1792345283.8782544,
+  "profileVersion": "ab04d0bea62ff154f832c6b059f7a76af6b5ae824bce8a607d578ee8d32e6233"
+}

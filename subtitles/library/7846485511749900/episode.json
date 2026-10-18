@@ -1,0 +1,23 @@
+{
+  "title": "花戎第23集",
+  "order": 23,
+  "vid": "3fd30edf0c41458d39cc4d31abacacc8",
+  "tvid": "7846485511749900",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337948.0872254,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 564
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20240417/14/58/fb0cf992660124bdab064dd20513757c.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

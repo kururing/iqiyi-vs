@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window  size="184,168" >
+  <Font name="微软雅黑" size="16" bold="false" default="true" />
+  <HorizontalLayout width="184" height="168" name="open_root" >
+    <Control width="12" bkcolor="#01000000"/>
+    <VerticalLayout width="160" height="168">
+    <Control height="8" bkcolor="#01000000"/>
+    <VerticalLayout width="160" height="160" bkcolor="#E61C1D1F" borderround="12,12,12,12" bordercolor="#33FFFFFF">
+      <VerticalLayout inset="6,8,6,8">
+        <Option name="menu_openfile"    text="打开文件" width="148" height="48"  borderround="8,8,8,8"
+    textcolor="#F2FFFFFF" hottextcolor="#FFFFFFFF"  hotbkcolor="0x0FFFFFFF" textpadding="38,0,0,0" align="left"
+    normalimage="file='geeIcon/openfile.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+    hotimage="file='geeIcon/openfile.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+    pushedimage="file='geeIcon/openfile.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+        <Option name="menu_openfolder"    text="打开文件夹" width="148" height="48"  borderround="8,8,8,8"
+        textcolor="#F2FFFFFF" hottextcolor="#FFFFFFFF"  hotbkcolor="0x0FFFFFFF" textpadding="38,0,0,0" align="left"
+        normalimage="file='geeIcon/openfolder.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+        hotimage="file='geeIcon/openfolder.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+        pushedimage="file='geeIcon/openfolder.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+        <Option name="menu_open_url"    text="打开URL" width="148" height="48"  borderround="8,8,8,8"
+        textcolor="#F2FFFFFF" hottextcolor="#FFFFFFFF"  hotbkcolor="0x0FFFFFFF" textpadding="38,0,0,0" align="left"
+        normalimage="file='geeIcon/openurl.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+        hotimage="file='geeIcon/openurl.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+        pushedimage="file='geeIcon/openurl.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+
+      </VerticalLayout>
+    </VerticalLayout>
+  </VerticalLayout>
+    <Control width="12" bkcolor="#01000000"/>
+  </HorizontalLayout>
+</Window>

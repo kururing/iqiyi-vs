@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window  size="260,350" caption="0,0,260,25">
+	<Include source="public/xml/default_font.xml" />
+	<Font name="微软雅黑" size="12" bold="false" italic="false" indexfont="yahei_12" default="true" />
+	<Include source="public/xml/default_vscrollbar.xml" />
+	
+	
+  <VerticalLayout name="gifroot" bkimage="file='skinplan\public/dialog/wind_bk.png'" inset="1,1,1,1" 
+                  bordersize="1" bordercolor="color_wind_outer_bordercolor">
+    <HorizontalLayout name="hlayTitle"  height="33" >
+      <Label text="GIF截图" name="giftitle" textpadding="10,0,10,0" textcolor="wnd_title_text_nor" indexfont="yahei_14" width="200" align="leftmiddle" padding="10,0,0,0"/>
+      <Control />
+      <Button name="btnClose" animation="true" width="24" height="24" padding="11,4,4,0" tooltip="退出"
+		   normalimage="file='skinplan\public/ctrl/public_close.png' source='0,0,24,24'"
+			 hotimage="file='skinplan\public/ctrl/public_close.png' source='24,0,48,24'"
+			 pushedimage="file='skinplan\public/ctrl/public_close.png' source='48,0,72,24'"
+			 disabledimage="file='skinplan\public/ctrl/public_close.png' source='72,0,96,24'"/>
+    </HorizontalLayout>
+    
+    <HorizontalLayout bkcolor="color_gif_root_bk" >
+      <Control name="shadowCtrl" float="true" bkimage="file='skinplan\player/miniplayer/other/gifsnap/shadow.png' corner='5,5,5,5'" visible="false"/>
+      <Label name="labPreview" float="false" width="200" height="200" align="center" textcolor="wnd_label_text_nor" visible="false" />
+      <Gifcontrol name="gifPreview" float="false" width="490" height="290" visible="false" bordersize="1" bordercolor="0xFF333333" />
+      <Label name="labSnapPrg" width ="200" height="200" indexfont="yahei_16" align="centre" 
+             textcolor="wnd_label_text_nor" visible="false" />
+    </HorizontalLayout>
+    
+    <VerticalLayout name="gifconfig" height="184" bkcolor="color_gif_panel_bk" inset="30,0,30,0">
+      <HorizontalLayout height="24" padding="0,20,0,0">
+        <Label name="sizeGif" text="GIF尺寸" width="60" align="leftmiddle" textcolor="wnd_label_text_title" />
+			
+		    <Combo name="combSize" animation="true" width="72"  height="24" textpadding="3,1,20,1" enabled="true"
+		      textcolor="wnd_combo_text_nor" bkcolor="wnd_combo_bk" 
+		    	itemtextcolor="wnd_combo_item_text_nor" itembkcolor="wnd_combo_item_bk"
+		    	itemhottextcolor="wnd_combo_item_text_hot" itemhotbkcolor="wnd_combo_item_hot_bk"
+          dropdownlinecolor="wnd_combo_dropdown_line"
+          itemselectedtextcolor="wnd_combo_item_text_select" itemselectedbkcolor="wnd_combo_item_text_select_bk"
+          normalimage="file='skinplan\public/ctrl/combpicture.png' source='0,0,80,26' corner='2,2,23,2'"
+		      hotimage="file='skinplan\public/ctrl/combpicture.png' source='0,26,80,52' corner='2,2,23,2'"
+		      pushedimage="file='skinplan\public/ctrl/combpicture.png' source='0,52,80,78' corner='2,2,23,2'"
+		      disabledimage="file='skinplan\public/ctrl/combpicture.png' source='0,0,80,26' corner='2,2,23,2'" />
+		    	
+		    	
+        <Control />
+        <Label name="snapSpan" text="截取时长" textcolor="wnd_label_text_title" align="leftmiddle" width="50" padding="3,0,0,0"  />        
+        <Slider name="sldSpan" width="122" height="15" padding="8,5,8,0" min="100" max="30000" enabled="true" forepadding="1,5,0,5"
+            bkimage="file='skinplan\player/miniplayer/other/subtitleadjust/slider_bk.png'  dest='0,5,122,10' corner='3,0,3,5' "
+            foreimage="file='skinplan\player/miniplayer/other/subtitleadjust/slider_fore.png'  dest='1,5,121,10' corner='3,0,3,5' "
+  			    thumbimage="file='skinplan\player/miniplayer/other/subtitleadjust/thumb.png' source='0,0,15,15'"
+			      thumbhotimage="file='skinplan\player/miniplayer/other/subtitleadjust/thumb.png' source='0,0,15,15'"
+			      thumbpushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/thumb.png' source='0,0,15,15'"
+			      thumbsize="15,15" value="10000" step="100" />
+        <Label name="labSpanValue" width="40" text="10.0秒" textcolor="wnd_label_text_title" align="leftmiddle" />
+        <Button name="btnSpanSub" tooltip="减少0.1秒" animation="true" width="30" height="22" padding="10,1,0,1"
+            normalimage="file='skinplan\player/miniplayer/other/subtitleadjust/advance_delay.png' source='0,0,30,22'"
+            hotimage="file='skinplan\player/miniplayer/other/subtitleadjust/advance_delay.png' source='30,0,60,22'"
+            pushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/advance_delay.png' source='60,0,90,22'"
+            disabledimage="file='skinplan\player/miniplayer/other/subtitleadjust/advance_delay.png' source='90,0,120,22'"
+        />
+       
+        <Button name="btnSpanAdd" tooltip="增加0.1秒" animation="true" width="30" height="22" padding="2,1,0,1" 
+          normalimage="file='skinplan\player/miniplayer/other/subtitleadjust/advance_delay.png' source='0,22,30,44'"
+          hotimage="file='skinplan\player/miniplayer/other/subtitleadjust/advance_delay.png' source='30,22,60,44'"
+          pushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/advance_delay.png' source='60,22,90,44'"
+          disabledimage="file='skinplan\player/miniplayer/other/subtitleadjust/advance_delay.png' source='90,22,120,44'"
+        />
+
+        <Control />
+
+        <Label name="labSpan" width="50" text="截取间隔"  padding="5,0,0,0" textcolor="wnd_label_text_title" align="leftmiddle" />
+        <Slider name="sldStep" width="125" height="15" padding="8,5,13,0" min="1" max="20" value="3" enabled="true" forepadding="1,5,0,5"
+            bkimage="file='skinplan\player/miniplayer/other/subtitleadjust/slider_bk.png'  dest='0,5,122,10' corner='3,0,3,5' "
+            foreimage="file='skinplan\player/miniplayer/other/subtitleadjust/slider_fore.png'  dest='1,5,121,10' corner='3,0,3,5' "
+  			    thumbimage="file='skinplan\player/miniplayer/other/subtitleadjust/thumb.png' source='0,0,15,15'"
+			      thumbhotimage="file='skinplan\player/miniplayer/other/subtitleadjust/thumb.png' source='0,0,15,15'"
+			      thumbpushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/thumb.png' source='0,0,15,15'"
+			      thumbsize="15,15" />
+        <Label name="labStepValue" width="55" text="100毫秒" textcolor="wnd_label_text_title" align="right" />
+        
+      </HorizontalLayout>
+      <HorizontalLayout height="30" padding="0,28,0,0" >
+        <!--Control maxwidth="50" /-->
+        <Label width="55" text="截取位置" textcolor="wnd_label_text_title" height="20" />
+        <Label name="labProgMin" width="50" padding="3,0,0,0" align="left" textcolor="wnd_label_text_title" height="20" />
+        <BtweenSlider name="sldProgress"  height="19" padding="8,2,10,0" 
+           min="1" max="1000" enabled="true" forepadding="1,0,0,9" thumbpadding="0,2,0,0"
+           bkimage="file='skinplan\player/miniplayer/other/subtitleadjust/slider_bk.png' dest='0,5,704,10' corner='3,0,3,5'"
+           foreimage="file='skinplan\player/miniplayer/other/subtitleadjust/slider_fore.png' dest='1,5,703,10' corner='3,0,3,5'"
+           beginthumbimage="file='skinplan\player/miniplayer/other/gifsnap/thumb.png' source='0,0,8,14'"
+           beginthumbhotimage="file='skinplan\player/miniplayer/other/gifsnap/thumb.png' source='0,0,8,14'"
+           beginthumbpushedimage="file='skinplan\player/miniplayer/other/gifsnap/thumb.png' source='0,0,8,14'"                      
+           endthumbimage="file='skinplan\player/miniplayer/other/gifsnap/thumb.png' source='0,0,8,14'"
+           endthumbhotimage="file='skinplan\player/miniplayer/other/gifsnap/thumb.png' source='0,0,8,14'"
+           endthumbpushedimage="file='skinplan\player/miniplayer/other/gifsnap/thumb.png' source='0,0,8,14'"
+           beginthumbsize="8,14" endthumbsize="8,14" mininterval="100" step="100"
+        />
+        <Label name="labProgMax" width="60" align="right"  textcolor="wnd_label_text_title" height="20" />
+      </HorizontalLayout>    
+      
+      <HorizontalLayout height="30" padding="0,25,0,0">
+        <Label text="保存路径" name="savepath" textcolor="wnd_label_text_title" width="60" align="leftmiddle" />
+        <Edit name="edtSavePath" animation="true" width="270" height="26" align="leftmiddle" padding="0,2,0,2" textpadding="7,0,7,0"
+          pathellipsis="true" bkcolor="0x00FFFFFF"  textcolor="wnd_edt_text_nor" nativebkcolor="wnd_edt_native" disabledtextcolor="color_444444_cccccc"
+					normalimage="file='skinplan\public/ctrl/text.png' source='0,0,60,26' corner='2,2,2,2' "
+					hotimage="file='skinplan\public/ctrl/text.png' source='60,0,120,26' corner='2,2,2,2'"
+          focusedimage="file='skinplan\public/ctrl/text.png' source='120,0,180,26' corner='2,2,2,2' "
+          disabledimage="file='skinplan\public/ctrl/text.png' source='180,0,240,26' corner='2,2,2,2' "
+        />
+        <Button name="btnExplore" animation="true" textpadding="10,0,10,0" text="更改目录" textcolor="wnd_label_text_title" padding="1,2,0,2"
+            width="68" height="26" align="center"
+            normalimage="file=&apos;skinplan\public/ctrl/commonbtn.png&apos; source=&apos;0,0,68,26&apos;"
+            hotimage="file=&apos;skinplan\public/ctrl/commonbtn.png&apos; source=&apos;68,0,136,26&apos;"
+            pushedimage="file=&apos;skinplan\public/ctrl/commonbtn.png&apos; source=&apos;136,0,204,26&apos;"
+            disabledimage="file=&apos;skinplan\public/ctrl/commonbtn.png&apos; source=&apos;204,0,272,26&apos;"
+        />
+
+        <Control />
+        <Button name="btnPreview" text="预览" width="60" height="26" animation="true"
+          textcolor="wnd_label_text_title" hottextcolor="wnd_label_text_title" pushedtextcolor="wnd_label_text_dark" disabledtextcolor="wnd_btn_disable"
+          normalimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='0,0,60,26' "
+          hotimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='60,0,120,26' "
+          pushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='120,0,180,26' "
+          disabledimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='180,0,240,26' "
+        />
+
+        <Button name="btnStop" text="停止" width="60" height="26" visible="false" animation="true"
+          textcolor="wnd_label_text_title" hottextcolor="wnd_label_text_title" pushedtextcolor="wnd_label_text_dark" disabledtextcolor="wnd_btn_disable"
+          normalimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='0,0,60,26' "
+          hotimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='60,0,120,26' "
+          pushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='120,0,180,26' "
+          disabledimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='180,0,240,26' "
+        />
+        <Button name="btnSave" text="保存" width="60" height="26"  padding="20,0,0,0" animation="true"
+          textcolor="wnd_label_text_title" hottextcolor="wnd_label_text_title" pushedtextcolor="wnd_label_text_dark" disabledtextcolor="wnd_btn_disable"
+          normalimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='0,0,60,26' "
+          hotimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='60,0,120,26' "
+          pushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='120,0,180,26' "
+          disabledimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='180,0,240,26' "
+        />
+        <Button name="btnSNS" text="分享到微博"  width="108" height="26"
+          textcolor="wnd_label_text_title" hottextcolor="wnd_label_text_title" pushedtextcolor="wnd_label_text_dark" disabledtextcolor="wnd_btn_disable"
+          padding="20,0,0,0" animation="true" enabled="false" textpadding="22,0,0,0"
+          normalimage="file='skinplan\player/miniplayer/other/gifsnap/share.png' source='0,0,108,26' corner='2,2,2,2' "
+          hotimage="file='skinplan\player/miniplayer/other/gifsnap/share.png' source='0,26,108,52' corner='2,2,2,2'"
+          pushedimage="file='skinplan\player/miniplayer/other/gifsnap/share.png' source='0,52,108,78' corner='2,2,2,2'"
+          disabledimage="file='skinplan\player/miniplayer/other/gifsnap/share.png' source='0,78,108,104' corner='2,2,2,2'"
+        />
+      </HorizontalLayout>
+    </VerticalLayout>
+    
+    <Label name="labBeginTime" text="00:00:01" float="true" align="right" textcolor="wnd_label_text_title" />
+    <Label name="labEndTime" text="00:00:02" float="true" align="left" textcolor="wnd_label_text_title" />
+
+  </VerticalLayout>

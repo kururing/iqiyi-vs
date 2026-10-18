@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+  <VerticalLayout name="shortcut_layout" height="84" width="644">
+      <VerticalLayout width="96" height="34">
+        <Label text="快捷键" textcolor="0xFFFFFFFF"  height="22"  textpadding="46,0,0,0" indexfont="yahei_16"
+              bkimage="file='geeIcon/shortcut.svg' dest='20,3,36,19'"/>
+      </VerticalLayout>
+      <VerticalLayout name="option_container" width="604" height="48" bkcolor="0x33000000" borderround="8,8,8,8" bordercolor="#1AFFFFFF" padding="20,0,20,0">
+        <HorizontalLayout  height="48" padding="20,0,12,0">
+          <Label text="设置快捷键" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <Button name="btnshortcut" width="100" height="32"	text="去设置" padding="0,8,0,8" textpadding="22,0,22,0" font="yahei_14"
+            textcolor="#F2FFFFFF"  hottextcolor="#FFFFFFFF" pushedtextcolor="#99FFFFFF"
+            bordercolor="#14FFFFFF" bkcolor="#0FFFFFFF" hotbkcolor="#1AFFFFFF" pushedbkcolor="#0AFFFFFF" borderround="16,16,16,16"/>
+        </HorizontalLayout>
+      </VerticalLayout>
+  </VerticalLayout> 
+</Window>

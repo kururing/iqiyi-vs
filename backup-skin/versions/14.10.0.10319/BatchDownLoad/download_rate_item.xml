@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+<Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="DefaultFont" default="true"/>
+  	<HorizontalLayout height="30">
+		<Control />
+		<Option name="btn_rate" width="50" text="蓝光4K" height="28" group="dri_rate" textcolor="batchdownload_normal_btn_color" hottextcolor="mainui_hot_btn_color" pushedtextcolor="mainui_pushed_btn_color" selectedtextcolor="mainui_pushed_btn_color"/>
+		<Button name="dr_vip" padding="2,9,0,0" width="16" height="10" bkimage="file='commonres/subscripttype/vip.svg' align='center,16,10' " visible="false"/>
+		<Button name="dr_free" padding="2,8,0,0" width="22" height="12" bkimage="file='commonres/free.svg' align='center,22,12' " visible="false"/>
+		<Button name="dr_basemember" padding="2,8,0,0" width="22" height="12" bkimage="file='commonres/base_memeber.svg' align='center,22,12' " visible="false"/>
+		<Control />
+	</HorizontalLayout>
+</Window>

@@ -1,0 +1,171 @@
+{
+  "memory": {
+    "setting": "mixed",
+    "summary": "Phim kết hợp tiên hiệp thần giới và cổ trang tu tiên nhân gian. Các cảnh phim chuyển đổi giữa không gian tu luyện tại thư viện Bạch Lộ, chốn thiên đình của Thiên Đế và cảnh mua bán, phố phường tại Ngu Đô.",
+    "characters": [
+      {
+        "name": "魏枝",
+        "translation": "Ngụy Chi",
+        "role": "nữ chính, học sinh thư viện Bạch Lộ, vốn là Cố Phụng Tri (đại tiểu thư Cố Thành), trước là nha hoàn thô sử phủ Thượng thư",
+        "address": "Ngụy Chi → Viêm Việt: gọi là sư tôn; Viêm Việt → Ngụy Chi: gọi tên; Ngụy Chi → Ngụy Lăng Nguyệt: gọi tam tiểu thư; Ngụy Lăng Nguyệt → Ngụy Chi: gọi tên; Ngụy Chi → Minh Lãng: gọi tên; Minh Lãng → Ngụy Chi: gọi Phụng Tri hoặc Ngụy Chi",
+        "evidence": "#1, #230, #256, #264-277, #660, #808: Ngụy Chi gọi Viêm Việt là sư tôn, xưng hô tôn ti với Ngụy Lăng Nguyệt, xác nhận thân phận cũ là Cố Phụng Tri với Minh Lãng"
+      },
+      {
+        "name": "炎越",
+        "translation": "Viêm Việt",
+        "role": "Xích Nhật thần quân thiên giới, hạ phàm làm sư tôn dạy pháp thuật tại thư viện Bạch Lộ",
+        "address": "Viêm Việt → Ngụy Chi: gọi tên, tự xưng ta; Ngụy Chi → Viêm Việt: gọi sư tôn; Ngụy Lăng Nguyệt → Viêm Việt: gọi sư tôn, xưng học sinh hoặc Lăng Nguyệt; Ý Nhi → Viêm Việt: gọi biểu ca",
+        "evidence": "#1, #34, #84-87, #164, #167, #184, #323, #529, #566, #589: học sinh gọi là sư tôn, Ý Nhi gọi là biểu ca"
+      },
+      {
+        "name": "魏凌月",
+        "translation": "Ngụy Lăng Nguyệt",
+        "role": "tam tiểu thư phủ Thượng thư, học sinh có tư chất xuất sắc tại thư viện Bạch Lộ",
+        "address": "Ngụy Lăng Nguyệt → Viêm Việt: gọi sư tôn, xưng học sinh hoặc Lăng Nguyệt; Ngụy Tĩnh Nguyệt → Ngụy Lăng Nguyệt: gọi tỷ tỷ; Ngụy Chi → Ngụy Lăng Nguyệt: gọi tam tiểu thư; Ngụy Lăng Nguyệt → Ngụy Chi: gọi tên",
+        "evidence": "#121, #164, #167, #174, #184, #209, #240, #253-256: được gọi là tam tiểu thư, Ngụy Tĩnh Nguyệt gọi là tỷ tỷ"
+      },
+      {
+        "name": "魏静月",
+        "translation": "Ngụy Tĩnh Nguyệt",
+        "role": "tứ tiểu thư phủ Thượng thư, học sinh thư viện Bạch Lộ, tính tình kiêu căng",
+        "address": "Ngụy Tĩnh Nguyệt → Ngụy Lăng Nguyệt: gọi tỷ tỷ; Ngụy Lăng Nguyệt → Ngụy Tĩnh Nguyệt: gọi Tĩnh Nguyệt; Ngụy Tĩnh Nguyệt → Minh Lãng: gọi Minh ca ca; Ngụy Tĩnh Nguyệt → Ngụy Chi: xưng hô kẻ trên với người hầu",
+        "evidence": "#140, #173, #238, #240, #462: gọi Ngụy Lăng Nguyệt là tỷ tỷ và Minh Lãng là Minh ca ca"
+      },
+      {
+        "name": "明朗",
+        "translation": "Minh Lãng",
+        "role": "thế tử Cố Thành, học sinh thư viện Bạch Lộ, bạn thanh mai trúc mã từng có hôn ước với Cố Phụng Tri (Ngụy Chi)",
+        "address": "Minh Lãng → Ngụy Chi: gọi Phụng Tri hoặc Ngụy Chi; Ngụy Chi → Minh Lãng: gọi tên; Ngụy Tĩnh Nguyệt → Minh Lãng: gọi Minh ca ca",
+        "evidence": "#140, #270, #275-277, #307, #686-687: đối thoại riêng nhận ra thân phận của Cố Phụng Tri"
+      },
+      {
+        "name": "炎洛",
+        "translation": "Viêm Lạc",
+        "role": "Vũ Thần thiên giới, đệ đệ của Viêm Việt, con trai của Thiên Đế và Thiên Hậu",
+        "address": "Viêm Lạc → Thiên Đế: gọi phụ đế; Viêm Lạc → Thiên Hậu: gọi mẫu hậu, xưng Viêm Lạc; Ý Nhi → Viêm Lạc: gọi Viêm Lạc biểu ca",
+        "evidence": "#325, #353, #369, #404, #428: gọi Thiên Đế là phụ đế, Thiên Hậu là mẫu hậu"
+      },
+      {
+        "name": "意儿",
+        "translation": "Ý Nhi",
+        "role": "Đông Trù Ty Mạng trên thiên giới, biểu muội của Viêm Việt và Viêm Lạc, cháu gái của Thiên Đế",
+        "address": "Ý Nhi → Viêm Lạc: gọi Viêm Lạc biểu ca; Ý Nhi → Viêm Việt: gọi biểu ca; Ý Nhi → Thiên Đế: gọi di phụ",
+        "evidence": "#333, #346, #353, #529, #586, #589: xưng biểu ca với Viêm Lạc, Viêm Việt và nhắc đến di phụ Thiên Đế"
+      },
+      {
+        "name": "青涣",
+        "translation": "Thanh Hoán",
+        "role": "thần tiên thiên giới, trợ tá hỗ trợ Viêm Việt",
+        "address": "Thanh Hoán → Viêm Việt: gọi tên; Ý Nhi → Thanh Hoán: gọi tên",
+        "evidence": "#34, #51, #339, #551: đối thoại cùng Viêm Việt và Ý Nhi"
+      },
+      {
+        "name": "天帝",
+        "translation": "Thiên Đế",
+        "role": "người đứng đầu thiên giới, phụ đế của Viêm Việt và Viêm Lạc",
+        "address": "Viêm Lạc → Thiên Đế: gọi phụ đế",
+        "evidence": "#50, #321, #334, #369, #404: được quần thần bái kiến và con trai gọi là phụ đế"
+      },
+      {
+        "name": "天后",
+        "translation": "Thiên Hậu",
+        "role": "Thiên Hậu thiên giới, chưởng quản dòng chảy thời gian của tam giới, mẫu hậu của Viêm Lạc",
+        "address": "Viêm Lạc → Thiên Hậu: gọi mẫu hậu",
+        "evidence": "#334, #406, #411, #428: chưởng quản thời gian, được xưng tụng Thiên Hậu nương nương"
+      },
+      {
+        "name": "敬修",
+        "translation": "Kính Tu",
+        "role": "viện trưởng thư viện Bạch Lộ",
+        "address": "chưa rõ",
+        "evidence": "#745: được nhắc tên là viện trưởng"
+      },
+      {
+        "name": "魏叶",
+        "translation": "Ngụy Diệp",
+        "role": "em trai của Ngụy Chi",
+        "address": "chưa rõ",
+        "evidence": "#286, #670: Ngụy Chi nhắc tới mẹ và đệ đệ"
+      },
+      {
+        "name": "肖锦",
+        "translation": "Tiêu Cẩm",
+        "role": "học sinh thư viện Bạch Lộ, con trai của vị quan lục phẩm",
+        "address": "chưa rõ",
+        "evidence": "#618, #727-732: được nhắc tới là con quan lục phẩm có tư chất kém"
+      }
+    ],
+    "glossary": [
+      {
+        "source": "白鹭书院",
+        "translation": "thư viện Bạch Lộ"
+      },
+      {
+        "source": "鉴仙镜",
+        "translation": "gương soi tiên cốt"
+      },
+      {
+        "source": "凤凰",
+        "translation": "phượng hoàng"
+      },
+      {
+        "source": "虞都",
+        "translation": "Ngu Đô"
+      },
+      {
+        "source": "顾城",
+        "translation": "Cố Thành"
+      },
+      {
+        "source": "顾凤知",
+        "translation": "Cố Phụng Tri"
+      },
+      {
+        "source": "赤日神君",
+        "translation": "Xích Nhật thần quân"
+      },
+      {
+        "source": "雨神",
+        "translation": "Vũ Thần"
+      },
+      {
+        "source": "东厨司命",
+        "translation": "Đông Trù Ty Mạng"
+      },
+      {
+        "source": "瞬移术",
+        "translation": "thuật thuấn di"
+      },
+      {
+        "source": "快活楼",
+        "translation": "lầu Khoái Hoạt"
+      },
+      {
+        "source": "瀛洲",
+        "translation": "Doanh Châu"
+      },
+      {
+        "source": "时光尘埃",
+        "translation": "bụi thời gian"
+      },
+      {
+        "source": "秀色可餐",
+        "translation": "tú sắc khả xan"
+      },
+      {
+        "source": "大尊",
+        "translation": "Đại Tôn"
+      }
+    ],
+    "uncertainties": [
+      "Chưa rõ danh tính chính xác của nhân vật bí mật được thuộc hạ gọi là Đại Tôn đang âm thầm quan sát phượng hoàng.",
+      "Chưa rõ thân phận của vị quý nhân trong triều đình xuất hiện ở đoạn cuối bàn mưu can thiệp thư viện Bạch Lộ."
+    ]
+  },
+  "episodes": {
+    "2034793945152700": "8383dfec63fe53796dd3cb3e312a1ddebd8922a05ddcb75e62095041e9b0b7c0",
+    "1584778904610600": "e5aa4e8e5b8198d3a2a21f6d70b0868d90a3600c645e7f17e523c92600f2f53f"
+  },
+  "updatedAt": 1792341049.6619647,
+  "profileVersion": "7bdfcaeecfb1473589933cbd771bff09f6652c16d69e1b9919cbf15c9ed6a8a1"
+}

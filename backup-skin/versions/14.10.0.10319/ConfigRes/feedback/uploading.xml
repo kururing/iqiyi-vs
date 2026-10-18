@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="359,162">
+    <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="DefaultFont" default="true"/>
+	<Font name="Microsoft YaHei" size="16" bold="false" italic="false" indexfont="yahei_16"/>
+	<!--背景-->
+	<VerticalLayout style="popwnd_bk_style" >
+		<HorizontalLayout height="32">
+          <Label text="上传中…" name="top_title" style="popwnd_title_style" padding="14,6,0,0" width="150" indexfont="Title"/>
+          <Control />
+        </HorizontalLayout>
+		<HorizontalLayout name="repairing_tip" padding="0,7,0,0">
+		    <Control />
+		    <Control width="88" height="88" bkimage="ConfigRes/repair.apng"/>
+			<Label text="正在上传日志 请稍等…" padding="0,20,0,5" height="44" width="140" align="left" textcolor ="suggest_repairtip_color" />
+			<Control />
+		</HorizontalLayout>
+    </VerticalLayout>
+
+</Window>

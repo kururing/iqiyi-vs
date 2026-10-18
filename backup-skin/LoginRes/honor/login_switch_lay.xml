@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window width="360" height="282" roundcorner="4,4">
+  <Font name="Microsoft YaHei" size="18" bold="false" italic="false" indexfont="yahei_18"/>
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="yahei_14"/>
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="yahei_12"/>
+	<VerticalLayout bkcolor="#ff1E2126" borderround="4,4">
+	    <Button name="closebtn" style="close_style" float="true" width="12" height="12" pos="332,12,344,24"/>
+		<Label name="title_lab" text="使用手机已登录账号快捷登录" indexfont="yahei_18" textcolor="#e6ffffff" align="center" padding="0,32,0,0" height="18"/>
+		<HorizontalLayout name="quick_login_lay" width="204" padding="78,19,78,19" height="28" >
+			<Control />
+			<ImageUrlLabel name="face" width="28" height="28" borderround="14,14"/>
+			<Label name="nick_name" width="168" padding="8"  indexfont="yahei_14" height="16" padding="8,7,0,0" textcolor="80ffffff" endellipsis="true"/>
+			<Control />
+		</HorizontalLayout>
+		
+		<Button name="quick_login_btn" text="使用此账号一键登录" align="center" textcolor="#ffffffff" width="296" height="40" borderround="3,3"
+		hot-gradient="tips_ok_hot_gradient" gradient="tips_know_gradient" indexfont="yahei_14" padding="32,0,32,0" visible="false"/>
+		
+		<Button name="opt_login" text="手机授权登录" align="center" textcolor="#ffffffff" disabledtextcolor="#66ffffff" width="296" height="40" borderround="3,3"
+		hot-gradient="tips_ok_hot_gradient" gradient="tips_know_gradient" disabled-gradient="login_green_btn_disabled_gradient" indexfont="yahei_14" padding="32,32,32,0"/>
+		
+		<Button name="other_login" text="使用其他账号登录" align="center" textcolor="#e6ffffff" hottextcolor="#b300cc4c" indexfont="yahei_14" width="296" height="40" borderround="3,3" padding="32,12,32,0" bkcolor="#14ffffff" hotbkcolor="#1400cc4c" padding="32,12,0,0"/>
+		<HorizontalLayout name="profile_lay" height="16" padding="79,26,0,0">
+			<CheckBox name="profile_check" style="login_checkbox_style" width="16"  />
+			<Control width="8"/>
+			<Label text="同意" textcolor="login_normal_text_color" indexfont="yahei_12" width="24" />
+			<Button name="protocal_btn" text="《用户协议》" textcolor="#b300cc4c" indexfont="yahei_12" width="72" />
+			<Label text="和" textcolor="login_normal_text_color" indexfont="yahei_12" width="12"/>
+			<Button name="policies_btn" text="《隐私条款》" textcolor="#b300cc4c" indexfont="yahei_12" width="72"/>
+		</HorizontalLayout>
+		<Label name="profile_tip" text="请阅读并勾选下方协议" bkimage="skinplan\login\profile_bk.svg" width="114" height="28" textpadding="12,-11,0,0" align="vcenter" float="true" textcolor="#80ffffff" visible="false" indexfont="yahei_12" pos="50,218,193,246"/>
+	</VerticalLayout>
+</Window>

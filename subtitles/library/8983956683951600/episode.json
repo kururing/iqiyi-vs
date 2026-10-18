@@ -1,0 +1,23 @@
+{
+  "title": "田耕纪第15集",
+  "order": 15,
+  "vid": "b78763996442722398a8975cae5ec33b",
+  "tvid": "8983956683951600",
+  "albumId": "7714930311098201",
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321734.232296,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 814
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260518/da/d9/794d96dc3425a596bfccf667b6224872.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

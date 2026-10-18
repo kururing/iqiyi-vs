@@ -1,0 +1,23 @@
+{
+  "title": "田耕纪第19集",
+  "order": 19,
+  "vid": "26d6685f6ce2155236481e27fc6827f4",
+  "tvid": "2207259602582100",
+  "albumId": "7714930311098201",
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321734.234295,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 1020
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260518/dd/54/f64afbf16d517c81140d8d1acea22136.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+<Font name="微软雅黑" size="12" bold="false" italic="false" default="true" indexfont="yahei_font12" />
+<VerticalLayout name="layWebPageContainer" bkcolor="Discover_subwnd_bkcolor">
+  <VerticalLayout name="layWebPageWithUrlBar" height="54" >
+  	<Container name="urlControlBar" height="54" padding="1,1,1,0"/>
+    <Container name="layWebpage" visible="false" />
+  </VerticalLayout>
+  
+  <VerticalLayout name="layLoading" visible="true" >
+    <Control />
+    <HorizontalLayout>
+      <Control />
+      <Control name="loading" bkimage="CommonRes\loading.apng"  width="100" height="100" />
+      <Control />
+    </HorizontalLayout>
+    <Control />
+  </VerticalLayout>
+
+  <VerticalLayout name="DownloadPPSGame" visible="false" >
+    <HorizontalLayout height="206" />
+    <Container name="downloading" padding="10,1,10,1" inset="1,0,1,1" />
+    <HorizontalLayout>
+      <VerticalLayout />
+      <VerticalLayout width="220">
+        <HorizontalLayout height="20">
+          <Label name="DownloadText" align="center" text="正在下载..." textcolor="#ffc8c8c8"/>
+        </HorizontalLayout>
+      </VerticalLayout>
+      <VerticalLayout />
+    </HorizontalLayout>
+    <HorizontalLayout height="206" />
+  </VerticalLayout>
+  
+  <VerticalLayout name="layErrorPage" visible="false" >
+    <Control />
+    <VerticalLayout height="325">
+		<HorizontalLayout height="259">
+			<VerticalLayout />
+			<VerticalLayout width="280">
+				<Label bkimage="file='skinplan\app_plugin_store\webpage_error_p.png'" width="280" height="259" />
+			</VerticalLayout>
+			<VerticalLayout />
+		</HorizontalLayout>
+        <Control />
+		<HorizontalLayout>
+			<VerticalLayout />
+			<VerticalLayout height="17" width="355">
+				<VerticalLayout />
+				<HorizontalLayout height="15" align="center">
+					<Label text="请检查网络连接是否正常，如果连接正常" textcolor="#666666" indexfont="yahei_font12" align="right" width="255"/>
+					<Button name="btnRefresh" text="请刷新本页" padding="3,0,0,0" textcolor="#ff7e00" hottextcolor="#00D305" align="left" width="100" indexfont="UnderLineFont"/>
+				</HorizontalLayout>
+		  </VerticalLayout>
+		  <VerticalLayout />
+		</HorizontalLayout>
+        <Control height="10" />
+     </VerticalLayout>
+    <Control />
+  </VerticalLayout>
+
+</VerticalLayout>
+</Window>

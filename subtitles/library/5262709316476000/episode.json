@@ -1,0 +1,23 @@
+{
+  "title": "田耕纪第23集",
+  "order": 23,
+  "vid": "54dac002d31c22b4c0214d9d8af5d1e9",
+  "tvid": "5262709316476000",
+  "albumId": "7714930311098201",
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321734.2372937,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 831
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260518/37/6b/8acddc4205ee8b5c827d973490c9c25e.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+    <FollowugcUserItem name="follow_user_container" height="40" padding="20,0,10,0">
+    	<Control name="pic" width="36" height="36" bkimage="file='skinplan/login/userinfo/default_face.svg' align='center,36,36'" borderround="18,18" padding="0,2,0,0"/>
+    	<VerticalLayout height="40" padding="10,0,0,0">
+    		<Label name="user_name" text="主标题" height="20" endellipsis="true" textcolor="PreferencesCenter_title_normal" padding="0,1,0,4"/>
+			<Label name="user_update" text="2小时前更新" height="14" endellipsis="true" textcolor="PreferencesCenter_subtitle_normal" indexfont="font_12"/>
+        </VerticalLayout>
+		<Button name="updatebtn" text="查看更新 " height="20" width="56" padding ="0,1,0,0" visible="false"
+		    align="left" textcolor="PreferencesCenter_btn_normal" hottextcolor="PreferencesCenter_btn_hover" pushedtextcolor="PreferencesCenter_btn_hover"/>
+    </FollowugcUserItem>
+
+</Window>

@@ -1,0 +1,23 @@
+{
+  "title": "花戎第4集",
+  "order": 4,
+  "vid": "ba79c34517127dbc7e41577ca11201bb",
+  "tvid": "3851699590213100",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337946.8702254,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 605
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/97/c2/600e496b169efc36853102b5a3c47eae.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

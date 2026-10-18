@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Window>
+  <Font name="微软雅黑" size="12" bold="true" italic="false" default="false" indexfont="yahei_12b" />
+  <Font name="微软雅黑" size="12" bold="false" italic="false" default="false" indexfont="yahei_12" />
+  <PageConfigSpeed name="laySubSpeed" visible="false" >
+    <VerticalLayout height="80" inset="18,0,18,0">
+      <Label text="步进定位"  height="40" align="leftmiddle" textcolor="color_dddddd_444444" indexfont="yahei_12b" />
+
+      <HorizontalLayout height="26">
+        <Button name="btnStepReward" text="后退"  animation="true" width="48" height="26" indexfont="yahei_12"
+          textcolor="color_wind_btn_text" hottextcolor="color_wind_btn_text_hot" pushedtextcolor="color_wind_btn_text_push" disabledtextcolor="color_wind_btn_text_disable"
+          normalimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='0,0,60,26' "
+          hotimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='60,0,120,26' "
+          pushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='120,0,180,26' "
+          disabledimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='180,0,240,26' "
+        />
+        <Combo name="combStep" animation="false" width="68" textpadding="3,1,1,1" padding="4,0,4,0"
+			      textcolor="color_wind_label_text" bkcolor="wnd_combo_bk"
+			      itemtextcolor="color_wind_label_text" itembkcolor="wnd_combo_item_bk"
+			      itemhottextcolor="wnd_combo_item_text_hot" itemhotbkcolor="wnd_combo_item_hot_bk"
+            dropdownlinecolor="wnd_combo_dropdown_line"
+            itemselectedtextcolor="wnd_combo_item_text_select" itemselectedbkcolor="wnd_combo_item_text_select_bk"
+            normalimage="file='skinplan\public/ctrl/combpicture.png' source='0,0,80,26' corner='2,2,23,2'"
+		        hotimage="file='skinplan\public/ctrl/combpicture.png' source='0,26,80,52' corner='2,2,23,2'"
+		        pushedimage="file='skinplan\public/ctrl/combpicture.png' source='0,52,80,78' corner='2,2,23,2'"
+		        disabledimage="file='skinplan\public/ctrl/combpicture.png' source='0,0,80,26' corner='2,2,23,2'"/>
+
+        <Button name="btnStepForward" text="前进"  animation="true" width="48" height="26" indexfont="yahei_12"
+          textcolor="color_wind_btn_text" hottextcolor="color_wind_btn_text_hot" pushedtextcolor="color_wind_btn_text_push" disabledtextcolor="color_wind_btn_text_disable"
+          normalimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='0,0,60,26' "
+          hotimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='60,0,120,26' "
+          pushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='120,0,180,26' "
+          disabledimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='180,0,240,26' "
+        />
+      
+      </HorizontalLayout>
+    </VerticalLayout>
+
+    <Control bkimage="file='skinplan\menu/menu_line.png'" height="1" />
+
+    <VerticalLayout height="80" inset="18,0,18,0">
+      <HorizontalLayout height="40">
+        <Label text="时间定位" width="100"  align="leftmiddle" textcolor="color_dddddd_444444" indexfont="yahei_12b" />
+        <Label name="labGotoErr" text="请输入正确的定位时间" height="40" visible="false" align="rightmiddle" textcolor="color_b22424_ff3333" indexfont="yahei_12" />
+      </HorizontalLayout>
+      
+      <HorizontalLayout height="26">
+        <Edit name="editPosHour" animation="true" width="48" disabledtextcolor="wnd_edt_text_disable" bkcolor="wnd_edt_bk"
+           text="00" numbertype="true" numrange="0,99999" indexfont="yahei_12"  align="centre"
+           pathellipsis="true" textcolor="wnd_edt_text_nor" nativebkcolor="wnd_edt_bk"
+           normalimage="file='skinplan\public/ctrl/text.png' source='0,0,60,26' corner='2,2,2,2' "
+           hotimage="file='skinplan\public/ctrl/text.png' source='60,0,120,26' corner='2,2,2,2'"
+           focusedimage="file='skinplan\public/ctrl/text.png' source='120,0,180,26' corner='2,2,2,2' "
+        />
+        <Label text=":"   width="14" align="centre" indexfont="yahei_12" textcolor="color_666666_666666"  />
+
+        <Edit name="editPosMin" animation="true" width="48" disabledtextcolor="wnd_edt_text_disable" bkcolor="wnd_edt_bk"
+           text="30" numbertype="true" numrange="0,99999"  indexfont="yahei_12"  align="centre"
+           pathellipsis="true" textcolor="wnd_edt_text_nor" nativebkcolor="wnd_edt_bk"
+           normalimage="file='skinplan\public/ctrl/text.png' source='0,0,60,26' corner='2,2,2,2' "
+           hotimage="file='skinplan\public/ctrl/text.png' source='60,0,120,26' corner='2,2,2,2'"
+           focusedimage="file='skinplan\public/ctrl/text.png' source='120,0,180,26' corner='2,2,2,2' "
+        />
+
+        <Label text=":"   width="14" align="centre" indexfont="yahei_12" textcolor="color_666666_666666"  />
+
+        <Edit name="editPosSec" animation="true" width="48" disabledtextcolor="wnd_edt_text_disable" bkcolor="wnd_edt_bk"
+           text="00" numbertype="true" numrange="0,99999"  indexfont="yahei_12"  align="centre"
+           pathellipsis="true" textcolor="wnd_edt_text_nor" nativebkcolor="wnd_edt_bk"
+           normalimage="file='skinplan\public/ctrl/text.png' source='0,0,60,26' corner='2,2,2,2' "
+           hotimage="file='skinplan\public/ctrl/text.png' source='60,0,120,26' corner='2,2,2,2'"
+           focusedimage="file='skinplan\public/ctrl/text.png' source='120,0,180,26' corner='2,2,2,2' "        />
+
+
+        <Button name="btnPosGoto" text="跳转" animation="true" width="48" height="26" padding="14,0,0,0" indexfont="yahei_12"
+          textcolor="color_wind_btn_text" hottextcolor="color_wind_btn_text_hot" pushedtextcolor="color_wind_btn_text_push" disabledtextcolor="color_wind_btn_text_disable"
+          normalimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='0,0,60,26' "
+          hotimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='60,0,120,26' "
+          pushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='120,0,180,26' "
+          disabledimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='180,0,240,26' "
+        />
+
+      </HorizontalLayout>
+    </VerticalLayout>
+
+    <Control bkimage="file='skinplan\menu/menu_line.png'" height="1" />
+
+    <VerticalLayout height="150" >
+      <HorizontalLayout height="40" inset="18,0,18,0">
+        <Label text="播放速度"  height="40" align="leftmiddle" textcolor="color_dddddd_444444" indexfont="yahei_12b" />
+        <Label name="labTipSpeed" text="当前速度:1.0倍" height="40" align="rightmiddle" textcolor="color_666666_666666" indexfont="yahei_12" />
+      </HorizontalLayout>
+
+      <VerticalLayout height="30" >
+        <Slider name="sldSpeed" width="225"  height="15" min="1" max="500" value="100" enabled="true" forepadding="1,5,0,5" padding="18,0,18,0"
+            bkimage="file='skinplan\player/miniplayer/other/subtitleadjust/slider_bk.png'  dest='0,5,225,10' corner='3,0,3,5' "
+            foreimage="file='skinplan\player/miniplayer/other/subtitleadjust/slider_fore.png'  dest='1,5,224,10' corner='3,0,3,5' "
+  			    thumbimage="file='skinplan\player/miniplayer/other/subtitleadjust/thumb.png' source='0,0,15,15'"
+			      thumbhotimage="file='skinplan\player/miniplayer/other/subtitleadjust/thumb.png' source='0,0,15,15'"
+			      thumbpushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/thumb.png' source='0,0,15,15'"
+			      thumbsize="15,15" />
+        <HorizontalLayout height="15" padding="10,0,10,0" >
+          <Label text="0.1"  width="20" align="centre" textcolor="color_666666_666666" indexfont="yahei_12" />
+          <Control width="24" />
+          <Label text="1"    width="20" align="centre" textcolor="color_666666_666666" indexfont="yahei_12" />
+          <Control width="23" />
+          <Label text="2"    width="20" align="centre" textcolor="color_666666_666666" indexfont="yahei_12" />
+          <Control width="23" />
+          <Label text="3"    width="20" align="centre" textcolor="color_666666_666666" indexfont="yahei_12" />
+          <Control width="23" />
+          <Label text="4"    width="20" align="centre" textcolor="color_666666_666666" indexfont="yahei_12" />
+          <Control width="23" />
+          <Label text="5"    width="20" align="centre" textcolor="color_666666_666666" indexfont="yahei_12" />
+        </HorizontalLayout>
+      </VerticalLayout>
+
+      <HorizontalLayout height="40" inset="10,0,18,0" padding="0,20,0,0">
+        <CheckBox name="chkSpeedRemb" height="14" animation="true" text="播放速度设置始终生效" padding="0,9,0,0"
+           textpadding="24,0,0,0" align="leftmiddle" textcolor="color_wind_btn_text" hottextcolor="color_wind_btn_text_hot"
+           selectedtextcolor="color_wind_btn_text" selectedhottextcolor="color_wind_btn_text"
+           selectedpushedtextcolor="color_wind_btn_text" indexfont="yahei_12"
+           normalimage="file='skinplan\public/ctrl/checkboxpicture.png' source='0,0,14,14' dest='0,0,14,14'"
+           hotimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='14,0,28,14' dest='0,0,14,14'"
+           pushedimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='28,0,42,14' dest='0,0,14,14'"
+           disabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,0,56,14' dest='0,0,14,14'"
+           selectednormalimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='0,14,14,28' dest='0,0,14,14'"
+           selectedhotimage="file='skinplan\public/ctrl/checkboxpicture.png' source='14,14,28,28' dest='0,0,14,14'"
+           selectedpushedimage="file='skinplan\public/ctrl/checkboxpicture.png' source='28,14,42,28' dest='0,0,14,14'"
+           selecteddisabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,14,56,28' dest='0,0,14,14'"
+           partselectednormalimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='0,28,14,42' dest='0,0,14,14'"
+           partselectedhotimage="file='skinplan\public/ctrl/checkboxpicture.png' source='14,28,28,42' dest='0,0,14,14'"
+           partselectedpushedimage="file='skinplan\public/ctrl/checkboxpicture.png' source='28,28,42,42' dest='0,0,14,14'"
+           partselecteddisabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,28,56,42' dest='0,0,14,14'"
+			  />
+        
+        <Control />
+
+        <Button name="btnSpeedReset" text="重置" animation="true" width="48" height="26" padding="14,0,0,0" indexfont="yahei_12"
+            textcolor="color_wind_btn_text" hottextcolor="color_wind_btn_text_hot" pushedtextcolor="color_wind_btn_text_push" disabledtextcolor="color_wind_btn_text_disable"
+            normalimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='0,0,60,26' "
+            hotimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='60,0,120,26' "
+            pushedimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='120,0,180,26' "
+            disabledimage="file='skinplan\player/miniplayer/other/subtitleadjust/button.png' source='180,0,240,26' "
+        />
+      </HorizontalLayout>
+
+    </VerticalLayout>
+
+    <Control bkimage="file='skinplan\menu/menu_line.png'" height="1" />
+    
+  </PageConfigSpeed>
+</Window>

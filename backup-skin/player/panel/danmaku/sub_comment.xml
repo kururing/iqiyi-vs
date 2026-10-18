@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window >
+	<Font name="微软雅黑" size="14" bold="false" italic="false" default="false" indexfont="yahei_14"/>
+	<Font name="微软雅黑" size="12" bold="false" italic="false" default="false" indexfont="yahei_12"/>
+
+	<WeakHorizontalLayout padding="16,0,0,0" >
+		<WeakControl name="second_line_and_space" width="2" bkcolor="#25d8d8d8" padding="0,0,10,0" visible="false"/>
+		<WeakVerticalLayout>
+			<WeakControl name="header_space" height="10"/>
+			<WeakHorizontalLayout height="22">
+				<UserInfoUI name="user_info"  height="20" padding="0,0,0,2"/>
+				<WeakControl />
+				<WeakCheckBox name="more_info" height="16" width="16" align="centre"  indexfont="yahei_12" padding="0,2,16,6" visible="true" 
+							normalimage="file='player/panel/danmaku/widget/more_info.svg' dest='0,7,16,9' svg-fill-color='#4CFFFFFF' hot-svg-fill-color='#FF00BE06'"
+							selectednormalimage="file='player/panel/danmaku/widget/more_info.svg'  dest='0,7,16,9' svg-fill-color='#FF00BE06'"/>
+			</WeakHorizontalLayout>
+			<WeakHorizontalLayout>
+				<WeakControl name="skip_user_pic" width="28"/>
+				<WeakVerticalLayout > 
+					<WeakHorizontalLayout name="content_layout">
+						<WeakVerticalLayout name="second_self_reply_layout" visible="false" width="290">
+						 <WeakHorizontalLayout>
+						 	 <WeakLabel text="回复" width="25" textcolor="player_text_color" indexfont="yahei_12" />
+						 	 <WeakLabel name="answered_name" textcolor="#4CFFFFFF" align="left" indexfont="yahei_12" padding="5,0,5,0"/>
+						 	 <WeakButton name="second_reply_content" textcolor="player_text_color" indexfont="yahei_12" endellipsis="true" align="left_vcenter"/>
+						 </WeakHorizontalLayout>
+						 <WeakButton name="second_reply_content_line_two" textcolor="player_text_color" indexfont="yahei_12"  endellipsis="true" align="left_vcenter"/>
+						</WeakVerticalLayout>
+						<WeakButton name="reply_content" textcolor="player_text_color" indexfont="yahei_12" singleline="false" align="left" endellipsis="true" linespace="2"/>
+						<WeakControl width="48"/>
+					</WeakHorizontalLayout>
+					
+					<WeakHorizontalLayout name="button_layout" height="17" visible="true" padding="0,4,0,0">
+						 <WeakCheckBox name="reply_checkbox" width="24" text="回复" align="left" textcolor="#4CFFFFFF"  hottextcolor="#FF23d41e" selectedtextcolor="#4CFFFFFF" 
+						 selectedhottextcolor="#FF23d41e" pushedtextcolor="#FF23d41e" indexfont="yahei_12"/>
+						 <WeakControl width="2" name="splite_line" padding="12,3,12,3" bkcolor="4CFFFFFF"/>
+						 <WeakCheckBox name="like_checkbox"  width="55" align="center"  indexfont="yahei_12"  visible="true"
+							textcolor="#4DFFFFFF"  hottextcolor="#FFF74190" selectedtextcolor="#FFF74190" pushedtextcolor="#FFF74190" />
+						 <WeakControl />
+					</WeakHorizontalLayout>
+					
+					<SendDanmuUI name="send_layout" padding="0,6,17,0"  bkcolor="#19D8D8D8" height="32" borderround="2,2" visible="false"/>
+			               
+				</WeakVerticalLayout>
+			</WeakHorizontalLayout>
+		</WeakVerticalLayout>
+		<WeakButton name="report_button" width="40" height="28" float="true" text="举报" textcolor="#FFFFFFFF"    hottextcolor="#FF23d41e" selectedtextcolor="#FF23d41e"   pushedtextcolor="#FF23d41e" indexfont="yahei_12" visible="false" normalimage="file='player/panel/danmaku/widget/report.svg' svg-fill-color='#0AFFFFFF'"/>
+	</WeakHorizontalLayout>
+</Window>

@@ -1,0 +1,23 @@
+{
+  "title": "田耕纪第17集",
+  "order": 17,
+  "vid": "a8300e61542b9a59f12dd7886ff463e3",
+  "tvid": "1109896722940100",
+  "albumId": "7714930311098201",
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321734.233296,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 1004
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260518/92/dc/4874512e3212ea9baa48bcd17065fec5.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="400,245" caption="0,0,0,32">
+  <Include source="public/xml/default_font.xml" />
+  <VerticalLayout >
+    <HorizontalLayout height="32" inset="12,1,1,0" bkimage="file='skinplan\public/dialog/border_title.png' corner='3,3,4,4'">
+      <Label text="提示" singleline="false" align="leftmiddle"  padding="0,3,0,0"
+	         textcolor="wnd_title_text_nor" indexfont="yahei_14" /> 
+      <Button name="btn_close"  animation="true" tooltip="关闭" width="24" height ="24" align="center" padding="11,4,5,4" 
+			  normalimage="file='skinplan\public/ctrl/public_close.png' source='0,0,24,24'"
+			  hotimage="file='skinplan\public/ctrl/public_close.png' source='24,0,48,24'"
+			  pushedimage="file='skinplan\public/ctrl/public_close.png' source='48,0,72,24'"
+			  disabledimage="file='skinplan\public/ctrl/public_close.png' source='72,0,96,24'"  />
+    </HorizontalLayout>
+
+	<VerticalLayout >
+	<VerticalLayout inset="1,0,1,1" bkimage="file='skinplan\public/dialog/border_content.png' corner='3,3,4,4'">
+	<VerticalLayout bkimage="file='skinplan\public/dialog/main_bk.png' corner='1,1,1,1'">
+		<HorizontalLayout inset="25,0,11,0" height="95" >
+			<Label width="54" height="54" bkimage="file='skinplan\public/ctrl/warning.png'" padding="0,25,26,45" />
+			<Label name="lab_content" text="因版权原因，Win7及以下系统暂不支持该音频解码" width="268" height="100" 
+			       padding="0,25,0,0" textcolor="wnd_label_text_light" singleline="false" align="leftmiddle" indexfont="yahei_16" 
+			/>
+			  
+		</HorizontalLayout>
+		<Label text="建议您将系统升级到Win10" height="40"  textcolor="wnd_label_text_light" 
+		       singleline="false" align="left" padding="104,0,0,0" indexfont="yahei_16" />
+
+		<Button name="btnMore" text="点此了解更多" animation="true"  height="30" 
+		        padding="104,0,0,0" indexfont="yahei_16l" align="left" textcolor="0xff47b100"  />
+		<Button name="btnNoLongerShow" text="不再提示" animation="true"  height="30" align="left" indexfont="yahei_16l" 
+				textcolor="0xff47b100" padding="104,0,0,0" />		
+		</VerticalLayout>
+	</VerticalLayout>
+	</VerticalLayout>
+</VerticalLayout>
+</Window>

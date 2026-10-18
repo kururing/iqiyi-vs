@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+	<VerticalLayout width="94" height="47">
+		<Button name="ad_close_tips_title" width="94" height="40" padding="0,7,0,0"text="关闭广告" fallbackfont="Segoe UI,Arial,微软雅黑,Microsoft Jhenghei,MS UI Gothic,Malgun Gothic,Segoe UI Emoji,Segoe UI Symbol" font="DefaultFont" bkcolor="PreferencesCenter_ad_close_tips_bk" textcolor="PreferencesCenter_ad_close_tips_title" align="center" endellipsis="false" borderround="2,2" bordercolor="PreferencesCenter_ad_bordercolor"/>
+		<Label float="true" pos="70,0,84,8" bkimage="file='skinplan/PreferencesCenter/ad_arrow.svg'"/>
+    </VerticalLayout>
+</Window>

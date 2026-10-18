@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="636,293" >
+    <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="DefaultFont" default="true"/>
+    <Font name="Microsoft YaHei" size="13" bold="false" italic="false" indexfont="font_yahei_13" default="false"/>
+    <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="font_yahei_12"/>
+	<Default name="VScrollBar" value="showbutton1=&quot;false&quot; showbutton2=&quot;false&quot; width=&quot;6&quot; thumbnormalimage=&quot;file='skinplan/PreferencesCenter/scrollbar.png' source='0,0,10,40' corner='0,6,0,6'&quot; thumbhotimage=&quot;file='skinplan/PreferencesCenter/scrollbar.png' source='10,0,20,40' corner='0,6,0,6'&quot; thumbpushedimage=&quot;file='skinplan/PreferencesCenter/scrollbar.png' source='20,0,30,40' corner='0,6,0,6'&quot; " />
+	<!--背景-->
+	<VerticalLayout bkcolor="batchdownload_wnd_bkcolor" bordercolor="batchdownload_wnd_bordercolor">
+		<!--标题区域-->
+		<HorizontalLayout height="48">
+            <Label name="bd_title" text="新建下载任务" style="popwnd_title_style" endellipsis="true" height="18" width="560" padding="20,15,0,15"/>
+			<Control />
+			<Button name="closeBtn" style="close_style" padding="0,20,20,0" width="12" height="12" />
+		</HorizontalLayout>
+		
+		<!--非标题区域-->
+		<VerticalLayout width="634" padding ="0,2,0,0">
+		    <VerticalLayout name="dataframe" visible = "false">
+		    	<Control bkcolor="batchdownload_division_bk" height="1" padding="20,0,20,0"/>
+		    	<VerticalLayout height="34" name="chooseDownload" padding="17,18,0,0" bordercolor1="#FFFF0000">
+		    	    <!--tab页签-->
+		    	    <HorizontalLayout name ="dynamicContainer" padding="0,0,20,12" height="28" visible="false">
+		    	    	<Button name="leftArrow" enabled="false" width="18" height="20" padding="0,2,0,0" 
+						    normalimage="file='commonres/left_arrow.svg' align='center,10,10' svg-fill-color='batchdownload_normal_btn_color' hot-svg-fill-color='mainui_hot_btn_color' pushed-svg-fill-color='mainui_pushed_btn_color' "
+		    			    disabledimage=""/>
+		    	    	<HorizontalLayout name ="tagsContainer">
+		    	    	</HorizontalLayout>
+		    	    	<Button name ="rightArrow" enabled="false" width="18" height="20" padding="0,2,0,0" 
+		    	    	    normalimage="file='commonres/right_arrow.svg' align='center,10,10' svg-fill-color='batchdownload_normal_btn_color' hot-svg-fill-color='mainui_hot_btn_color' pushed-svg-fill-color='mainui_pushed_btn_color' "
+		    			    disabledimage=""/>
+		    	    </HorizontalLayout>
+		    	    <!--list-->
+		    	    <VerticalLayout  name ="listContainer" height="34" bordercolor1="#FF00FF00">
+					    <!--此处是节目小格子或者长条-->
+                        <VerticalLayout name="videoList" vscrollbar="true" hscrollbar="false"/>
+                        <TileLayout name="grid_container" childpadding="6" itemsize="54,34" visible="false" vscrollbar="true" hscrollbar="false">
+                          <!--小格子 动态布局 每行最多十个-->
+                        </TileLayout>
+		    	    	<VerticalLayout name="yearTips" padding="0,0,20,0" visible="false">
+							<Control />
+							<HorizontalLayout name="YearUpdateGif" height="60">
+							    <Control />
+								<Control width="60" height="60" bkimage="commonres/loading.apng"/>
+								<Control />
+							</HorizontalLayout>
+		    	    		<Label name="YeartipsText" text="" height="30" align="center" textcolor ="batchdownload_tips_normal" />
+							<Control />
+		    	    	</VerticalLayout>
+		    	    </VerticalLayout>
+		    	</VerticalLayout> 
+		    	<!--全选按钮-->
+				<HorizontalLayout padding="20,30,10,0" height="14">
+		    		<Label name="ratelabel" text="清晰度：" width="56" textcolor="batchdownload_subtitle_normal"/>
+					<Button name="ratebtn" text="蓝光 " width="50" align="left" textcolor="batchdownload_normal_btn_color" hottextcolor="mainui_hot_btn_color" pushedtextcolor="mainui_pushed_btn_color" />
+					<Control />
+					<CheckBox name="selectAllBtn" style="checkbox_style" text="全选" padding="20,0,0,0" textpadding="18,-1,0,0" width="60" height="14"/>
+		    	</HorizontalLayout>
+		    	
+            
+		    	<!--选择目录保存-->
+				<HorizontalLayout name="bd_directory_hl" padding="20,29,20,0" height="26" visible="false">
+		    		<Label text="下载至：" width="62" height="26" textcolor="batchdownload_subtitle_normal"/>
+                    <HorizontalLayout style="border_edit_style" width="532" height="26">
+                        <Label name="editDownloadPath" width="394" endellipsis="true" textcolor="batchdownload_tips_normal" padding="6,0,0,0" indexfont="font_yahei_12"/>
+                        <Label name="diskspacesize" text="120G" padding="18,0,6,0" width="45" textcolor="batchdownload_tips_normal" indexfont="font_yahei_12"/>
+                        <Control />
+                        <Button name="btnChangeDirectory" text="更改目录" width="60" textcolor="config_txt_normal" hottextcolor="config_edit_txt_hover" pushedtextcolor="config_edit_txt_pushed" indexfont="font_yahei_12"/>
+                    </HorizontalLayout>
+		    	</HorizontalLayout>
+		    	<HorizontalLayout name ="downloadCancelBtn" height="36" padding="20,30,20,0">
+					<HorizontalLayout name="showviptips_1" visible="false" padding="0,6,0,0" width="380" height="18">
+		    		    <Label text="下载你选中的视频，需要" width="160" textcolor="batchdownload_tips_normal"/>
+					    <HorizontalLayout name="login_hori_1" visible="true" padding="0,0,6,0" width="48">
+		    		        <Button name="login_btn" text="登录" width="30" textcolor="userinfo_green_btn_normal" hottextcolor="userinfo_green_btn_hover" pushedtextcolor="userinfo_green_btn_pushed"/>
+		    		        <Label text="或" width="18" padding="4,0,0,0" textcolor="batchdownload_tips_normal"/>
+		    	        </HorizontalLayout>
+		    		    <Button name="openvipbtn1" text="开通VIP" width="50" textcolor="integral_vip_btn_noraml" hottextcolor="integral_vip_btn_hot" pushedtextcolor="integral_vip_btn_pushed"/>
+						<Control />
+		    	    </HorizontalLayout>
+				    <HorizontalLayout name="showviptips_2" visible="false" padding="0,6,0,0" width="380" height="18">
+		    		    <Label text="你选中了VIP清晰度，需要" width="166" textcolor="batchdownload_tips_normal"/>
+						<HorizontalLayout name="login_hori_2" visible="true" padding="0,0,6,0" width="48">
+		    		        <Button name="login_btn" text="登录" width="30" textcolor="userinfo_green_btn_normal" hottextcolor="userinfo_green_btn_hover" pushedtextcolor="userinfo_green_btn_pushed"/>
+		    		        <Label text="或" width="18" padding="4,0,0,0" textcolor="batchdownload_tips_normal"/>
+		    	        </HorizontalLayout>
+		    		    <Button name="openvipbtn" text="开通VIP" width="50" textcolor="integral_vip_btn_noraml" hottextcolor="integral_vip_btn_hot" pushedtextcolor="integral_vip_btn_pushed"/>
+						<Control />
+		    	    </HorizontalLayout>
+					<HorizontalLayout name="showviptips_3" visible="false" padding="0,6,0,0" width="380" height="18">
+		    		    <Label text="版权保护，下载视频请" width="146" textcolor="batchdownload_tips_normal" />
+						<HorizontalLayout name="login_hori_3" visible="true" padding="0,0,6,0" width="48">
+		    		        <Button name="login_btn" text="登录" width="30" textcolor="userinfo_green_btn_normal" hottextcolor="userinfo_green_btn_hover" pushedtextcolor="userinfo_green_btn_pushed"/>
+		    		        <Label text="或" width="18" padding="4,0,0,0" textcolor="batchdownload_tips_normal"/>
+		    	        </HorizontalLayout>
+		    		    <Button name="payorticketbutton" text="购买" width="28" textcolor="integral_vip_btn_noraml" hottextcolor="integral_vip_btn_hot" pushedtextcolor="integral_vip_btn_pushed"/>
+						<Control />
+		    	    </HorizontalLayout>
+					<HorizontalLayout name="showviptips_4" visible="false" padding="0,6,0,0" width="380" height="18">
+		    		    <Label text="版权保护，暂不支持下载会员加更礼选集" width1="146" textcolor="batchdownload_tips_normal" />
+		    	    </HorizontalLayout>
+					
+					<HorizontalLayout name="showviptips_5" visible="false" padding="0,6,0,0" width="380" height="18">
+		    		    <Label name="tips5_label" text="你选中了xxxxxxxx，需要"  textcolor="batchdownload_tips_normal"/>						
+		    		    <Button name="openvipbtn" text="开通黄金VIP" width="80" textcolor="integral_vip_btn_noraml" hottextcolor="integral_vip_btn_hot" pushedtextcolor="integral_vip_btn_pushed"/>
+						<Control />
+		    	    </HorizontalLayout>
+					
+					<HorizontalLayout name="showdirtip" visible="false" padding="0,6,0,0" width="380" height="18">
+		    		    <Label text="下载目录无效，请更改目录" width="200" textcolor="batchdownload_tips_red" />
+						<Control />
+		    	    </HorizontalLayout>
+		    	    <Control />
+		    		<Button name="downloadBtn" style="green_gradient_btn_style" text="下载(0)" indexfont="DefaultFont" width="74" height="30" />
+					<WeakButton name="loginDownloadBtn" text="登录后下载(0)" visible="false"
+								style="green_gradient_btn_style"
+								width="114" height="30" indexfont="font_yahei_13" />
+				</HorizontalLayout>
+		    </VerticalLayout>
+		    
+            <VerticalLayout name="nodata">
+                <VerticalLayout name="LoadData" visible="true">
+					<Control />
+					<HorizontalLayout height="100">
+					    <Control />
+						<Control width="100" height="100" bkimage="commonres/loading.apng"/>
+						<Control />
+					</HorizontalLayout>
+		    	    <Label text="数据正在加载中......" padding="0,26,0,0" height="40" align="center" textcolor ="batchdownload_tips_normal" />
+					<Control />
+                </VerticalLayout>
+                <VerticalLayout name="error" visible="false">
+                    <Label name="errorIcon" width="202" height="186" bkimage="file='skinplan/commonres/page_noexit.svg' decode='render'" padding="224,0,0,0" />
+                    <HorizontalLayout name="downloadfailed" height ="20">
+                        <Label name ="tipsText" text="网络加载超时，请" padding="236,0,0,0" width="112" textcolor ="batchdownload_tips_normal"/>
+                        <Button name="rescuedata" text="重新试试" width="60" textcolor="userinfo_green_btn_normal" hottextcolor="userinfo_green_btn_hover" pushedtextcolor="userinfo_green_btn_pushed"/>
+						<Label name ="tipsText" text="~" textcolor ="batchdownload_tips_normal"/>
+                    </HorizontalLayout>
+                    <Label name ="tipsText" text="由于版权限制，视频不允许下载！" visible="false" height="20" align="center" textcolor ="batchdownload_tips_normal" />
+                </VerticalLayout>
+            </VerticalLayout>
+		</VerticalLayout>
+		<Label name="lock_tips" text="超前解锁剧集需要会员购买后才可下载" width="270" height="40" align="center" textcolor ="batchdownload_lock_tips_textcolor" borderround="2,2" bordercolor="batchdownload_lock_tips_bordercolor" bkcolor="batchdownload_lock_tips_bkcolor" float="true" pos="183,197,453,237" visible="false" />
+    </VerticalLayout>
+
+</Window>

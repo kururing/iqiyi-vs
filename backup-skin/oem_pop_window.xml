@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<Window size="576,395" sizebox="10,10,10,10" caption="0,0,0,50" enabledstroke="true" >
+	<Font name="Tahoma" size="13" bold="false" italic="false" indexfont="skinFont1" />
+	<Font name="Microsoft YaHei" size="14" bold="false" italic="false" default="true" indexfont="skinDefault" />
+    <Default name="VScrollBar" value="showbutton1=&quot;false&quot; showbutton2=&quot;false&quot; width=&quot;6&quot; thumbnormalimage=&quot;file='commonres/scrollbar.png' decode='render' source='0,0,10,40' corner='0,6,0,6'&quot; thumbhotimage=&quot;file='commonres/scrollbar.png' decode='render' source='10,0,20,40' corner='0,6,0,6'&quot; thumbpushedimage=&quot;file='commonres/scrollbar.png' decode='render' source='20,0,30,40' corner='0,6,0,6'&quot; " />
+	<VerticalLayout  bkcolor="#ff252528">
+		<HorizontalLayout name="layout_top" height="50" bkcolor="#ff2C2C2F" >
+			<Label name="msgbox_title" text="用户协议与隐私保护" height="20" padding="20,15,0,0" textpadding="0,0,0,0" textcolor="#7fffffff" align="left" indexfont="skinDefault"/>
+		</HorizontalLayout>
+		
+		<HorizontalLayout name="layout_tips" height="251" padding="18,18,1,0" autovscroll="true" vscrollbar="true" bkcolor="#ff252528">
+            <Text name="protocol_text" textcolor="#ffffffff" bordersize="1" padding="0,0,7,0" 
+                        text="<c #ffffff>感谢您选择爱奇艺PC客户端！</c><c #ffffff><n><n> </c><c #ffffff><n ><n>我们非常重视您的个人信息和隐私保护。为了更好地保障您的个人权益，在您使用我们的产品前，请务必审慎阅读</c><a https://www.iqiyi.com/user/register/protocol.html><c #00b909>《爱奇艺服务协议》</c></a><c #ffffff>与</c><a https://privacy.iqiyi.com/policies><c #00b909>《爱奇艺隐私政策》</c></a><c #ffffff>内的所有条款，尤其是:</c><c #ffffff><n> </c>
+<c #ffffff><n>1. 我们对您的个人信息的收集/保存/使用/对外提供/保护等规则条款，以及您的用户权利等条款；</c>
+<c #ffffff><n>2. 约定我们的限制责任、免责条款；</c><c #ffffff><n>3. 其他以颜色或加粗进行标识的重要条款。<n></c><c #ffffff><n> </c><c #ffffff><n>如您对以上协议有任何疑问，可通过人工客服或发邮件至 privacy＠qiyi.com与我们联系。您点击“同意并继续”的行为即表示您已阅读完毕并同意以上协议的全部内容。</c><c #ffffff><n> <n>如您同意以上协议内容，请点击“同意并继续”，开始使用我们的产品和服务！</c>" singleline="false" height="300" showhtml="true" indexfont="skinDefault" />
+		</HorizontalLayout>
+		
+		<HorizontalLayout name="layout_do" height="76" bkcolor="#ff252528">
+			<Button name="ok_btn" text="同意并继续" borderround="2,2" width="96" height="32" textcolor="#ffffffff" align="center" padding="172,22,0,20" gradient="linear startpoint='0,0.69' endpoint='1,0.31'  colorstops=((#ff16e05a, 0) (#ff16e09d, 1))"
+        hot-gradient="linear startpoint='0,0.69' endpoint='1,0.31' colorstops=((#ff23d41e, 0) (#ff16e09d, 1.0))"
+        pushed-gradient="linear startpoint='0,0.69' endpoint='1,0.31' colorstops=((#cc23d41e, 0) (#cc16e09d, 1.0))" />
+			<Button name="cancel_btn" text="不同意" width="96" height="32" borderround="2,2" bkcolor="cancel_btn_normal_color" hotbkcolor="cancel_btn_hot_color" pushedbkcolor="cancel_btn_pushed_color" textcolor="#ffffffff" align="center" padding="40,22,0,0" indexfont="skinDefault"/>
+		</HorizontalLayout>
+	</VerticalLayout>
+</Window>

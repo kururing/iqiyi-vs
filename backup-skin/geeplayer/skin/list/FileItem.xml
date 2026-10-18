@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Window>
+	<FileItem name="fileItem " height="40"  inset="0,0,0,0" bkcolor="#ff0000ff" >
+		<Control name="space" width="16"/>
+		<Control name="lastplayed_icon"  visible="true" width="16" height="12"
+		 padding="0,14,3,0" tooltip="上一次播放的文件"/>
+		<Label name="name" height="36" adjustwidth="true" textcolor="list_item_text_nor" indexfont="yahei_16"
+			endellipsis="true" showhtml="true"/>
+		<Label name="invalidatelabel" height="20" align="right" padding="8,10,0,0" text="文件已失效" visible="true" width="80" textcolor="0xFFF65175"
+			indexfont="yahei_14"/>
+		<CheckBox name="item_playbtn" visible="true" width="28"  height="28" padding ="4,6,0,6"
+		textcolor="list_item_playbtn_nor" hottextcolor="list_item_playbtn_hot" pushedtextcolor="list_item_playbtn_press"
+		normaltooltip="播放" selectedtooltip="暂停"
+             normalimage="file='geeIcon/settop.svg'  svg-fill-color='0xBFFFFFFF'"
+             hotimage="file='geeIcon/settop.svg'  svg-fill-color='0xFFFFFFFF'"
+             pushedimage="file='geeIcon/settop.svg'  svg-fill-color='0x80FFFFFF'"
+             selectednormalimage="file='geeIcon/istop.svg'  svg-fill-color='0xBFFFFFFF'"
+             selectedhotimage="file='geeIcon/istop.svg' svg-fill-color='0xFFFFFFFF'"
+             selectedpushedimage="file='geeIcon/istop.svg'  svg-fill-color='0x80FFFFFF'"/>
+		<Button name="item_closebtn" visible="true" width="28" height="28" padding ="2,6,0,6" tooltip="从播放列表中删除"
+		   normalimage="file='newIcon/FileItem/normal/delete.png' source='0,0,56,56'"
+		   hotimage="file='newIcon/FileItem/hover/delete.png' source='0,0,56,56'"
+		   pushedimage="file='newIcon/FileItem/press/delete.png' source='0,0,56,56'"
+			   bordersize="0" bordercolor="0xFFFFFFFF"
+   />
+		<Gifcontrol name="playicon"  visible="true" width="16" height="16" padding="4,12,0,12" bkimage="newIcon/FileItem/normal/playing.gif" autoplay="true"/>
+		<HorizontalLayout name="listControl" adjustwidth="true"  padding="8,0,0,0" align="leftmiddle">
+			<Label name="videoTime" visible="true"   textcolor="list_item_text_nor" adjustwidth="true"
+				   bordersize="0" bordercolor="0xFFFFFFFF"
+				 indexfont="yahei_14" minheight="30" />
+			<Control name="placeholder" width ="0" visible="true"/>
+
+		</HorizontalLayout>
+	</FileItem>
+</Window>

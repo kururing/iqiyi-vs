@@ -1,0 +1,23 @@
+{
+  "title": "田耕纪第2集",
+  "order": 2,
+  "vid": "d99ca6da3a9f268cd067780e34b24094",
+  "tvid": "1249473580435700",
+  "albumId": "7714930311098201",
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321734.2232907,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 955
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260518/28/7f/ca168e704224e063c18647b91a6c4fe8.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

@@ -1,0 +1,23 @@
+{
+  "title": "花戎第20集",
+  "order": 20,
+  "vid": "d839d8f0ff9d3a29b8e1a196eb9bac97",
+  "tvid": "1164444000411300",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337947.0272262,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 914
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/6f/cc/8a94ce4c8e7926e2aa327f874798b86d.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

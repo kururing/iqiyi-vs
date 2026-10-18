@@ -1,0 +1,23 @@
+{
+  "title": "田耕纪第25集",
+  "order": 25,
+  "vid": "dccbec02dff4bc0714d904ad1f61afc3",
+  "tvid": "3268525019093100",
+  "albumId": "7714930311098201",
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321734.2392948,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 808
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260518/4f/72/77d119427a3988fb53dd4714c473c002.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

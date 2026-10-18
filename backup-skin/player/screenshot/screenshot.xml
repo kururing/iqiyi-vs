@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Window size="520,455" roundcorner="2,2" sizebox="0,0,0,0">
+	<Font name="Microsoft YaHei" size="14" bold="false" italic="false" default="false" indexfont="yahei_14" />
+
+	<WeakVerticalLayout name="root" width="520" height="455" minwidth="520" minheight="455"  bkcolor="#FF252528" bordersize="1" bordercolor="#66000000">
+		<WeakVerticalLayout>
+			<WeakLabel text="预览" align="left" indexfont="yahei_14" textcolor="player_text_disabledcolor" padding="20,16,0,0"/>
+			<WeakLabel name="screen" maxwidth="480" maxheight="270" minwidth="480" minheight="270" padding="20,8,20,0" bkcolor="#FF000000" />
+
+			<WeakHorizontalLayout width="480" height="30" padding="20,12,20,0" >
+				<Label text="已保存至:" width="70" height="30" align="left" textcolor="player_text_disabledcolor" indexfont="yahei_14" />
+				<HorizontalLayout width="260" height="30">
+					<WeakLabel name="path_without_extension" width="232" height="30" maxwidth="260" align="left"
+						textcolor="player_text_disabledcolor" endellipsis="true" singleline="true" indexfont="yahei_14" />
+					<WeakLabel name="extension"  text=".jpg" width="28" height="30" align="left" textcolor="player_text_disabledcolor" indexfont="yahei_14" />
+				</HorizontalLayout>
+				<WeakButton name="open" width="140" height="30" padding="16,0,0,0" borderround="2,2" bkcolor="#0CFFFFFF"
+					text="打开文件位置" align="left" textcolor="player_text_disabledcolor" hottextcolor="player_text_hotcolor"
+					indexfont="yahei_14" textpadding="38,0,0,0"
+					normalimage="file='player/menu/icon_local_file.svg' dest='10,8,30,23'
+					svg-fill-color='player_top_normal_color'
+					hot-svg-fill-color='player_control_hover_color'
+			    pushed-svg-fill-color='player_control_press_color'
+			    disabled-svg-fill-color='player_top_disable_color'"/>
+			</WeakHorizontalLayout>
+
+			<WeakHorizontalLayout width="480" height="50" padding="20,15,20,14" >
+				<Label text="分享至:" width="60" height="30" align="left" textcolor="player_text_disabledcolor" indexfont="yahei_14" padding="0,10,0,10" />
+				<Control width="10" />
+				<WeakLabel text="正在为您加载..." usergroup="sharing_waiting" visible="true" width="446" height="30" align="left" textcolor="player_text_disabledcolor" indexfont="yahei_14" padding="0,10,0,10" />
+				<WeakHorizontalLayout name="share" width="446" height="50" usergroup="sharing_waiting" visible="false" >
+					<WeakButton name="share_qq" width="50" height="50" borderround="2,2" bkcolor="#0CFFFFFF" tooltip="分享到QQ好友" bkimage="player/screenshot/qq.svg" />
+					<WeakButton name="share_weibo" width="50" height="50" borderround="2,2" bkcolor="#0CFFFFFF" tooltip="分享到新浪微博" padding="20,0,0,0" bkimage="player/screenshot/weibo.svg"  />
+					<WeakButton name="share_qzone" width="50" height="50" borderround="2,2" bkcolor="#0CFFFFFF" tooltip="分享到QQ空间" padding="20,0,0,0" bkimage="player/screenshot/qzone.svg" />
+				</WeakHorizontalLayout>
+			</WeakHorizontalLayout>
+		</WeakVerticalLayout>
+
+		<WeakButton name="close" width="20" height="20" maxwidth="20" maxheight="20" float="true" pos="485,16,505,36"
+			normalimage="file='player/screenshot/close.svg'
+							svg-fill-color='40ffffff'
+            	hot-svg-fill-color='close_hot_btn_color'
+            	pushed-svg-fill-color='close_pushed_btn_color'
+							align='center'" />
+    </WeakVerticalLayout>
+</Window>

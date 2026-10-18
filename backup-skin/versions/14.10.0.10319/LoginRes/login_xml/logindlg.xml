@@ -1,0 +1,210 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="706,507" caption="0,0,0,38" >
+  <Font name="Microsoft YaHei" size="16" bold="false" italic="false" indexfont="yahei_16"/>
+  <Font name="Microsoft YaHei" size="26" bold="false" italic="false" indexfont="yahei_26"/> 
+  <Font name="Microsoft YaHei" size="13" bold="false" italic="false" indexfont="yahei_13" default="true"/>
+  <Font name="Microsoft YaHei" size="20" bold="false" italic="false" indexfont="yahei_20"/>
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="yahei_14"/>
+  
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="yahei_12"/>
+	<VerticalLayout name="mask" bkcolor="80000000">
+		<Control />
+		<HorizontalLayout height="507">
+			<Control />
+			<VerticalLayout name="login_main_lay" width="706" height="507" bkcolor111="login_bk_color" borderround="12,12">
+				<!-- 左边-->
+				<VerticalLayout name="left_lay" width="350" float="true" pos="0,0,350,507">
+					<!-- 左边有头像-->
+					<VerticalLayout name="fast_login_lay" width="350" height="507" bkimage="skinplan\login\left_head.png"  inset="0,0,20,0" visible="false" >
+						<Label name="fast_login_title" text="快速登录" textcolor="login_title_text_color" indexfont="yahei_26" padding="0,126,0,0" align="center" height="26"/>
+						<HorizontalLayout padding="0,16,0,22" height="16">
+							<Control />
+							<Label width="32" height="1" padding="0,8,0,0" gradient="login_tips_leftline_gradient"/>
+							<Label text="点击头像快速登录" textcolor="login_normal_text_color" align="center" padding="8,0,0,0" indexfont="yahei_16" width="128"/>
+							<Label width="32" height="1" padding="8,8,0,0" gradient="login_tips_rightline_gradient"/>
+							<Control />
+						</HorizontalLayout>
+						<HorizontalLayout name="fast_user_lay">
+						</HorizontalLayout>
+					</VerticalLayout>
+					<!-- 左边无头像-->
+					<VerticalLayout name="no_fast_lay" width="350" bkimage="skinplan\login\left_nohead.png" inset="0,0,20,0" height="507">
+						<Label name="left_main_title" text="欢迎来到爱奇艺" textcolor="login_title_text_color" indexfont="yahei_26" padding="0,224,0,0" height="26" align="center"/>
+						<HorizontalLayout padding="0,16,0,22" height="16" >
+							<Control />
+							<Label width="12" height="1" padding="0,7,0,0" gradient="login_tips_leftline_gradient"/>
+							<Label name="left_sub_title" text="登录后解锁更多功能" textcolor="login_normal_text_color" indexfont="yahei_16" align="center" padding="8,0,8,0" />
+							<Label width="12" height="1" padding="0,7,0,0" gradient="login_tips_rightline_gradient"/>
+							<Control />
+						</HorizontalLayout>
+					</VerticalLayout>
+				</VerticalLayout>
+				<!-- 右边-->
+				<VerticalLayout name="right_lay"  float="true" pos="306,0,706,507" bkcolor1="login_no_fast_bk_color" height="507" inset="24,0,0,0" width="400">
+					<HorizontalLayout  height="26" padding="0,60,0,0">
+						<Control />
+						<VerticalLayout width="64">
+							<Option name="qr_login_opt" text="扫码登录" textcolor="login_normal_text_color" hottextcolor="login_opt_hot_textcolor" selectedtextcolor="login_opt_select_color" height="16" indexfont="yahei_16" group="login_group" selected="true"/>
+							<Label name="qr_login_line" width="12" height="2" bkcolor="login_opt_select_color" borderround="1,1" padding="26,8,0,0"/>
+						</VerticalLayout>
+						<Control width="44"/>
+						<VerticalLayout  width="64">
+							<Option name="sms_login_opt" text="短信登录" textcolor="login_normal_text_color" hottextcolor="login_opt_hot_textcolor" selectedtextcolor="login_opt_select_color" height="16" indexfont="yahei_16" group="login_group"/>
+							<Label name="sms_login_line" width="12" height="2" bkcolor="login_opt_select_color" borderround="1,1" align="center" padding="26,8,0,0" visible="false"/>
+						</VerticalLayout>
+						<Control width="44" />
+						<VerticalLayout  width="64">
+							<Option name="passwd_login_opt" text="密码登录" textcolor="login_normal_text_color" hottextcolor="login_opt_hot_textcolor" selectedtextcolor="login_opt_select_color" indexfont="yahei_16" height="16" group="login_group"/>
+							<Label name="passwd_login_line" width="12" height="2" bkcolor="login_opt_select_color" borderround="1,1" align="center" padding="26,8,0,0" visible="false"/>
+						</VerticalLayout>
+						<Control />
+					</HorizontalLayout>
+					<VerticalLayout name="login_lay" height="259">
+					   <!--扫码登录-->
+						<VerticalLayout name="qr_login_lay" visible="false">
+							<!--二维码-->
+							<HorizontalLayout bkcolor="#ffffffff" width="148" height="148" borderround="8,8" padding="114,40,0,0" bordercolor="login_grcode_bordercolor">
+								<Button name="qrcode_image" width="132" height="132" bkimage="file='LoginRes/loading.png'" padding="7,7,7,7"/>
+								<Button name="mask_lab" visible="false" bkcolor="login_qr_mask_color" float="true" pos="0,0,148,148" visible="false" enabled="false"/>
+							</HorizontalLayout>
+							<!--二维码失效-->
+							<VerticalLayout name="qrcode_outdate" bkcolor="login_qr_outtime_color" bordercolor="login_line_color" width="148" height="148" borderround="4,4" padding="114,-148,0,0" visible="false">
+								<Label text="二维码已失效" align="center" textcolor="login_qr_status_text_color" padding="0,48,0,0" height="13"/>
+								<Button name="refresh_qrcode" text="点击重试" gradient="login_green_btn_hot_gradient" width="100" height="28" align="center" padding="24,12,0,0" textcolor="login_qr_btn_text_color" borderround="4,4"/>
+							</VerticalLayout>
+							<!--扫码成功-->
+							<VerticalLayout name="qrcode_scan" bkcolor="login_qr_outtime_color" width="148" height="148" borderround1="8,8" padding="114,-148,0,0" visible="false">
+								<Label width="52" height="52" bkimage="LoginRes\loginsuccess.svg" padding="48,28,0,0"/>
+								<Label text="扫码成功" textcolor="login_qr_status_text_color" align="center" height="18" lineheight="18" padding="0,4,0,0"/>
+								<Label text="请在手机上授权登录" textcolor="login_qr_status_text_color" align="center" lineheight="18" height="18"/>
+							</VerticalLayout>
+							<HorizontalLayout height="13" padding="0,12,0,0">
+								<Control />
+								<Label text="打开" textcolor="login_qr_text_color" width="26"/>
+								<Label text="爱奇艺手机APP" textcolor="login_qr_green_color" width="91"/>
+								<Label text="扫码登录" textcolor="login_qr_text_color" width="52"/>
+								<Control />
+							</HorizontalLayout>
+						</VerticalLayout>
+						
+						<!--短信登录-->
+						<VerticalLayout name="sms_login_lay" visible="false">
+							<HorizontalLayout name="sms_lay" padding="48,24,0,0" style="login_edit_style">
+								<!--区号-->
+								<Button name="area_code_btn" width="67" textpadding="14,1,0,0" itemtextpadding="10,1,10,1" textcolor="login_area_textcolor" indexfont="yahei_13" text="+86" align="left" bkimage="file='skinplan\login\arrow_down.svg' dest='45,19,55,29'" userdata="86"/>
+								<Label width="1" height="20" bkcolor="login_edit_border_color" padding="0,14,0,0"/>
+								<TextField name="phone_text_field" indexfont="yahei_13" tip="请输入手机号" tippadding="0,0,0,0" tiptextcolor="login_normal_text_color" textpadding="12,0,16,0" caretcolor="login_normal_text_color" textcolor="login_edit_text_color" numberonly="true"/>
+								<Button name="sms_delete_phone_btn" width="16" height="16" float="true" normalimage="skinplan\login\delete.svg" hotimage="LoginRes\delete_acc_hot.svg" pos="248,16,264,32"  visible="false"/>
+							</HorizontalLayout>
+							<Label name="err_text1" height="24"  padding="48,0,0,0" textcolor="login_err_textcolor"/>
+							<HorizontalLayout name="code_lay"  style="login_edit_style" padding="48,0,0,0">
+								<TextField name="v_code_lab" width="199" height="48" tip="请输入验证码" textpadding="10,0,16,0" tippadding="0,0,0,0" tiptextcolor="login_normal_text_color" indexfont="yahei_13" caretcolor="login_normal_text_color" textcolor="login_edit_text_color" numberonly="true"/>
+								<Button name="send_sms_btn" text="获取验证码" textcolor="login_varify_textcolor"  indexfont="yahei_13" caretcolor="login_normal_text_color" width="65" disabledtextcolor="login_send_sms_textcolor" />
+								<Button name="sms_delete_code_btn" width="16" height="16" float="true" normalimage="skinplan\login\delete.svg"  hotimage="LoginRes\delete_acc_hot.svg" pos="171,16,187,32"  visible="false"/>
+							</HorizontalLayout>
+							<Label name="err_text2" height="13" padding="48,4,0,0" textcolor="login_err_textcolor"/>
+							<Button name="sms_login_btn" text="登录" style="login_style" padding="48,19,0,0" enabled="false"/>
+						</VerticalLayout>
+						<!--密码登录-->
+						<VerticalLayout name="account_login_lay">
+							<HorizontalLayout name="acc_lay"  style="login_edit_style" padding="48,24,0,0">
+								<TextField name="account_text_field" indexfont="yahei_13" tip="请输入手机号/邮箱" tippadding="0,0,0,0" tiptextcolor="login_normal_text_color" textpadding="10,0,40,0" caretcolor="login_normal_text_color" textcolor="login_edit_text_color" />
+								<Button name="acc_delete_btn" width="16" height="16" float="true" normalimage="skinplan\login\delete.svg" hotimage="LoginRes\delete_acc_hot.svg" pos="248,16,264,32"  visible="false"/>
+							</HorizontalLayout>
+							<Label name="err_text1" height="24" padding="48,0,0,0" textcolor="login_err_textcolor"/>
+							<HorizontalLayout  name="passwd_lay" padding="48,0,0,0"  style="login_edit_style">
+								<TextField name="passpwd_text" width="216" height="48" tip="请输入密码" tippadding="0,0,0,0" tiptextcolor="login_normal_text_color" textpadding="10,0,0,0" indexfont="yahei_13" caretcolor="login_normal_text_color" password="true" textcolor="login_edit_text_color"/>
+								<Button width="16" height="16" padding="0,16,0,0"/>
+								<Option name="passwd_opt" width="16" height="16" canpress="true" padding="16,16,0,0" normalimage="file='skinplan\login\show_passwd.svg'" hotimage="LoginRes\show_passwd_hot.svg"  selectedimage="file='skinplan\login\show_passwd_n.svg'" selectedhotimage="LoginRes\show_passwd_n_hot.svg" selected="true"/>
+								<Button name="acc_delete_psswd_btn" width="16" height="16" float="true" normalimage="skinplan\login\delete.svg"  hotimage="LoginRes\delete_acc_hot.svg" pos="216,16,232,32" visible="false"/>
+							</HorizontalLayout>
+							<HorizontalLayout height="13" padding="0,4,49,0">
+								<Label name="err_text2" height="13" padding="48,0,0,0" textcolor="login_err_textcolor" indexfont="yahei_13"/>
+								<Button name="forget_passwd" text="忘记密码" textcolor="login_forget_btn_textcolor" hottextcolor="login_forget_btn_hottextcolor" align="right" indexfont="yahei_13" width="52"/>
+							</HorizontalLayout>
+
+							<Button name="login_btn" text="登录" style="login_style" padding="48,19,0,0" enabled="false"/>
+						</VerticalLayout>
+					</VerticalLayout>
+					<!-- 第三方登录-->
+					<VerticalLayout name="third_login_show"  height="105">
+						<HorizontalLayout height="13">
+							<Control />
+							<Label height="1" width="89" bkcolor="login_line_color" padding="0,6,0,0"/>
+							<Control width="12"/>
+							<Label text="其他登录方式" textcolor="login_other_opt_color" indexfont="yahei_13" width="78"/>
+							<Control width="12"/>
+							<Label height="1" width="89" bkcolor="login_line_color" padding="0,6,0,0"/>
+							<Control />
+						</HorizontalLayout>
+						<HorizontalLayout name="third_inner" height="36" width="376" padding="0,16,0,0">
+							<Control />
+							<Button name="third_weixin" width="36" height="36" bkimage="skinplan\login\weixin.png" hotbkcolor="#14FFFFFF" borderround="6,6" tag="29" userdata="wx"/>
+							<Control width="13"/>
+							<Button name="third_qq" width="36" height="36" bkimage="skinplan\login\qq.png" hotbkcolor="#14FFFFFF" borderround="6,6" tag="4" userdata="qq"/>
+							<Control width="13"/>
+							<Button name="third_weibo" width="36" height="36" bkimage="skinplan\login\weibo.png" hotbkcolor="#14FFFFFF" borderround="6,6" tag="2" userdata="wb"/>
+							<Control width="13" />
+							<Button name="third_zhifubao" width="36" height="36" bkimage="skinplan\login\zhifubao.png" hotbkcolor="#14FFFFFF" borderround="6,6" tag="5" userdata="zfb"/>
+							<Control width="13" />
+							<Button name="third_baidu" width="36" height="36" bkimage="skinplan\login\baidu.png" hotbkcolor="#14FFFFFF" borderround="6,6" tag="1" userdata="bd"/>
+							<Control width="13" />
+							<Button name="third_xiaomi" width="36" height="36" bkimage="skinplan\login\xiaomi.png" hotbkcolor="#14FFFFFF" borderround="6,6" tag="30" userdata="xm"/>
+							<!-- <Button name="third_weiruan" width="36" height="36" bkimage="skinplan\login\weiruan.png" hotbkcolor="#14FFFFFF" borderround="6,6" tag="58"/> -->
+							<Control />
+						</HorizontalLayout>
+						<Control />
+					</VerticalLayout>
+					<Label height="1"  bkcolor="login_line_color"/>
+					<VerticalLayout name="profile_lay">
+						<HorizontalLayout height="16" padding="0,20,0,0">
+							<Control />
+							<CheckBox name="profile_check" style="login_checkbox_style" width="16"  />
+							<Control width="8"/>
+							<Label text="同意" textcolor="login_normal_text_color" indexfont="yahei_13" width="26"/>
+							<Button name="protocal_btn" text="《用户协议》" textcolor="login_protocal_color" indexfont="yahei_13" width="78"/>
+							<Label text="和" textcolor="login_normal_text_color" indexfont="yahei_13" width="13"/>
+							<Button name="policies_btn" text="《隐私条款》" textcolor="login_protocal_color" indexfont="yahei_13" width="78"/>
+							<Control />
+						</HorizontalLayout>
+						<Label name="regist_tip" text="未注册过的手机号，我们将自动帮您注册账号" textcolor="login_regist_tip_textcolor" indexfont="yahei_13" align="center" padding="0,8,0,0" visible="false" height="13"/>
+						<Control />
+					</VerticalLayout>
+				</VerticalLayout>
+				<Label name="profile_tip" text="请阅读并勾选下方协议" bkimage="skinplan\login\profile_bk.svg" width="154" height="48" textpadding="12,-12,0,0" align="vcenter" float="true" textcolor="#80ffffff" visible="false" indexfont="yahei_13"/>
+				<Button name="close_btn" style="close_style" float="true" width="16" height="16" pos="670,20,686,36"/>
+				<!--风险扫码页面-->
+				<VerticalLayout name="danger_lay" width="360" height="354" float="true" pos="173,76,533,430" visible="false" borderround="4,4">
+				</VerticalLayout>
+				<!--实名验证页面-->
+				<VerticalLayout name="bind_lay" width="360" height="354" visible="false"  float="true" pos="173,76,533,430" borderround="4,4">
+				</VerticalLayout>
+				<!--实名验证--选择账号页面-->
+				<VerticalLayout name="bind_select_lay" width="360" height="354" visible="false"  float="true" pos="173,76,533,430" borderround="4,4">
+				</VerticalLayout>
+				<!--二次并发安全-->
+				<VerticalLayout name="concurrent_verify_lay" width="360" height="390" visible="false"  float="true" pos="173,58,533,448" borderround="4,4">
+				</VerticalLayout>
+				<!--二次并发--主设备扫码-->
+				<VerticalLayout name="concurrent_grcode_lay" width="360" height="390" visible="false"  float="true" pos="173,58,533,448" borderround="4,4">
+				</VerticalLayout>
+				<!--二次并发--切换账号-->
+				<VerticalLayout name="concurrent_switch_lay" width="360" height="384" visible="false" float="true" pos="173,61,533,445" borderround="4,4">
+				</VerticalLayout>
+				<!--上行短信-->
+				<VerticalLayout name="uplink_sms_lay" width="360" height="354" visible="false" float="true" pos="173,76,533,430" borderround="4,4">
+				</VerticalLayout>	
+				<!--设备锁扫码页面-->
+				<VerticalLayout name="locked_lay" width="360" height="354" visible="false" float="true" pos="173,76,533,430" borderround="4,4">
+				</VerticalLayout>		
+				<!-- 地区列表-->
+				<VerticalLayout name="area_lay" width="160" height="192" visible="false" float="true" pos="378,162,538,354" borderround="4,4">
+				</VerticalLayout>
+				<Label name="err_tip" height="40" width="172" textpadding="16,12,0,0" float="true" pos="232,233,474,273" textcolor="#e6ffffff" bkcolor="#F0464F61" visible="false" align="center"
+				borderround="4,4" singleline="false" lineheight="20" indexfont="yahei_14"/>
+			</VerticalLayout>
+			<Control />
+		</HorizontalLayout>
+		<Control />
+	</VerticalLayout>
+</Window>

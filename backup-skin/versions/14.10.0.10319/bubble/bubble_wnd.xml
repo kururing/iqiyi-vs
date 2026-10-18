@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="405,126" caption="0,0,0,34">
+<Font name="Microsoft YaHei" size="12" bold="true" italic="false" default="true" indexfont="skinDefault" />
+<Font name="Microsoft YaHei" size="14" bold="true" italic="false" indexfont="TitleDefault" />
+<HorizontalLayout name="bubble_bkimage" float="true" pos="19,13" bkimage="bubble\\bubble.png">
+        <HorizontalLayout width="75" height="100" float="true" pos="19,13">
+            <Label name="tip_photo" width="75" height="100"/>
+        </HorizontalLayout>
+        <VerticalLayout inset="0,6,0,0" float="true" pos="104,6">
+            <Label name="tip_title" text="快来观看吧~" width="260" align="left" padding="0,0" textpadding="0,0" font="TitleDefault" textcolor="#FF333333"/>
+            <Label name="tip_title_ex" text="" align="left" height="1" visiable="false" font="TitleDefault" textcolor="#FF333333"/>
+            <Label name="tip_video_desc1" text="" width="280" textcolor="#FF666666" endellipsis="true"/>
+            <Label name="tip_seperator" bkimage="bubble\\seperator.png" height="2" width="8" padding="0,1,0,1" textcolor="#FF666666"/>
+            <Label name="tip_video_desc2" text="" width="280" textcolor="#FF666666" endellipsis="true"/>
+            <HorizontalLayout name="bottom_container" float="true" pos="0,80">
+                <Button name="playbtn" width="86" height="26" 
+                        text="立即观看" font="TitleDefault" textcolor="0xFFFFFFFF"
+                        normalimage="file='bubble\\play.png' source='0,0,86,26'" 
+                        hotimage="file='bubble\\play.png' source='0,26,86,52'" 
+                        selectedimage="file='bubble\\play.png' source='0,52,86,78'"
+                        disabledimage="file='bubble\\play.png' source='0,78,86,104'"
+                />
+                <Label width="10"/>
+                <Button name="add_bodan" width="140" height="26" 
+                        text="加入播单稍后看" font="TitleDefault" textcolor="0xFFFFFFFF"
+                        normalimage="file='bubble\\play.png' source='0,0,140,26'" 
+                        hotimage="file='bubble\\play.png' source='0,26,140,52'" 
+                        selectedimage="file='bubble\\play.png' source='0,52,140,78'"
+                        disabledimage="file='bubble\\play.png' source='0,78,140,104'"
+                />
+            </HorizontalLayout>
+        </VerticalLayout>
+        <Button name="close" width="11" height="10" float="true" pos="380,13"
+                    normalimage = "file='bubble\\close.png' source='0,0,10,10'"
+                    hotimage = "file='bubble\\close.png' source='11,0,21,10'"
+                    selectedimage = "file='bubble\\close.png' source='22,0,33,10'">
+        </Button>
+</HorizontalLayout>
+</Window>

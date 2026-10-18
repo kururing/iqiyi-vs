@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window size="1,1">
+  <Font indexname="0" name="微软雅黑" size="12" default="true" indexfont="yahei12"/>
+  <Font indexname="0" name="微软雅黑" size="14" default="false" indexfont="yahei14"/>
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="yahei14"/>
+  <VerticalLayout name="root" bkcolor="main_bk_color">
+	<VerticalLayout name="lwa_fake_view_reference" float="true" visible="true"/>
+	<VerticalLayout name="lwa_view_reference" visible="true"/>
+	<VerticalLayout name="drag_view_reference" float="true" pos="0,0"/>
+	<Button name="close_btn" float="true" pos="12,12"
+				normalimage="file='coeus\tips\close_btn.svg' align='center,12,12' 
+				svg-fill-color='incentivise_tips_clsbtn'
+				hot-svg-fill-color='#FF9A1111'
+				pushed-svg-fill-color='#FF9A1111'" visible="false"/>
+	<Button name="back_btn" float="true" pos="12,12" align="center" text="加载异常，请点击返回首页！" textcolor="integral_text" hottextcolor="mainui_hot_btn_color" indexfont="yahei14" visible="false"/>
+  </VerticalLayout>
+</Window>

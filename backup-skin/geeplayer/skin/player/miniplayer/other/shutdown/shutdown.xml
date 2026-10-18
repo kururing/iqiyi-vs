@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Window size="280,240" caption="0,0,280,32" >
+  <Include source="public/xml/default_font.xml" />
+  <Font name="微软雅黑" size="12" bold="false" italic="false" indexfont="yahei_12" default="true"/>
+  
+    <VerticalLayout bkimage="file='skinplan\public/dialog/wind_bk.png'" >
+
+		<HorizontalLayout height="32" inset="12,1,1,0" bkimage="file='skinplan\public/dialog/border_title.png' corner='3,3,4,4'">
+			<Label name="title_time" text="定时设置" algin="left" width="130" textcolor="wnd_title_text_nor" indexfont="yahei_14" />
+			<Control />
+			<Button name="btn_close"  animation="true" tooltip="关闭" width="24" height ="24" align="center" padding="0,3,4,4" 
+				  normalimage="file='skinplan\public/ctrl/public_close.png' source='0,0,24,24'"
+				  hotimage="file='skinplan\public/ctrl/public_close.png' source='24,0,48,24'"
+				  pushedimage="file='skinplan\public/ctrl/public_close.png' source='48,0,72,24'"
+				  disabledimage="file='skinplan\public/ctrl/public_close.png' source='72,0,96,24'" />
+		</HorizontalLayout>
+		
+		<VerticalLayout bkimage="file='skinplan\public/dialog/main_bk.png' corner='1,1,1,1' " >
+			<VerticalLayout inset="1,0,1,1" bkimage="file='skinplan\public/dialog/border_content.png' corner='3,3,4,4'">
+		
+				<HorizontalLayout height="30" padding="25,22,25,0">         
+				  	<Label name="label_time_shutdown" text="定时关机：" align="rightmiddle" width="63" textcolor="wnd_label_text_title" height="15" padding="0,5,0,0"/>
+
+				  	<HorizontalLayout width="68" height="28" padding="4,0,0,0">
+						<Edit name="edit_hour" animation="true" width="45" disabledtextcolor="wnd_edt_text_disable" bkcolor="wnd_edt_bk" textpadding="7,0,7,0"
+							textcolor="color_666666_666666" nativebkcolor="wnd_edt_bk" numbertype="true"  numrange="0,23" height="26" disabledtextcolor="color_444444_cccccc"
+					        normalimage="file='skinplan\public/ctrl/text.png' source='0,0,60,26' corner='2,2,2,2' "
+					        hotimage="file='skinplan\public/ctrl/text.png' source='60,0,120,26' corner='2,2,2,2'"
+							focusedimage="file='skinplan\public/ctrl/text.png' source='120,0,180,26' corner='2,2,2,2' "
+							disabledimage="file='skinplan\public/ctrl/text.png' source='180,0,240,26' corner='2,2,2,2' "/>
+						<VerticalLayout width="23" >
+						  <Button name="spinup" animation="true" width="20" height="13" userdata="hour"
+								  normalimage="file='skinplan\public/ctrl/spin_box.png' source='0,0,20,13'"
+								hotimage="file='skinplan\public/ctrl/spin_box.png' source='0,26,20,39' "
+								pushedimage="file='skinplan\public/ctrl/spin_box.png' source='0,52,20,65' " />
+						  <Button name="spindown" animation="true" width="20" height="13" userdata="hour"
+								normalimage="file='skinplan\public/ctrl/spin_box.png' source='0,13,20,26' "
+								hotimage="file='skinplan\public/ctrl/spin_box.png' source='0,39,20,52' "
+								pushedimage="file='skinplan\public/ctrl/spin_box.png' source='0,65,20,78' "  />
+						</VerticalLayout>
+				  	</HorizontalLayout>
+
+				  	
+
+				  	<HorizontalLayout width="68" height="28" padding="12,0,0,0">
+						<Edit name="edit_minute" animation="true" width="45" disabledtextcolor="wnd_edt_text_disable" bkcolor="wnd_edt_bk" textpadding="7,0,7,0"
+							textcolor="color_666666_666666" disabledtextcolor="color_444444_cccccc" nativebkcolor="wnd_edt_bk" numbertype="true" numrange="0,59" height="26"
+							normalimage="file='skinplan\public/ctrl/text.png' source='0,0,60,26' corner='2,2,2,2' "
+							hotimage="file='skinplan\public/ctrl/text.png' source='60,0,120,26' corner='2,2,2,2'"
+							focusedimage="file='skinplan\public/ctrl/text.png' source='120,0,180,26' corner='2,2,2,2' "
+							disabledimage="file='skinplan\public/ctrl/text.png' source='180,0,240,26' corner='2,2,2,2' "/>
+						
+						<VerticalLayout width="20" >
+						  	<Button name="spinup" animation="true"  width="20" height="13" userdata="min"
+								normalimage="file='skinplan\public/ctrl/spin_box.png' source='0,0,20,13'"
+								hotimage="file='skinplan\public/ctrl/spin_box.png' source='0,26,20,39' "
+								pushedimage="file='skinplan\public/ctrl/spin_box.png' source='0,52,20,65' "/>
+						  	<Button name="spindown" animation="true" width="20" height="13" userdata="min"
+								normalimage="file='skinplan\public/ctrl/spin_box.png' source='0,13,20,26' "
+								hotimage="file='skinplan\public/ctrl/spin_box.png' source='0,39,20,52' "
+								pushedimage="file='skinplan\public/ctrl/spin_box.png' source='0,65,20,78' " />
+						</VerticalLayout>
+				  	</HorizontalLayout>
+
+				  	
+				</HorizontalLayout>
+
+				<HorizontalLayout height="30" padding="0,14,0,0">
+					  <Label text="剩余时间：" align="rightmiddle" width="84" textcolor="wnd_label_text_title" align="right" />
+					  <Label name="remain_time" text="" width="274" textcolor="wnd_shutdown_remain_text" padding="4,0,0,0" />
+				</HorizontalLayout>
+
+				<HorizontalLayout height="28" padding="0,14,0,0">
+					  <Label text="定时动作：" align="rightmiddle" width="84" height="24"  textcolor="wnd_label_text_title" align="right" />
+				        <Combo name="comboperate" animation="true" width="90" textpadding="3,1,1,1" padding="4,0,4,0"
+								textcolor="color_wind_label_text" bkcolor="wnd_combo_bk"
+								itemtextcolor="color_wind_label_text" itembkcolor="wnd_combo_item_bk"
+								itemhottextcolor="wnd_combo_item_text_hot" itemhotbkcolor="wnd_combo_item_hot_bk"
+								dropdownlinecolor="wnd_combo_dropdown_line"
+								itemselectedtextcolor="wnd_combo_item_text_select" itemselectedbkcolor="wnd_combo_item_text_select_bk"
+								normalimage="file='skinplan\public/ctrl/combpicture.png' source='0,0,80,26' corner='2,2,23,2'"
+								hotimage="file='skinplan\public/ctrl/combpicture.png' source='0,26,80,52' corner='2,2,23,2'"
+								pushedimage="file='skinplan\public/ctrl/combpicture.png' source='0,52,80,78' corner='2,2,23,2'"
+								disabledimage="file='skinplan\public/ctrl/combpicture.png' source='0,0,80,26' corner='2,2,23,2'"
+						/>
+				</HorizontalLayout>
+				<HorizontalLayout padding="53,26,53,25" height="28">
+				  <Button name="btn_confirm" text="确定" animation="true" tooptip="确定"  width="80" textcolor="wnd_btn_ok_text_nor" 
+						disabledtextcolor="wnd_btn_ok_text_disable" align="center" indexfont="yahei_12"
+						normalimage="file='skinplan\public/ctrl/okbtn.png' source='0,0,80,28'" 
+						hotimage="file='skinplan\public/ctrl/okbtn.png' source='80,0,160,28'" 
+						pushedimage="file='skinplan\public/ctrl/okbtn.png' source='160,0,240,28'" 
+						disabledimage="file='skinplan\public/ctrl/okbtn.png' source='240,0,320,28'"/>
+						
+				  <Button name="btn_cancel" tooptip="取消" animation="true" text="取消" width="80" padding="12,0,0,0" 
+						textcolor="wnd_btn_cancel_text_nor" disabledtextcolor="wnd_btn_cancel_text_disable" align="center" indexfont="yahei_12"
+						normalimage="file='skinplan\public/ctrl/cancelbtn.png' source='0,0,80,28'" 
+						hotimage="file='skinplan\public/ctrl/cancelbtn.png' source='80,0,160,28'" 
+						pushedimage="file='skinplan\public/ctrl/cancelbtn.png' source='160,0,240,28'" 
+						disabledimage="file='skinplan\public/ctrl/cancelbtn.png' source='240,0,320,28'" />
+				</HorizontalLayout>
+			</VerticalLayout>
+    	</VerticalLayout>
+
+    	<Label name="label_tip_hour" text="" textcolor="wnd_tip_text_nor" textpadding="0,1,0,4" maxchar="2" align="center"
+			 float="true" pos="40,25,194,55" bkimage="file='player/MiniPlayer/Other/shutdown/label_valid_tip.png'" />
+		<Label name="label_tip_minu" text="" textcolor="wnd_tip_text_nor" textpadding="0,1,0,4" maxchar="2" align="center"
+			 float="true" pos="122,25,279,55" bkimage="file='player/MiniPlayer/Other/shutdown/label_valid_tip.png'" />
+
+    </VerticalLayout>
+</Window>

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="290,143" caption="0,0,0,32" >
+	<Include source="public/xml/default_font.xml" />	
+  <VerticalLayout name="commondlg" bkcolor="#E61C1D1F" borderround="12,12,12,12" bordercolor="#33FFFFFF">
+    <VerticalLayout height="102">
+      <Label name="lab_content" padding="0,40,0,6" text="内容" width="290" height="22" textcolor="#FFFFFFFF" singleline="false" align="center" indexfont="yahei_16"/>
+      <Text name="lab_content2" visible="false" text="内容" width="290" height="22" textcolor="#FFFFFFFF" align="center" indexfont="yahei_16"/>
+		</VerticalLayout>
+    <Label height="1" bkcolor="#33FFFFFF"/>
+    <HorizontalLayout height="40" > 
+      <Button name="btn_cancel"  animation="true" text="取消" width="145" padding="0,0,0,0" align="center" indexfont="yahei_14"
+				textcolor="#99ffffff" hottextcolor="#ffffffff"
+				pushedtextcolor="#99ffffff" disabledtextcolor="#FF444444"/>
+      <Label width="1" bkcolor="#33FFFFFF"/>
+			<Button name="btn_ok" text="确定" animation="true"  width="145" align="center" indexfont="yahei_14" 
+				textcolor="#f2ffffff" hottextcolor="#ffffffff"
+				pushedtextcolor="#80ffffff" disabledtextcolor="#FF777777"/>
+		</HorizontalLayout>
+</VerticalLayout>
+</Window>

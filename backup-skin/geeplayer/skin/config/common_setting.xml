@@ -1,0 +1,178 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+  <Default name="VScrollBar" value="width=&quot;8&quot;" />
+  <VerticalLayout name="common_setting" height="1080" width="644" >
+	    <VerticalLayout width="96" height="34">
+		    <Label text="通用" textcolor="0xFFFFFFFF"  height="22"  textpadding="46,0,0,0" indexfont="yahei_16"
+              bkimage="file='geeIcon/setting.svg' dest='20,3,36,19'"/>
+	    </VerticalLayout>
+      <VerticalLayout  padding="0,0,0,0" height="136" >
+        <Label text="基础设置" textcolor="0x99FFFFFF"  height="17" padding="20,0,0,8" indexfont="yahei_12"/>
+        <VerticalLayout width="604" height="96" bkcolor="0x33000000" borderround="8,8,8,8" bordercolor="#1AFFFFFF" padding="20,0,20,0">
+          <HorizontalLayout  height="48" padding="20,0,20,0">
+            <Label text="允许多开程序运行" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+            <CheckBox name="multi_instance" width="28" height="16" padding="0,16,0,16"
+                      normalimage="file='geeIcon/off.png'" hotimage="file='geeIcon/off.png' "
+                      pushedimage="file='geeIcon/off.png' " disabledimage="file='geeIcon/off.png'"
+                      selectednormalimage="file='geeIcon/open.png'" selectedhotimage="file='geeIcon/open.png'"
+                      selectedpushedimage="file='geeIcon/open.png'" selecteddisabledimage="file='geeIcon/open.png'"/>
+          </HorizontalLayout>
+          <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+          <HorizontalLayout  height="48" padding="20,0,20,0">
+            <Label text="添加到系统右键菜单" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+            <CheckBox name="hidesysmenu" width="28" height="16" padding="0,16,0,16"
+                      normalimage="file='geeIcon/off.png' decode='render'" hotimage="file='geeIcon/off.png' decode='render'"
+                      pushedimage="file='geeIcon/off.png' decode='render'" disabledimage="file='geeIcon/off.png' decode='render'"
+                      selectednormalimage="file='geeIcon/open.png' decode='render'" selectedhotimage="file='geeIcon/open.png' decode='render'"
+                      selectedpushedimage="file='geeIcon/open.png' decode='render'" selecteddisabledimage="file='geeIcon/open.png' decode='render'"/>
+          </HorizontalLayout>
+        </VerticalLayout>
+      </VerticalLayout>
+    <VerticalLayout  padding="0,0,0,0" height="434" >
+      <Label text="播放设置" textcolor="0x99FFFFFF"  height="17" padding="20,0,0,8" indexfont="yahei_12"/>    
+      <VerticalLayout width="604" height="394" bkcolor="0x33000000" borderround="8,8,8,8" bordercolor="#1AFFFFFF" padding="20,0,20,0">
+        <HorizontalLayout  height="48" padding="20,0,20,0">
+          <Label text="锁屏时暂停播放" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <CheckBox name="pause_lockscreen" width="28" height="16" padding="0,16,0,16"
+          normalimage="file='geeIcon/off.png'" hotimage="file='geeIcon/off.png' "
+          pushedimage="file='geeIcon/off.png' " disabledimage="file='geeIcon/off.png'"
+          selectednormalimage="file='geeIcon/open.png'" selectedhotimage="file='geeIcon/open.png'"
+          selectedpushedimage="file='geeIcon/open.png'" selecteddisabledimage="file='geeIcon/open.png'"/>
+        </HorizontalLayout>
+        <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+        <HorizontalLayout  height="48" padding="20,0,20,0">
+          <Label text="最小化时暂停播放" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <CheckBox name="pause_minimized" width="28" height="16" padding="0,16,0,16"
+                    normalimage="file='geeIcon/off.png'" hotimage="file='geeIcon/off.png' "
+                    pushedimage="file='geeIcon/off.png' " disabledimage="file='geeIcon/off.png'"
+                    selectednormalimage="file='geeIcon/open.png'" selectedhotimage="file='geeIcon/open.png'"
+                    selectedpushedimage="file='geeIcon/open.png'" selecteddisabledimage="file='geeIcon/open.png'"/>
+        </HorizontalLayout>
+        <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+        <HorizontalLayout  height="48" padding="20,0,20,0">
+          <Label text="启用自动续播功能" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <Button name="check_all_continue" width="28" height="16" padding="0,16,0,16" bkimage="file='geeIcon/open.png'"/>
+        </HorizontalLayout>
+        <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+        <HorizontalLayout  height="48" padding="20,0,20,0">
+          <Label text="启用硬件解码加速" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <CheckBox name="combo_hardware_accel" width="28" height="16" padding="0,16,0,16"
+                    normalimage="file='geeIcon/off.png'" hotimage="file='geeIcon/off.png' "
+                    pushedimage="file='geeIcon/off.png' " disabledimage="file='geeIcon/off.png'"
+                    selectednormalimage="file='geeIcon/open.png'" selectedhotimage="file='geeIcon/open.png'"
+                    selectedpushedimage="file='geeIcon/open.png'" selecteddisabledimage="file='geeIcon/open.png'"/>
+        </HorizontalLayout>
+        <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+        <HorizontalLayout  height="48" padding="20,0,20,0">
+          <Label text="启用播放信息显示" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <CheckBox name="play_msg" width="28" height="16" padding="0,16,0,16"
+                    normalimage="file='geeIcon/off.png'" hotimage="file='geeIcon/off.png' "
+                    pushedimage="file='geeIcon/off.png' " disabledimage="file='geeIcon/off.png'"
+                    selectednormalimage="file='geeIcon/open.png'" selectedhotimage="file='geeIcon/open.png'"
+                    selectedpushedimage="file='geeIcon/open.png'" selecteddisabledimage="file='geeIcon/open.png'"/>
+        </HorizontalLayout>
+        <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+        <HorizontalLayout  height="48" padding="20,0,20,0">
+          <Label text="启用倍速设置全局生效" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <CheckBox name="rember_speed" width="28" height="16" padding="0,16,0,16"
+                    normalimage="file='geeIcon/off.png'" hotimage="file='geeIcon/off.png' "
+                    pushedimage="file='geeIcon/off.png' " disabledimage="file='geeIcon/off.png'"
+                    selectednormalimage="file='geeIcon/open.png'" selectedhotimage="file='geeIcon/open.png'"
+                    selectedpushedimage="file='geeIcon/open.png'" selecteddisabledimage="file='geeIcon/open.png'"/>
+        </HorizontalLayout>
+        <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+        <HorizontalLayout  height="48" padding="20,0,20,0">
+          <Label text="启用长按右方向键倍速播放" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <CheckBox name="speed_play" width="28" height="16" padding="0,16,0,16"
+                    normalimage="file='geeIcon/off.png'" hotimage="file='geeIcon/off.png' "
+                    pushedimage="file='geeIcon/off.png' " disabledimage="file='geeIcon/off.png'"
+                    selectednormalimage="file='geeIcon/open.png'" selectedhotimage="file='geeIcon/open.png'"
+                    selectedpushedimage="file='geeIcon/open.png'" selecteddisabledimage="file='geeIcon/open.png'"/>
+        </HorizontalLayout>
+        <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+        <HorizontalLayout  height="48" padding="20,0,20,0">
+          <Label text="启用鼠标悬停进度条预览画面" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <Button name="show_preview" width="28" height="16" padding="0,16,0,16" bkimage="file='geeIcon/off.png'"/>
+        </HorizontalLayout>
+      </VerticalLayout>
+    </VerticalLayout>      
+    <VerticalLayout  padding="0,0,0,0" height="136" >
+      <Label text="列表设置" textcolor="0x99FFFFFF"  height="17" padding="20,0,0,8" indexfont="yahei_12"/>
+      <VerticalLayout width="604" height="96" bkcolor="0x33000000" borderround="8,8,8,8" bordercolor="#1AFFFFFF" padding="20,0,20,0">
+        <HorizontalLayout  height="48" padding="20,0,20,0">
+          <Label text="自动添加相似文件至播放列表" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <CheckBox name="autoaddfilesimilar" width="28" height="16" padding="0,16,0,16"
+                    normalimage="file='geeIcon/off.png'" hotimage="file='geeIcon/off.png' "
+                    pushedimage="file='geeIcon/off.png' " disabledimage="file='geeIcon/off.png'"
+                    selectednormalimage="file='geeIcon/open.png'" selectedhotimage="file='geeIcon/open.png'"
+                    selectedpushedimage="file='geeIcon/open.png'" selecteddisabledimage="file='geeIcon/open.png'"/>
+        </HorizontalLayout>
+        <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+        <HorizontalLayout  height="48" padding="20,0,20,0">
+          <Label text="退出时清空播放列表和播放记录" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <Button name="clearlist" width="28" height="16" padding="0,16,0,16" bkimage="file='geeIcon/off.png'"/>
+        </HorizontalLayout>
+        <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+      </VerticalLayout>
+    </VerticalLayout>
+	<VerticalLayout  padding="0,0,0,0" height="136" >
+	 <Label text="文件关联" textcolor="0x99FFFFFF"  height="17" padding="20,0,0,8" indexfont="yahei_12"/>
+    <VerticalLayout name="option_container" width="604" height="96" bkcolor="0x33000000" borderround="8,8,8,8" bordercolor="#1AFFFFFF" padding="20,0,20,0">
+      <HorizontalLayout  height="48" padding="20,0,20,0">
+        <Label text="始终保持文件关联" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+        <CheckBox name="alfileassoccheck" width="28" height="16" padding="0,16,0,16"
+                  normalimage="file='geeIcon/off.png'" hotimage="file='geeIcon/off.png' "
+                  pushedimage="file='geeIcon/off.png' " disabledimage="file='geeIcon/off.png'"
+                  selectednormalimage="file='geeIcon/open.png'" selectedhotimage="file='geeIcon/open.png'"
+                  selectedpushedimage="file='geeIcon/open.png'" selecteddisabledimage="file='geeIcon/open.png'"/>
+      </HorizontalLayout>
+      <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+      <HorizontalLayout  height="48" padding="20,0,12,0">
+        <Label text="设置文件关联" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+        <Button name="btnassoc" width="100" height="32"	text="去设置" padding="0,8,0,8" font="yahei_14"
+          textcolor="#F2FFFFFF"  hottextcolor="#FFFFFFFF" pushedtextcolor="#99FFFFFF"
+          bordercolor="#14FFFFFF" bkcolor="#0FFFFFFF" hotbkcolor="#1AFFFFFF" pushedbkcolor="#0AFFFFFF" borderround="16,16,16,16"/>
+      </HorizontalLayout>
+    </VerticalLayout>
+	</VerticalLayout>
+    <VerticalLayout  padding="0,0,0,0" height="184" >
+      <Label text="快进快退" textcolor="0x99FFFFFF"  height="17" padding="20,0,0,8" indexfont="yahei_12"/>
+      <VerticalLayout name="option_container" width="604" height="144" bkcolor="0x33000000" borderround="8,8,8,8" bordercolor="#1AFFFFFF" padding="20,0,20,0">
+        <HorizontalLayout  height="48" padding="20,0,12,0">
+          <Label text="快进一次" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <Combo name="combo_advanced_time" animation="true" width="100" height="32" style="s_combox_config_100" textpadding="8,1,30,1" itemtextpadding="8,0,0,0" itemfont="yahei_14"
+            padding="0,8,0,0" indexfont="yahei_14"   itemtextcolor="#F2FFFFFF"  itemhottextcolor="#FFFFFFFF" itemselectedtextcolor="#FF00D157"
+            itembkcolor="#FF28292A" itemhotbkcolor="#FF28292A" itemselectedbkcolor="#0F00C452" bordercolor="#1AFFFFFF" borderround="6,6,6,6"
+            normalimage="file='geeIcon/arrow_up.svg' dest='76,8,92,24' svg-fill-color='0xBFFFFFFF'"
+            hotimage="file='geeIcon/arrow_up.svg' dest='76,8,92,24'  svg-fill-color='0xFFFFFFFF'"
+            pushedimage="file='geeIcon/arrow_up.svg' dest='76,8,92,24'  svg-fill-color='0x80FFFFFF'"
+            selectedimage="file='geeIcon/arrow_down.svg' dest='76,8,92,24'  svg-fill-color='0xBFFFFFFF'"
+            selectedhotimage="file='geeIcon/arrow_down.svg' dest='76,8,92,24'  svg-fill-color='0xFFFFFFFF'"
+            selectedpushedimage="file='geeIcon/arrow_down.svg' dest='76,8,92,24'  svg-fill-color='0x80FFFFFF'"/>
+        </HorizontalLayout>
+        <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+        <HorizontalLayout  height="48" padding="20,0,12,0">
+          <Label text="快退一次" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <Combo name="combo_rewind_time" animation="true" width="100" height="32" style="s_combox_config_100" textpadding="8,1,30,1" itemtextpadding="8,0,0,0" itemfont="yahei_14"
+            padding="0,8,0,0" indexfont="yahei_14"   itemtextcolor="#F2FFFFFF"  itemhottextcolor="#FFFFFFFF" itemselectedtextcolor="#FF00D157"
+            itembkcolor="#FF28292A" itemhotbkcolor="#FF28292A" itemselectedbkcolor="#0F00C452" bordercolor="#1AFFFFFF" borderround="6,6,6,6"
+            normalimage="file='geeIcon/arrow_up.svg' dest='76,8,92,24' svg-fill-color='0xBFFFFFFF'"
+            hotimage="file='geeIcon/arrow_up.svg' dest='76,8,92,24'  svg-fill-color='0xFFFFFFFF'"
+            pushedimage="file='geeIcon/arrow_up.svg' dest='76,8,92,24'  svg-fill-color='0x80FFFFFF'"
+            selectedimage="file='geeIcon/arrow_down.svg' dest='76,8,92,24'  svg-fill-color='0xBFFFFFFF'"
+            selectedhotimage="file='geeIcon/arrow_down.svg' dest='76,8,92,24'  svg-fill-color='0xFFFFFFFF'"
+            selectedpushedimage="file='geeIcon/arrow_down.svg' dest='76,8,92,24'  svg-fill-color='0x80FFFFFF'"/>
+        </HorizontalLayout>
+        <Control bkimage="file='geeIcon/menu_line.png' source='5,0,15,1'" height="1" padding="12,0,12,0"/>
+        <HorizontalLayout  height="48" padding="20,0,20,0">
+          <Label text="暂停时逐帧快进" textcolor="0xF2FFFFFF" align="left" font="yahei_14" />
+          <CheckBox name="checkbox_pause_step" width="28" height="16" padding="0,16,0,16"
+                    normalimage="file='geeIcon/off.png'" hotimage="file='geeIcon/off.png' "
+                    pushedimage="file='geeIcon/off.png' " disabledimage="file='geeIcon/off.png'"
+                    selectednormalimage="file='geeIcon/open.png'" selectedhotimage="file='geeIcon/open.png'"
+                    selectedpushedimage="file='geeIcon/open.png'" selecteddisabledimage="file='geeIcon/open.png'"/>
+        </HorizontalLayout>
+      </VerticalLayout>
+    </VerticalLayout>
+  </VerticalLayout>
+</Window>

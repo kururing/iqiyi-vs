@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+	<Font name="HarmonyOS Sans SC" size="12" bold="false" italic="false" default="true"/>
+	<VerticalLayout name="hotkeycontainer">
+		<HorizontalLayout height="26">
+			<CheckBox name="hs_openboss" style="checkbox_style" width="86" height="14" text="开启老板键" padding="0,6,0,0" textpadding="18,-1,0,0"/>
+			<Button name="boss_key_value" text="Ctrl + Alt + N" align="left" textpadding="10,0,0,0" width="196"  height="26"
+				borderround="2,2" bordercolor="config_edit_border"
+				textcolor="config_txt_normal" hottextcolor="config_txt_hot" pushedtextcolor="config_txt_hot"/>
+		</HorizontalLayout>
+		<VerticalLayout height="268" padding="0,15,0,0">
+			<List name="hotkeylist" width="390" height = "230" bkcolor="config_hotkey_bk" bordercolor="config_edit_border" textcolor="config_hotkey_txt" inset="1,1,1,1" itemtextpadding="10,0,0,0"
+				  itemshowhtml="true" vscrollbar="true" hscrollbar="false" itemalign="left" itembkcolor="config_hotkey_item_bk" itemaltbk="true" 
+				  itemtextcolor="config_hotkey_item_txt" itemhottextcolor="config_hotkey_item_txt_hot" itemhotbkcolor="config_hotkey_item_hot_bk" itemselectedbkcolor="config_hotkey_item_sel_bk" itemselectedtextcolor="config_hotkey_item_txt" menu="true" indexfont="font_yahei_12">
+				<ListHeader padding="0,0,0,0" height="32" inset="0,1,1,0" >
+					<ListHeaderItem name="list_header_item1" text="功能" width="120" height="31" align="left" textcolor="config_hotkey_txt" textpadding="10,0,0,0" bkcolor="config_hotkey_bk" indexfont="font_yahei_12"/>
+					<ListHeaderItem name="list_header_item1" text="快捷键" width="280" height="31" align="left" textcolor="config_hotkey_txt" textpadding="10,0,0,0" bkcolor="config_hotkey_bk" indexfont="font_yahei_12"/>
+				</ListHeader>
+			</List>
+		</VerticalLayout>
+		<VerticalLayout padding="0,-30,0,0">
+			<Button name="btnShortCutDefault" style="s_label_cfg_txtclr" text="恢复默认设置" tooltip="" textpadding="0,-3,0,0" float="true" pos="306,0,0,0" width="83" height="20" textcolor="config_txt_normal" hottextcolor="config_edit_txt_hover" selectedtextcolor="config_edit_txt_pushed" align="center"/>
+		</VerticalLayout>
+	</VerticalLayout>
+</Window>

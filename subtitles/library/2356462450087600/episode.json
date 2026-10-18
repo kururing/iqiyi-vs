@@ -1,0 +1,23 @@
+{
+  "title": "花戎第26集",
+  "order": 26,
+  "vid": "ef2f6095f5e238d5988f6c6aebe540a9",
+  "tvid": "2356462450087600",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337948.0982428,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 778
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20240417/10/ad/9c0926fd283a65bb303d1e33b7fd6f25.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

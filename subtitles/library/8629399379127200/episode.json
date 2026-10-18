@@ -1,0 +1,23 @@
+{
+  "title": "花戎第29集",
+  "order": 29,
+  "vid": "2d6fc9c95f17510c521039bff210f4f6",
+  "tvid": "8629399379127200",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337948.1042428,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 533
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20240417/9a/ee/5864fba8839e1f9474d1597e14f4cf3b.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

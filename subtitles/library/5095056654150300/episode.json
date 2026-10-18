@@ -1,0 +1,23 @@
+{
+  "title": "花戎第35集",
+  "order": 35,
+  "vid": "5ac5742b51831c2772871a96fd024f29",
+  "tvid": "5095056654150300",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337948.1252239,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 710
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/39/0c/04ac4472c6936a5d7c94356c8cdbaca1.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

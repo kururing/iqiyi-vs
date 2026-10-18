@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "iQIYI Vietnamese",
+  "version": "1.0.0",
+  "description": "Dich giao dien iQIYI sang tieng Viet",
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="358,252" caption="0,0,0,34" alpha="250">
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" default="true"/>
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="Title"/>
+  <Font name="Tahoma" size="16" bold="false" italic="false" indexfont="show"/>
+  <Default name="VScrollBar" value="minthumbheight=&quot;20&quot; style=&quot;s_vscroll&quot;" />
+    <VerticalLayout name="TimeSetCon" style="popwnd_bk_style">
+      <HorizontalLayout height="34" >
+        <Label style="popwnd_title_style" text="定时关机"/>
+        <Control />
+        <Button name="closebtn" style="close_style" width="12" height="12" padding="0,10,10,10"/>
+      </HorizontalLayout>
+
+      <VerticalLayout  bordersize="1" width="358">
+			<HorizontalLayout height="14" padding="0,14,0,0">
+                <Control />
+                <Button name="btnreset" text="重置定时" align="right" padding="0,0,24,0" width="67" visible="false"
+				normalimage="file='commonres/refresh.svg' align='leftvcenter,12,12'" style="main_ui_style"/>
+            </HorizontalLayout>
+			
+			<CheckBox name="radioPlayEnd" style="radio_style" group="group_timeset" padding="52,9,0,0" width="200" height="14" text="影片播放完成后关机" textpadding="24,-1,0,0" />
+			<CheckBox name="radioDownloadEnd" style="radio_style" group="group_timeset" padding="52,22,0,0" width="200" height="14" text="离线任务下载完成后关机" textpadding="24,-1,0,0" />
+			<CheckBox name="radioTimeEnd" style="radio_style" group="group_timeset" padding="52,22,0,0" width="25" height="14" text="" textpadding="24,-1,0,0"/>
+	  
+			
+			<HorizontalLayout name="ContainerTimeSet" pos="76,104,0,0"  width="250" height="26" float="true" >
+				<Combo name="timehour" style="s_combox" width="50" height="26" tooltip="" textpadding="5,1,1,1"/>
+				<Label text="时" style="s_label_cfg_txtclr" padding="5,0,0,0" height="26" width="15"/>
+				<Combo name="timesecond" style="s_combox" padding="5,0,0,0" width="50" height="26" tooltip="" textpadding="5,1,1,1"/>
+				<Label text="分 后关机" style="s_label_cfg_txtclr" padding="5,0,0,0" height="26" />
+			</HorizontalLayout><!---->
+			
+	  
+			<HorizontalLayout name="ContainerTimeSee" pos="76,104,0,0"  width="250" height="26" float="true" visible="false" >
+				<Button name="hour_0" text="0" align="center" textcolor="config_txt_normal" width="21" indexfont="show" bordercolor="config_border_bk"/>
+				<Button name="hour_1" text="0" align="center" textcolor="config_txt_normal" width="21" indexfont="show" bordercolor="config_border_bk"/>
+				<VerticalLayout width="2" height="26" padding="4,0,0,0">
+					<Label width="2" height="2" padding="0,9,0,0" bkcolor="#FF00FF00"/>
+					<Label width="2" height="2" padding="0,3,0,0" bkcolor="#FF00FF00"/>
+				</VerticalLayout>
+				<Button name="minute_0" text="3" align="center" textcolor="config_txt_normal" width="21" padding="4,0,0,0" indexfont="show" bordercolor="config_border_bk"/>
+				<Button name="minute_1" text="0" align="center" textcolor="config_txt_normal" width="21" indexfont="show" bordercolor="config_border_bk"/>
+				<Label text="后关机" style="s_label_cfg_txtclr" padding="4,3,0,0"/>
+			</HorizontalLayout>
+	  
+			<Control />
+			<HorizontalLayout width="314" height="32" padding="22,0,0,32">
+                <Control />
+                <Button  name="btnOK" style="green_gradient_btn_style" text="确 认" width="80" height="32"/>
+				<Control />
+            </HorizontalLayout>
+			<!--bordercolor="#ffff0000"-->
+	  
+        </VerticalLayout>
+    </VerticalLayout>
+</Window>

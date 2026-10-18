@@ -1,0 +1,23 @@
+{
+  "title": "成何体统第1集",
+  "albumId": "4222300210214001",
+  "albumTitle": "成何体统",
+  "order": 1,
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "url": "http://meta.video.iqiyi.com/20260401/40/bb/f52478e1707e33b139b4e5b1a45ac334.xml",
+      "format": "xml"
+    }
+  ],
+  "discoveredAt": 1792334421.5403996,
+  "provider": "iqiyi",
+  "vid": "f095c4de21e7166405ecdc259c398800",
+  "tvid": "7171864034925400",
+  "albumTotal": 32,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 816
+  }
+}

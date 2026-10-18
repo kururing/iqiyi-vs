@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window>
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="yahei_12" default="true" />
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="yahei_14" />
+  <Font name="Microsoft YaHei" size="16" bold="false" italic="false" indexfont="yahei_16" />
+  <Font name="Microsoft YaHei" size="20" bold="false" italic="false" indexfont="yahei_20" />
+  
+  <VerticalLayout name="root" bkcolor="#FF09090B" borderround="8,8" bkimage="file='navigator\res\lwa_bkimage.png' decode='render'">
+    <HorizontalLayout name="titlebar" height="20" padding="0,22,0,0">
+      <Control  />
+      <Button name="mini_btn" width="20" height="20" normalimage="file='navigator\res\min_btn.svg' decode='render'
+            svg-fill-color='#BFFFFFFF'
+            hot-svg-fill-color='#FFFFFFFF'
+            pushed-svg-fill-color='#80FFFFFF'"/>
+      <Button name="top_close_btn" width="20" height="20" padding="20,0,20,0" normalimage="file='navigator\res\close_btn.svg' decode='render'
+            svg-fill-color='#BFFFFFFF'
+            hot-svg-fill-color='#FFFFFFFF'
+            pushed-svg-fill-color='#80FFFFFF'"/>
+    </HorizontalLayout>
+	<HorizontalLayout name="logo_layout" height="48" padding="0,202,0,0">
+		<Control  />
+		<Label name="logo" width="310" height="48" bkimage="file='navigator\res\lwa_logo.png' decode='render'"/>
+		<Control  />
+	</HorizontalLayout>
+	<Control  height="1" padding="0,47,0,0"/>
+	<VerticalLayout name="middle_layout" height="250">
+		<VerticalLayout name="downloading_layout" height="62">
+			<HorizontalLayout name="downloading_title_layout" height="30">
+				<Control />
+				<Label name="downloading_title_prefix_label" text="您的系统缺少微软" width="170" height="30" textcolor="#F2FFFFFF" indexfont="yahei_20" align="center"/>
+				<Button name="downloading_wv2_keyword_btn" text="WebView2组件" width="140" height="30" textcolor="#FF86F0CB" hottextcolor="#FF86F0CB" pushedtextcolor="#FF86F0CB" indexfont="yahei_20" align="left"/>
+				<Label name="downloading_title_suffix_label" text="，正在为您下载安装，请稍候..." width="280" height="30" textcolor="#F2FFFFFF" indexfont="yahei_20" align="left"/>
+				<Control />
+			</HorizontalLayout>
+			<HorizontalLayout name="downloading_tip_layout" height="16" padding="0,16,0,0">
+				<Control  />
+				<Label name="tip_icon" width="14" height="14" bkimage="file='navigator\res\tip_1.png' decode='render'" padding="0,1,0,1"/>
+				<Label name="tip_label" text="爱奇艺PC客户端依赖该组件，安装完成后即可正常使用，且仅需安装一次"  width="516" height="16"  textcolor="#99FFFFFF" indexfont="yahei_16" align="left" padding="6,0,0,0"/>
+				<Control  />
+			</HorizontalLayout>
+		</VerticalLayout>
+		<VerticalLayout name="unzip_layout" height="30" visible="false">
+			<HorizontalLayout name="unzip_title_layout" height="30">
+				<Control />
+				<Label name="unzip_title_prefix_label" text="正在解压微软" width="130" height="30" textcolor="#F2FFFFFF" indexfont="yahei_20" align="center"/>
+				<Button name="unzip_wv2_keyword_btn" text="WebView2组件" width="140" height="30" textcolor="#FF86F0CB" hottextcolor="#FF86F0CB" pushedtextcolor="#FF86F0CB" indexfont="yahei_20" align="left"/>
+				<Label name="unzip_title_suffix_label" text="，请稍候..." width="100" height="30" textcolor="#F2FFFFFF" indexfont="yahei_20" align="left"/>
+				<Control />
+			</HorizontalLayout>
+		</VerticalLayout>
+		<VerticalLayout name="final_layout" height="30" visible="false">
+			<Label name="final_label" text="爱奇艺PC客户端已准备就绪，正在启动中..." height="30" textcolor="#F2FFFFFF" indexfont="yahei_20" align="center" />
+		</VerticalLayout>
+		<HorizontalLayout name="open_web_btn_layout" height="48" padding="0,32,0,0" visible="false">
+			<Control  />
+			<Button name="open_web_btn" text="跳转爱奇艺网页版" width="300" height="48" borderround="24,24" indexfont="yahei_16" textcolor="#F2FFFFFF"
+			gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff00A8E6, 0) (#ff00b84d,0.5) (#ff00b84d, 1.0))"
+			hot-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff1ac1ff, 0) (#ff00cc55, 0.5) (#ff00cc56, 1.0))"
+			pushed-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff0082b3, 0) (#ff009940,0.5) (#ff009940, 1.0))"/>
+			<Control  />
+		</HorizontalLayout>
+		<HorizontalLayout name="retry_btn_layout" height="16" padding="0,16,0,0" visible="false">
+			<Control  />
+			<Button name="retry_btn" text="重试" width="32" height="16" indexfont="yahei_16" textcolor="#99FFFFFF" hottextcolor="#FFFFFFFF" pushedtextcolor="#80FFFFFF" visible="false"/>
+			<Control  />
+		</HorizontalLayout>
+		<Control  />
+		<HorizontalLayout name="progress_layout" height="44" padding="0,0,0,0">
+			<Control  />
+			<VerticalLayout width="800">
+				<Label name="progress_label" text="" width="800"  height="16" textcolor="#66FFFFFF" indexfont="yahei_16" align="left" />
+				<Progress name="progress_bar" min="0" max="100" value="0" width="800" height="8" padding="0,20,0,0" bkcolor="#1AFFFFFF" foregradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#FF00A8E6, 0) (#ff00B84D, 0.51) (#ff00B84D, 1)"  borderround="6,6"/>
+			</VerticalLayout>
+			<Control  />
+		</HorizontalLayout>
+	    <VerticalLayout name="place_holder" height="74" visible="false"/>
+	</VerticalLayout>
+	<HorizontalLayout name="bottom_layout" height="185" padding="0,25,0,0">
+		<Control  />
+		<VerticalLayout name="bottom_card" gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#1A00a8e6, 0) (#1A00b84d,0.5) (#1A00b84d, 1.0))" width="800" height="185" borderround="12,12">
+			<HorizontalLayout name="bottom_download_layout" height="36" padding="32,32,32,0">
+				<Label name="bottom_download_icon" width="36" height="36" bkimage="file='navigator\res\wv2_bottom_download.svg' decode='render' dest='10,10,26,26'" bordersize="1" bordercolor="#FF2F433B" bkcolor="#FF172E25" borderround="8,8"/>
+				<Label name="bottom_download_desc_label" text="手动下载包含完整组件的客户端" height="36" textcolor="#FFFFFFFF" indexfont="yahei_16" align="leftmiddle" padding="12,0,0,0"/>
+				<Control />
+				<Button name="copy_download_btn" text="复制下载链接" width="132" height="36" textcolor="#99FFFFFF" hottextcolor="#FFFFFFFF" pushedtextcolor="#80FFFFFF" indexfont="yahei_14" align="center" bkcolor="#0FFFFFFF" hotbkcolor="#1AFFFFFF" pushedbkcolor="#0AFFFFFF" borderround="24,24" bordersize="1" bordercolor="#1AFFFFFF"/>
+			</HorizontalLayout>
+			<Control height="1" bkcolor="#26FFFFFF" padding="32,24,32,0"/>
+			<HorizontalLayout name="bottom_qq_layout" height="36" padding="32,24,32,0">
+				<Label name="bottom_qq_icon" width="36" height="36" bkimage="file='navigator\res\wv2_bottom_qq.svg' decode='render' dest='10,10,26,26'" bordersize="1" bordercolor="#FF2F433B" bkcolor="#FF172E25" borderround="8,8"/>
+				<Label name="bottom_qq_desc_label" text="如需帮助，请加QQ群联系我们，QQ群号：48328857" width="400" height="36" textcolor="#FFFFFFFF" indexfont="yahei_16" align="leftmiddle" padding="12,0,0,0"/>
+				<Control />
+				<Button name="copy_qq_btn" text="复制QQ群" width="132" height="36" textcolor="#99FFFFFF" hottextcolor="#FFFFFFFF" pushedtextcolor="#80FFFFFF" indexfont="yahei_14" align="center" bkcolor="#0FFFFFFF" hotbkcolor="#1AFFFFFF" pushedbkcolor="#0AFFFFFF" borderround="24,24" bordersize="1" bordercolor="#1AFFFFFF"/>
+			</HorizontalLayout>
+		</VerticalLayout>
+		<Control  />
+	</HorizontalLayout>
+    <VerticalLayout name="wv2_tips_layout" float="true" visible="false" width="300" height="112" bkcolor="#01FFFFFF">
+		<VerticalLayout name="wv2_tips_panel" width="300" height="106" bkcolor="#FF292C33" bordercolor="#1AFFFFFF" bordersize="1" borderround="8,8" padding="0,5,0,0">
+			<Label text="WebView2是微软提供的页面显示组件，爱奇艺PC" width="276" height="18" textcolor="#FFFFFFFF" indexfont="yahei_12" align="leftmiddle" padding="12,8,0,0"/>
+			<Label text="客户端内的部分页面需要该组件支持" width="276" height="18" textcolor="#FFFFFFFF" indexfont="yahei_12" align="leftmiddle" padding="12,0,0,0"/>
+			<Label text="当前电脑暂未安装，安装后即可正常使用，不会影响" width="276" height="18" textcolor="#FFFFFFFF" indexfont="yahei_12" align="leftmiddle" padding="12,0,0,0"/>
+			<Label text="您的个人文件和系统设置" width="276" height="18" textcolor="#FFFFFFFF" indexfont="yahei_12" align="leftmiddle" padding="12,0,0,0"/>
+			<Button name="wv2_tips_dl_btn" text="<u>点击此处跳转微软官网下载WebView2组件</u>" showhtml="true" height="18" padding="12,0,0,0" textcolor="#FF86F0CB" hottextcolor="#FF86F0CB" pushedtextcolor="#FF86F0CB" indexfont="yahei_12" align="leftmiddle"/>
+		</VerticalLayout>
+		<Label name="wv2_tips_arrow" float="true" pos="144,0,156,7" bkimage="file='navigator\res\arrow_up.svg' decode='render'"/>
+	</VerticalLayout>
+	<HorizontalLayout name="toast_layout" float="true" visible="false" >
+		<Control />
+		<Label name="toast_label" text="" width="144" height="48" bordercolor="#1AFFFFFF" bkcolor="#992E2F31" borderround="8,8" textcolor="#F2FFFFFF" indexfont="yahei_16" align="center" />
+		<Control />
+	</HorizontalLayout>
+  </VerticalLayout>
+</Window>

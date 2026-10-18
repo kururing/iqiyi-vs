@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window bktrans="true">
+  <Font name="微软雅黑" size="12" bold="false" default="true" />
+  <Font name="微软雅黑" size="14" bold="true"/>
+  <Default name="Menu" value="minwidth=&quot;108&quot; inset=&quot;6,8,6,13&quot; itemtextpadding=&quot;20,0,0,0&quot; itemselectedbkcolor=&quot;color_meun_item_bk_sel&quot; itemtextcolor=&quot;color_meun_item_text_nor&quot; itemhottextcolor=&quot;color_meun_item_text_hot&quot; itemheight=&quot;28&quot; itemselectedtextcolor=&quot;color_meun_item_text_sel&quot; itemdisabledtextcolor=&quot;color_meun_item_text_disable&quot; itemhotbkcolor=&quot;color_meun_item_bk_hot&quot; itemdisabledbkcolor=&quot;color_meun_item_bk_disable&quot; itemselectedbkimage=&quot;file='player/AppPlayer/RightMenu/right_menu_main_butten' source='150,0,300,26'&quot; " />
+
+  <Menu name="default_menu" width="108" vscrollbar="false" bkimage="file='skinplan\menu/loopmenubk.png'  corner='4,6,4,20'"
+    submenuchecknorimage="file='skinplan\menu/item_selected.png' source='0,0,16,16' dest='6,5,22,21'"
+    submenucheckhotimage="file='skinplan\menu/item_selected.png' source='16,0,32,16' dest='6,5,22,21'"  >
+    
+    <MenuElement id="1" name="menu_play_single" text="单个播放" height="28" />
+    <MenuElement id="4" name="menu_play_single_loop" text="单个循环" height="28"  />
+    <MenuElement id="2" name="menu_play_sequence" text="顺序播放" height="28"  />
+    <MenuElement id="5" name="menu_play_sequence_loop"  text="顺序循环" height="28" />
+    <MenuElement id="3" name="menu_play_random"  text="随机播放" height="28"  />
+  </Menu>
+</Window>

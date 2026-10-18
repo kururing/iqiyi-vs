@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Window>
+  <Font name="微软雅黑" size="12" bold="false" italic="false" default="true"/>
+  <Container name="PlaySettingContainer" width="404" height="320" inset="0,0,0,0" >
+    <VerticalLayout vscrollbar="true">
+	  <VerticalLayout name="video_panel" height="18" padding="0,0,0,0">
+		  <HorizontalLayout name="video_hw_decode_panel" padding="0,0,0,0" height="18">
+				<Label text="硬件加速：" textcolor="config_txt_hot" font="yahei_14" width="86" height="18" padding="0,-2,0,0" align="right"/>
+				<CheckBox name="ps_video_hw_decode_open" style="radio_style" group="radio_hw_decode" width="66" text="开启" padding="24,0,0,0" textpadding="18,-1,0,0" />
+				<CheckBox name="ps_video_hw_decode_close" style="radio_style" group="radio_hw_decode" width="66" text="关闭" padding="8,0,0,0" textpadding="18,-1,0,0" />
+		  </HorizontalLayout>
+	  </VerticalLayout>
+	  <HorizontalLayout name="gpu_control_panel" padding="25,5,0,0" height="30">
+				<Label text="显卡选择：" style="s_label_cfg_txtclr" width="66" padding="0,2,0,0" />
+				<Combo name="comb_adapter" style="s_combox_config_300" height="26" width="290" textpadding="10,1,22,1" itemtextpadding="8,0,0,0" />
+	  </HorizontalLayout>
+	  <VerticalLayout name="audio_panel" height="51" padding="0,15,0,0">
+		  <Label text="音频设置：" textcolor="config_txt_hot" width="86" height="18" font="yahei_14" padding="0,-2,0,0" align="right"/>
+		  <HorizontalLayout padding="25,5,0,0" height="30">
+			<Label text="输出设备：" style="s_label_cfg_txtclr" width="66" padding="0,2,0,0" />
+			<Combo name="ps_comboaudio" style="s_combox_config_300" height="26" width="290" textpadding="10,1,22,1" itemtextpadding="8,0,0,0" />
+		  </HorizontalLayout>
+	  </VerticalLayout>
+	  <VerticalLayout name="high_fps_choice" height="155" visible="true" padding="0,15,0,0">
+		  <HorizontalLayout  height="20" padding="0,0,0,0" >
+			 <Label text="高帧率设置：" textcolor="config_txt_hot" font="yahei_14" width="86" height="18" padding="0,-2,0,0" align="right"/>
+		  </HorizontalLayout>
+		  <VerticalLayout height="130" padding="10,5,0,0" visible="true">
+				<VerticalLayout  height="40">
+					<HorizontalLayout>
+						<CheckBox name="auto_high_fps" style="radio_style" group="radio_highfps" width="68" text="智能调节" selected="true" textpadding="18,-1,0,0"/>
+						<Label text="（推荐）" textcolor="radio_checkbox_selected_hot_color" height="14" width="51" textpadding="0,-2,0,0" align="left"/>
+					</HorizontalLayout>
+					<Label text="根据电脑配置自动选择最合适的帧率设置" textcolor="config_txt_disable" width="255" padding="18,5,0,0" />
+				</VerticalLayout>
+				<VerticalLayout height="40" padding="0,5,0,0">
+					<CheckBox name="open_high_fps" style="radio_style" group="radio_highfps" width="80" text="开启高帧率" textpadding="18,-1,0,0"/>
+					<Label text="默认开启高帧率，但部分设备可能会导致播放卡顿" textcolor="config_txt_disable" width="265" padding="18,5,0,0" />
+				</VerticalLayout>
+				<VerticalLayout height="40" padding="0,5,0,0">
+					<CheckBox name="close_high_fps" style="radio_style" group="radio_highfps" width="80" text="关闭高帧率" textpadding="18,-1,0,0"/>
+					<Label text="当电脑性能不足时的最优选择" textcolor="config_txt_disable" width="255" padding="18,5,0,0" />
+				</VerticalLayout>
+			</VerticalLayout>
+		</VerticalLayout>
+      
+      <VerticalLayout padding="0,15,0,6" height="66" name="fileassoc_choice" >
+        <HorizontalLayout  height="18">
+          <Label text="本地视频：" textcolor="config_txt_hot" font="yahei_14" width="86" height="18" padding="0,-2,0,0" align="right"/>
+          <CheckBox name="default_fileassoc" style="checkbox_style"  padding="24,0,0,0" height="14" text="本地视频默认使用爱奇艺播放" textpadding="18,-1,0,0" />
+        </HorizontalLayout>
+		<CheckBox name="delete_gee_his_list" style="checkbox_style"   padding="110,8,0,0" height="14" text="退出应用时清理本地播放列表和播放记录" textpadding="18,-1,0,0" />
+        <CheckBox name="gee_auto_add_similar_file" style="checkbox_style"   padding="110,12,0,0" height="14" text="自动添加同路径相似文件到播放列表" textpadding="18,-1,0,0" />
+      </VerticalLayout>
+      <HorizontalLayout  height="30" padding="0,16,0,0" visible="true">
+        <Label text="定时关机：" textcolor="config_txt_hot" font="yahei_14" width="86" height="18" padding="0,2,0,0" align="right"/>
+        <Button name="ps_time_play" style="border_btn_style" width="50" height="24" padding="24,0,0,0" borderround="2,2"
+        text="设置" tooltip="设置" />
+      </HorizontalLayout>
+      <HorizontalLayout padding="0,15,0,0" height="20" >
+        <Label text="双击播放器：" textcolor="config_txt_hot" font="yahei_14" width="86" height="18" padding="0,-2,0,0" align="right"/>
+        <CheckBox name="ps_radioselFull" style="radio_style" group="radio_screen_play" width="130" text="全屏/标准 模式切换" padding="24,0,0,0" textpadding="18,-1,0,0" />
+        <CheckBox name="ps_radioselSimple" style="radio_style" group="radio_screen_play" width="130" text="小窗/标准 模式切换" padding="8,0,0,0" textpadding="18,-1,0,0" />
+      </HorizontalLayout>
+      <HorizontalLayout padding="0,15,0,6" height="42" name="quality_lay" visible="false">
+        <VerticalLayout width="86">
+          <Label text="画质增强：" textcolor="config_txt_hot" font="yahei_14" padding="0,-2,0,0" width="86" height="18" align="right"/>
+          <Control />
+        </VerticalLayout>
+        <VerticalLayout >
+          <HorizontalLayout name="resolution_lay"  height="14" visible="true">
+            <CheckBox name="sup_resolution" style="checkbox_style" selected="true" width="46" text="超分"  padding="24,0,0,0" textpadding="18,-1,0,0" />
+            <Label text="（仅针对720P及以下清晰度生效）" textcolor="config_txt_disable" width="180" padding="-6,-2,0,0" />
+            <Control />
+          </HorizontalLayout>
+          <Control name="quality_temp_control" />
+          <HorizontalLayout name="memc_lay"  height="14" visible="true">
+            <CheckBox name="memc_check" style="checkbox_style" selected="true" width="46" text="超帧"  padding="24,0,0,0" textpadding="18,-1,0,0" />
+            <Label text="（仅针对1080P清晰度生效）" textcolor="config_txt_disable" width="180" padding="-6,-2,0,0" />
+            <Control />
+          </HorizontalLayout>
+        </VerticalLayout>
+      </HorizontalLayout>
+      <HorizontalLayout padding="0,15,0,6" height="20">
+        <Label text="视频加速：" textcolor="config_txt_hot" font="yahei_14" width="86" height="18" padding="0,-2,0,0" align="right"/>
+        <CheckBox name="playacceleratesvr" style="checkbox_style" selected="true" padding="24,0,0,0" width="115" height="14" text="开启视频加速服务" textpadding="18,-1,0,0" />
+        <Button name="playacceleratesvr_tips" width="14" height="14" padding="8,0,0,0" bkimage="file='commonres/tips.svg'" svg-fill-color="radio_checkbox_normal_color" hot-svg-fill-color="radio_checkbox_hot_color"/>
+      </HorizontalLayout>
+	  <HorizontalLayout name="lwa_gpu_panel" padding="0,10,0,0" height="22" visible="false">
+		<Label text="开启GPU加速：" textcolor="config_txt_hot" font="yahei_14" width="100" height="20" padding="-2,0,0,0" align="right"/>
+		<CheckBox name="open_lwa_gpu_ck" style="checkbox_style" width="150" text="更改后需要重启客户端" padding="11,2,0,0" textpadding="18,0,0,0" />
+	  </HorizontalLayout>
+    </VerticalLayout>
+  </Container>
+</Window>
+

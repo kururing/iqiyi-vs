@@ -1,0 +1,161 @@
+{
+  "memory": {
+    "setting": "historical",
+    "summary": "Bối cảnh chiến tranh và triều đình cổ trang; xen kẽ cảnh chiến trường tra án của thế tử, cảnh nội phủ Tạ gia phạt con gái, cảnh giao dịch cơ quan mật ở phố chợ và cảnh nghị sự trước mặt Thái hậu.",
+    "characters": [
+      {
+        "name": "萧晟",
+        "translation": "Tiêu Thịnh",
+        "role": "nam, Tĩnh An Vương thế tử",
+        "address": "Tiêu Thịnh → thuộc hạ: ta - các ngươi; Tiêu Thịnh → Gia Ngư: xưng ta, gọi nàng/Diệu Thủ công tử; Tiêu Thịnh → Thái hậu: thần - Thái hậu",
+        "evidence": "#1, #357, #660, #663, #823, #827: xưng bản thế tử, Tiêu thế tử, tự xưng thần trước Thái hậu"
+      },
+      {
+        "name": "谢嘉鱼",
+        "translation": "Tạ Gia Ngư",
+        "role": "nữ, nhũ danh Yêu Yêu, con gái Tạ thái phó, quận chúa, giả danh Diệu Thủ công tử",
+        "address": "Gia Ngư → mẫu thân: xưng nữ nhi/ta, gọi a mẫu; Gia Ngư → Bạch công tử: ta - Bạch công tử; Gia Ngư → Tiêu Thịnh: ta - ngươi",
+        "evidence": "#170, #171, #173, #185, #187, #194, #340, #341, #485, #647, #652, #829: con gái Tạ thái phó, mẫu thân gọi là Yêu Yêu, Trường Sa Vương gọi Gia Ngư muội muội"
+      },
+      {
+        "name": "长沙王",
+        "translation": "Trường Sa Vương",
+        "role": "nam, phiên vương, xưng bản vương",
+        "address": "Trường Sa Vương → Gia Ngư: xưng bản vương, gọi Gia Ngư muội muội",
+        "evidence": "#24, #188, #194, #657: xưng bản vương, mang sính lễ đến Tạ phủ"
+      },
+      {
+        "name": "太后",
+        "translation": "Thái hậu",
+        "role": "nữ, bề trên trong triều đình",
+        "address": "Thái hậu → Tiêu Thịnh: chưa rõ; Tiêu Thịnh → Thái hậu: thần - Thái hậu",
+        "evidence": "#823, #827: Tiêu thế tử tạ ơn và cầu xin Thái hậu ban hôn"
+      },
+      {
+        "name": "张寂",
+        "translation": "Trương Tịch",
+        "role": "nam, tướng lĩnh dưới quyền Tiêu Thịnh",
+        "address": "Trương Tịch → Tiêu Thịnh: mạt tướng - thế tử",
+        "evidence": "#33, #34: nhận lệnh chuẩn bị hỏa thiêu Cửu Trượng Nguyên"
+      },
+      {
+        "name": "冯武",
+        "translation": "Phùng Vũ",
+        "role": "nam, tướng lĩnh dưới quyền Tiêu Thịnh",
+        "address": "Phùng Vũ → Tiêu Thịnh: mạt tướng - thế tử",
+        "evidence": "#33, #34: cùng Trương Tịch nhận lệnh tác chiến"
+      },
+      {
+        "name": "白公子",
+        "translation": "Bạch công tử",
+        "role": "nam, người đề chữ trên đồ sứ cho Gia Ngư",
+        "address": "Bạch công tử → Gia Ngư: ta - Gia Ngư muội muội; Gia Ngư → Bạch công tử: ta - Bạch công tử",
+        "evidence": "#484, #485, #486, #493: đề chữ lên bình thanh từ tặng Gia Ngư"
+      },
+      {
+        "name": "南星",
+        "translation": "Nam Tinh",
+        "role": "người hầu bên cạnh Gia Ngư",
+        "address": "chưa rõ",
+        "evidence": "#162, #163: được phu nhân sai đi gọi y quan"
+      },
+      {
+        "name": "杨义",
+        "translation": "Dương Nghĩa",
+        "role": "nam, Vũ khố lệnh, đã uống độc tự vẫn",
+        "address": "chưa rõ",
+        "evidence": "#2, #19: nhận hối lộ mua nỏ rồi tự sát"
+      }
+    ],
+    "glossary": [
+      {
+        "source": "世子",
+        "translation": "thế tử"
+      },
+      {
+        "source": "靖安王",
+        "translation": "Tĩnh An Vương"
+      },
+      {
+        "source": "长沙王",
+        "translation": "Trường Sa Vương"
+      },
+      {
+        "source": "武库令",
+        "translation": "Vũ khố lệnh"
+      },
+      {
+        "source": "主簿",
+        "translation": "chủ bạ"
+      },
+      {
+        "source": "九丈原",
+        "translation": "Cửu Trượng Nguyên"
+      },
+      {
+        "source": "妙手公子",
+        "translation": "Diệu Thủ công tử"
+      },
+      {
+        "source": "连弩",
+        "translation": "liên nỏ"
+      },
+      {
+        "source": "连环弩",
+        "translation": "liên hoàn nỏ"
+      },
+      {
+        "source": "响云箭",
+        "translation": "Hưởng Vân tiễn"
+      },
+      {
+        "source": "九连环",
+        "translation": "Cửu Liên Hoàn"
+      },
+      {
+        "source": "迎风散",
+        "translation": "Nghênh Phong tán"
+      },
+      {
+        "source": "骁骑营",
+        "translation": "Kiêu Kỵ doanh"
+      },
+      {
+        "source": "北秦",
+        "translation": "Bắc Tần"
+      },
+      {
+        "source": "鹰王",
+        "translation": "Ưng Vương"
+      },
+      {
+        "source": "太傅",
+        "translation": "Thái phó"
+      },
+      {
+        "source": "太后",
+        "translation": "Thái hậu"
+      },
+      {
+        "source": "岐王",
+        "translation": "Kỳ Vương"
+      },
+      {
+        "source": "蕊夫人",
+        "translation": "Nhuỵ phu nhân"
+      },
+      {
+        "source": "扶楹院",
+        "translation": "viện Phù Doanh"
+      }
+    ],
+    "uncertainties": [
+      "Chưa rõ người trò chuyện và trị thương cho Tiêu Thịnh ở cue #806–#818 là đại phu hay bạn thân/thuộc hạ."
+    ]
+  },
+  "episodes": {
+    "8493031186391200": "1afe44c1a80664b75cc04a287ed5b5169edf241762e4a2564cb8ed5300fa9f4d"
+  },
+  "updatedAt": 1792344834.7998514,
+  "profileVersion": "ab04d0bea62ff154f832c6b059f7a76af6b5ae824bce8a607d578ee8d32e6233"
+}

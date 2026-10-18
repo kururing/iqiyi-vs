@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window >
+  <Font name="Microsoft YaHei" size="16" bold="false" italic="false" indexfont="yahei_16"/>
+  <Font name="Microsoft YaHei" size="20" bold="false" italic="false" indexfont="yahei_20"/>
+  <Font name="Microsoft YaHei" size="13" bold="false" italic="false" indexfont="yahei_13" default="true"/>
+
+    <VerticalLayout bkcolor="login_tip_bkcolor" name="logout_lay_inner" bordercolor="login_tip_bordercolor" borderround="4,4">
+        <Label name="title" text="确定退出当前账号吗" align="center" indexfont="yahei_20" height="20" textcolor="login_qr_text_color" padding="0,31,0,0"/>
+        <HorizontalLayout height="16" padding="0,16,0,0">
+            <Control />
+            <CheckBox name="profile_check" style="login_checkbox_style" text="记住账号下次快速登录" textcolor="login_normal_text_color" indexfont="yahei_13" width="174" selected="true"/>
+            <Control />
+        </HorizontalLayout>
+        <HorizontalLayout height="40" padding="0,30,0,0">
+            <Control />
+            <Button name="logout_agree_btn" text="确定退出" textcolor="login_agree_textcolor" style="login_style" width="140" height="40" indexfont="yahei_16" borderround="4,4"/>
+            <Control width="16"/>
+            <Button name="cancel_btn" text="取消" bkcolor="login_cancel_bkcolor" width="140" height="40" indexfont="yahei_16" textcolor="login_cancel_textcolor" borderround="4,4"/>
+            <Control />
+        </HorizontalLayout>
+    </VerticalLayout>
+</Window>

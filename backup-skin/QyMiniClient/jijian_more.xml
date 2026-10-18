@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window width="130" height="171">
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="yahei_12" />
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="yahei_14" />
+
+  <CxVerticalLayout name="root_lay" width="130" height="171" borderround="8,8" bkcolor="#FF1F2022" bordercolor="#FF262729">
+	  <Label text="关闭极简模式：" width="130" height="24" padding="0,8,0,0" align="left" textpadding="16,0,0,0" textcolor="#66ffffff" indexfont="yahei_14"/>
+	  <Button name="cur_close_btn" width="130" height="40" text="仅本次关闭" align="left" textpadding="16,0,0,0" textcolor="#ccffffff" hottextcolor="#ffffffff"  pushedtextcolor="#66ffffff" indexfont="yahei_14"
+	  hotbkcolor="#FF2C2C2E" pushedbkcolor="#FF2C2C2E"
+	  />
+	  <Button name="forever_close_btn" width="130" height="40" text="永久关闭" align="left" textpadding="16,0,0,0" textcolor="#ccffffff" hottextcolor="#ffffffff" pushedtextcolor="#66ffffff" indexfont="yahei_14"
+	  hotbkcolor="#FF2C2C2E" pushedbkcolor="#FF2C2C2E"
+	  />
+	  <Label width="130" height="1" bkcolor="#26ffffff" padding="0,4,0,0"/>
+	  <Button name="introduction" width="130" height="40" padding="0,4,0,0" text="极简模式介绍" bkimage="file='info.svg' dest='104,13,120,29'" textcolor="#ccffffff" hottextcolor="#ffffffff" pushedtextcolor="#66ffffff" indexfont="yahei_14" textpadding="16,0,0,0" align="left" hotbkcolor="#FF2C2C2E" pushedbkcolor="#FF2C2C2E"
+	  />
+  </CxVerticalLayout>
+</Window>

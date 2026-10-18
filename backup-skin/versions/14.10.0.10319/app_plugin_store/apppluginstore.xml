@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+  <Font name="Microsoft YaHei" size="24" bold="false" italic="false" indexfont="MiniList"/>
+  <Font name="Microsoft YaHei" size="20" bold="false" italic="false" indexfont="beauty_title_font"/>
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="more_font"/>
+  <Default name="VScrollBar" value="showbutton1=&quot;false&quot; showbutton2=&quot;false&quot; width=&quot;10&quot; thumbnormalimage=&quot;file='skinplan/app_plugin_store/scrollbar.png' source='0,0,10,40' corner='0,6,0,6'&quot; thumbhotimage=&quot;file='skinplan/app_plugin_store/scrollbar.png' source='10,0,20,40' corner='0,6,0,6'&quot; thumbpushedimage=&quot;file='skinplan/app_plugin_store/scrollbar.png' source='20,0,30,40' corner='0,6,0,6'&quot; " />
+  
+  <VerticalLayout name="app_page_bk" bkcolor="Discover_bkcolor" vscrollbar="true" scrollfloat="true">
+    <!--已安装插件容器-->
+    <TileLayout name="installed_plugin" padding="58,18,58,0" childpadding="2" itemsize="110,128" />
+	
+	<HorizontalLayout name="game" height="206"  padding="62,40,62,0" >	
+		<VerticalLayout >
+			<HorizontalLayout name="game_title" height="52"  >
+				<Label text="游戏中心" width="80" height="20" padding="0,16,6,16" textcolor="Discover_pictitle_textcolor" indexfont="beauty_title_font" />
+				<Button name="more_game" width="40" align="left" padding="0,20,0,18" indexfont="more_font" text="更多" textcolor="Discover_morebtn_textcolor" hottextcolor="Discover_morebtn_texthotcolor"    normalimage="file='commonres/right_arrow.svg' dest='28,2,40,14' svg-fill-color='Discover_morebtn_textcolor'
+            hot-svg-fill-color='Discover_morebtn_texthotcolor'" />
+			</HorizontalLayout>
+			<HorizontalLayout > 
+				<HorizontalLayout name="game_plugin"  itemsize="169,154" padding="0,0,1,0"/>
+				<Button name="game_left" width="22"  height="40" visible="true" float="true" pos="0,27,22,67" normalimage="file='skinplan/app_plugin_store/left.png' source='0,0,22,40'" hotimage="file='skinplan/app_plugin_store/left.png' source='22,0,44,40'"/>
+				<Button name="game_right" width="22"  height="40" visible="true" float="true" pos="-23,27,-1,67" normalimage="file='skinplan/app_plugin_store/right.png' source='0,0,22,40'" hotimage="file='skinplan/app_plugin_store/right.png' source='22,0,44,40'" />
+			</HorizontalLayout>
+		</VerticalLayout>
+	</HorizontalLayout>
+	<HorizontalLayout name="beauty" height="206"  padding="62,50,62,0" >
+		<VerticalLayout >
+			<HorizontalLayout name="beauty_title" height="52" >
+				<Label text="美女直播" width="80" height="20" padding="0,16,6,16" textcolor="Discover_pictitle_textcolor" indexfont="beauty_title_font" />
+				<Button name="more_beauty" width="40" align="left" padding="0,20,0,18" indexfont="more_font" text="更多"  textcolor="Discover_morebtn_textcolor" hottextcolor="Discover_morebtn_texthotcolor"   normalimage="file='commonres/right_arrow.svg' dest='28,2,40,14' svg-fill-color='Discover_morebtn_textcolor'
+            hot-svg-fill-color='Discover_morebtn_texthotcolor'"   />
+			</HorizontalLayout>
+			<HorizontalLayout > 
+				<HorizontalLayout name="beauty_plugin"  itemsize="169,154" padding="0,0,1,0"/>
+				<Button name="beauty_left" width="22"  height="40" visible="true" float="true" pos="0,27,22,67" normalimage="file='skinplan/app_plugin_store/left.png' source='0,0,22,40'" hotimage="file='skinplan/app_plugin_store/left.png' source='22,0,44,40'"/>
+				<Button name="beauty_right" width="22"  height="40" visible="true" float="true" pos="-23,27,-1,67" normalimage="file='skinplan/app_plugin_store/right.png' source='0,0,22,40'" hotimage="file='skinplan/app_plugin_store/right.png' source='22,0,44,40'" />
+			</HorizontalLayout>
+		</VerticalLayout>
+	</HorizontalLayout>
+	
+  </VerticalLayout>
+</Window>

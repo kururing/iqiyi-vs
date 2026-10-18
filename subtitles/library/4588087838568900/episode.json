@@ -1,0 +1,23 @@
+{
+  "title": "田耕纪第6集",
+  "order": 6,
+  "vid": "7455e997108133b55cf2e6c569887078",
+  "tvid": "4588087838568900",
+  "albumId": "7714930311098201",
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321734.2262938,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 846
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260518/83/9c/ff986873fa18ff09f2d7080ecbb8b33a.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

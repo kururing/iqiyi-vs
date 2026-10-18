@@ -1,0 +1,211 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="400,230" caption="0,0,0,38" >
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" default="true" />
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="yahei_14" />
+  <Font name="Microsoft YaHei" size="12" bold="true" italic="false" indexfont="yahei_12b" />
+  <Font name="Microsoft YaHei" size="16" bold="false" italic="false" indexfont="yahei_16" />
+  <Include source="public\xml\default_vscrollbar.xml" />
+
+  <VerticalLayout name="updateCon" >
+
+    <VerticalLayout name="normal_container" visible="false">
+      <VerticalLayout height="150" inset="1,1,1,0" bkimage="file='geeIcon/update/border_title.png' corner='3,3,4,4'">
+        <VerticalLayout name="titlebackground" >
+          <VerticalLayout height="145" padding="11,4,4,21" >
+            <HorizontalLayout height="24" >
+              <Label text="在线升级" height="24" width="140" align="leftmiddle" textcolor="0xffffffff" indexfont="yahei_14" />
+			  <Control />
+              <Button name="closebtn" animation="true" height="24" width="24"  padding=",0,4,0"
+                normalimage="file='geeIcon/update/public_close.png' source='0,0,24,24'"
+                hotimage="file='geeIcon/update/public_close.png' source='24,0,48,24'"
+                pushedimage="file='geeIcon/update/public_close.png' source='48,0,72,24'"
+                disabledimage="file='geeIcon/update/public_close.png' source='72,0,96,24'"/>
+            </HorizontalLayout>
+
+            <HorizontalLayout height="61" name="logoicon">
+              <Control />
+              <Label  width="74" height="61" bkimage="file='geeIcon/update/logoicon.png' " />
+              <Control />
+            </HorizontalLayout>
+
+
+            <HorizontalLayout name="progress_data" visible="false" height="36" padding="0,25,0,25" >
+              <Control />
+              <Label name="progress_100" width="25" visible="false" />
+              <Label name="progress_left" width="25" visible="false" bkimage="file='geeIcon/update/progress_data.png' source='0,0,25,36'"/>
+              <Label name="progress_right" width="25" bkimage="file='geeIcon/update/progress_data.png' source='0,0,25,36'"/>
+              <Label name="progress_end" width="37" padding="2,0,0,0" bkimage="file='geeIcon/update/progress_data.png' source='250,0,287,36'"/>
+              <Control />
+            </HorizontalLayout>
+            <HorizontalLayout height="26">
+			  <Control />
+			  <Label text="发现新版本！" name="titletip" height="26" textcolor="0xffffffff" padding="0,3,0,0" align="centre" indexfont="yahei_16" />
+			  <Control />
+			</HorizontalLayout>
+            
+          </VerticalLayout>
+
+          <VerticalLayout height="36" padding="128,20,0,0" >
+          <HorizontalLayout name="progress_data" visible="false" >
+            <Label name="progress_100" width="25" visible="false"/>
+            <Label name="progress_left" width="25" visible="false"
+                   bkimage="file='geeIcon/update/progress_data.png' source='0,0,25,36'"/>
+            <Label name="progress_right" width="25"
+                   bkimage="file='geeIcon/update/progress_data.png' source='0,0,25,36'"/>
+            <Label name="progress_end" width="37" padding="2,0,0,0" 
+                   bkimage="file='geeIcon/update/progress_data.png' source='250,0,287,36'"/>
+          </HorizontalLayout>
+        </VerticalLayout>
+		      <Progress name="downprogress"  height="3" visible="false" float="true" pos="1,146,1,0"
+		        foreimage="file='geeIcon/update/foreprogress.png'" bkimage="file='geeIcon/update/bkprogress.png'"/>
+	      </VerticalLayout>
+	    </VerticalLayout>
+    
+		<VerticalLayout bkimage="file='geeIcon/update/main_bk.png' corner='1,1,1,1'">
+		<VerticalLayout inset="1,0,1,1" bkimage="file='geeIcon/update/border_content.png' corner='3,3,4,4'">
+			<VerticalLayout name="versiontip" padding="25,18,25,0" width="348" >
+			    <Text name="newversion" text="" width="348" height="34" textcolor="#FFCCCCCC" showhtml="true" singleline="false" />
+				<VerticalLayout name="updateinfo" padding="0,18,0,0" >
+				</VerticalLayout>
+				
+			    <Label text="点击&quot;立即升级&quot;按钮将开始升级，之后程序会自动重启。" height="12" 
+					padding="0,18,0,0" textcolor="#ff666666"/>
+			</VerticalLayout>
+				
+				
+			<HorizontalLayout name="bottomlayout" height="28" padding="0,26,0,15" >
+			  <Control />
+			  <Button name="upgradebtn" animation="true" text="立即升级" width="80" align="center" textpadding="10,0,10,0"
+					textcolor="#ffffffff" hottextcolor="#ffffffff"
+					pushedtextcolor="#ffcccccc" disabledtextcolor="#FF777777"
+					normalimage="file='geeIcon/update/okbtn.png' source='0,0,80,28'"
+					hotimage="file='geeIcon/update/okbtn.png' source='80,0,160,28'"
+					pushedimage="file='geeIcon/update/okbtn.png' source='160,0,240,28'"
+					disabledimage="file='geeIcon/update/okbtn.png' source='240,0,320,28'" />
+				
+			  <Button name="cancelbtn" animation="true" text="以后再说" width="80" padding="12,0,0,0" textpadding="10,0,10,0"
+					textcolor="#ffeeeeee" hottextcolor="#ffffffff"
+					pushedtextcolor="#ffcccccc" disabledtextcolor="#FF444444" 
+					normalimage="file='geeIcon/update/cancelbtn.png' source='0,0,80,28'"
+					hotimage="file='geeIcon/update/cancelbtn.png' source='80,0,160,28'"
+					pushedimage="file='geeIcon/update/cancelbtn.png' source='160,0,240,28'"
+					disabledimage="file='geeIcon/update/cancelbtn.png' source='240,0,320,28'" />
+			  <Control />
+			</HorizontalLayout>
+
+			<HorizontalLayout name="updatedlayout" height="28" padding="113,26,113,25" visible="false">
+				<Button name="minisizebtn" animation="true" text="最小化" width="80" align="center" textpadding="10,0,10,0"
+					textcolor="#ffffffff" hottextcolor="#ffffffff"
+					pushedtextcolor="#ffcccccc" disabledtextcolor="#FF777777"
+					normalimage="file='geeIcon/update/okbtn.png' source='0,0,80,28'"
+					hotimage="file='geeIcon/update/okbtn.png' source='80,0,160,28'"
+					pushedimage="file='geeIcon/update/okbtn.png' source='160,0,240,28'"
+					disabledimage="file='geeIcon/update/okbtn.png' source='240,0,320,28'" />
+					
+				<Button name="cancelbtn" animation="true" text="关闭" width="80" height="28" padding="12,0,0,0" textpadding="10,0,10,0"
+					textcolor="#ffeeeeee" hottextcolor="#ffffffff"
+					pushedtextcolor="#ffcccccc" disabledtextcolor="#FF444444" 
+					normalimage="file='geeIcon/update/cancelbtn.png' source='0,0,80,28'"
+					hotimage="file='geeIcon/update/cancelbtn.png' source='80,0,160,28'"
+					pushedimage="file='geeIcon/update/cancelbtn.png' source='160,0,240,28'"
+					disabledimage="file='geeIcon/update/cancelbtn.png' source='240,0,320,28'" />
+			</HorizontalLayout> 
+		</VerticalLayout>
+		</VerticalLayout>
+    </VerticalLayout>
+
+    <VerticalLayout name="wait_container">
+      <VerticalLayout inset="1,1,1,0" bkimage="file='geeIcon/update/border_title.png' corner='3,3,4,4'">
+        <VerticalLayout name="waitbk" height="150" >
+          <HorizontalLayout height="30">
+            <Label text="在线升级"  width="140" align="leftmiddle" textcolor="0xffffffff" padding="11,3,0,0" indexfont="yahei_14" />
+            <Control />
+            <Button name="closebtn" animation="true" height="24" width="24" padding="0,4,4,0"
+                    normalimage="file='geeIcon/update/public_close.png' source='0,0,24,24'"
+                    hotimage="file='geeIcon/update/public_close.png' source='24,0,48,24'"
+                    pushedimage="file='geeIcon/update/public_close.png' source='48,0,72,24'"
+                    disabledimage="file='geeIcon/update/public_close.png' source='72,0,96,24'" />
+          </HorizontalLayout>
+          <HorizontalLayout  >
+            <Control />
+            <Label name="checkversionLabel" text="正在检测新版本，请稍候."  align="left_vcenter" width="330" height="120"
+                    textpadding="0,0,0,15"
+                    textcolor="0xffffffff" indexfont="yahei_16"/>
+            <Control />
+          </HorizontalLayout>
+        </VerticalLayout>
+      </VerticalLayout>
+      <VerticalLayout bkimage="file='geeIcon/update/main_bk.png' corner='1,1,1,1'" height="80">
+        <VerticalLayout inset="1,0,1,1" bkimage="file='geeIcon/update/border_content.png' corner='3,3,4,4'">
+          <Button name="singleclosebtn" animation="true" text="关闭" width="80" height="28" padding="159,26,110,0" 
+			    textcolor="#ffeeeeee" disabledtextcolor="#FF444444"
+          normalimage="file='geeIcon/update/cancelbtn.png' source='0,0,80,28'"
+          hotimage="file='geeIcon/update/cancelbtn.png' source='80,0,160,28'"
+          pushedimage="file='geeIcon/update/cancelbtn.png' source='160,0,240,28'"
+          disabledimage="file='geeIcon/update/cancelbtn.png' source='240,0,320,28'" />
+        </VerticalLayout>
+      </VerticalLayout>
+    </VerticalLayout>
+
+    <VerticalLayout name="error_container" visible="false" >
+		<VerticalLayout height="150" inset="1,1,1,0" bkimage="file='geeIcon/update/border_title.png' corner='3,3,4,4'">
+			<VerticalLayout name="titlebackground" >
+				<HorizontalLayout padding="11,4,4,21" height="24" >
+		
+				<Label text="在线升级"  width="140" align="leftmiddle" textcolor="0xffffffff" indexfont="yahei_14" />
+				<Control />
+				<Button name="closebtn" animation="true" height="24" width="24" 
+					normalimage="file='geeIcon/update/public_close.png' source='0,0,24,24'"
+					hotimage="file='geeIcon/update/public_close.png' source='24,0,48,24'"
+					pushedimage="file='geeIcon/update/public_close.png' source='48,0,72,24'"
+					disabledimage="file='geeIcon/update/public_close.png' source='72,0,96,24'" />
+				</HorizontalLayout>
+
+				<Label text="升级失败，请稍候重试！" align="centre" textcolor="0xffffffff" indexfont="yahei_16"
+					padding="0,20,0,0" />
+			</VerticalLayout>
+		</VerticalLayout>
+		
+		<VerticalLayout bkimage="file='geeIcon/update/main_bk.png' corner='1,1,1,1'" height="80">
+			<VerticalLayout inset="1,0,1,1" bkimage="file='geeIcon/update/border_content.png' corner='3,3,4,4'">
+			  <Button name="singleclosebtn" animation="true" text="关闭" width="80" height="28" padding="159,26,110,0"
+				  textcolor="#ffeeeeee" disabledtextcolor="#FF444444"
+				  normalimage="file='geeIcon/update/cancelbtn.png' source='0,0,80,28'"
+				  hotimage="file='geeIcon/update/cancelbtn.png' source='80,0,160,28'"
+				  pushedimage="file='geeIcon/update/cancelbtn.png' source='160,0,240,28'"
+				  disabledimage="file='geeIcon/update/cancelbtn.png' source='240,0,320,28'" />
+			</VerticalLayout>
+		</VerticalLayout>
+    </VerticalLayout>
+
+    <VerticalLayout name="new_container" visible="false">
+		<VerticalLayout inset="1,1,1,0" bkimage="file='geeIcon/update/border_title.png' corner='3,3,4,4'">
+		    <VerticalLayout name="titlebackground" >
+		      <VerticalLayout height="130" padding="11,4,4,21" >
+				<HorizontalLayout>
+			      <Label text="在线升级" height="24" width="140" align="leftmiddle" textcolor="0xffffffff" indexfont="yahei_14" />
+				  <Button name="closebtn" animation="true" height="24" width="24"  padding="220,0,4,0"  align="rightmiddle"
+				    	normalimage="file='geeIcon/update/public_close.png' source='0,0,24,24'"
+				    	hotimage="file='geeIcon/update/public_close.png' source='24,0,48,24'"
+				    	pushedimage="file='geeIcon/update/public_close.png' source='48,0,72,24'"
+				    	disabledimage="file='geeIcon/update/public_close.png' source='72,0,96,24'" />
+				</HorizontalLayout>
+				    <Label name="logoicon" height="61" width="74" bkimage="file='geeIcon/update/logoicon.png' " align="centre" padding="150,0,0,6" />
+					<Label text="当前已是最新版本" name="titletip" height="20" textcolor="0xffffffff" padding="0,0,0,0" align="centre" indexfont="yahei_16" />
+		      </VerticalLayout>
+		    </VerticalLayout>
+		</VerticalLayout>
+		
+		<VerticalLayout bkimage="file='geeIcon/update/main_bk.png' corner='1,1,1,1'" height="80">
+			<VerticalLayout inset="1,0,1,1" bkimage="file='geeIcon/update/border_content.png' corner='3,3,4,4'">
+			  <Button name="singleclosebtn" animation="true" text="关闭" width="80" height="28" padding="159,26,110,0"
+				  textcolor="#ffeeeeee" disabledtextcolor="#FF444444"
+				  normalimage="file='geeIcon/update/cancelbtn.png' source='0,0,80,28'"
+				  hotimage="file='geeIcon/update/cancelbtn.png' source='80,0,160,28'"
+				  pushedimage="file='geeIcon/update/cancelbtn.png' source='160,0,240,28'"
+				  disabledimage="file='geeIcon/update/cancelbtn.png' source='240,0,320,28'" />
+			  </VerticalLayout>
+		  </VerticalLayout>
+    </VerticalLayout>
+  </VerticalLayout>
+</Window>

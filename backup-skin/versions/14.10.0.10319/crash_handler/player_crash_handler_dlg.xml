@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="358,208" caption="0,0,0,38" alpha="250" >
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" default="true" />
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="Title" />
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="tipfont" />
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" underline="true" indexfont="tipfont_underline" />
+  <Default name="VScrollBar" value="minthumbheight=&quot;20&quot; button1normalimage=&quot;file='ConfigRes/scrollbar_h.png' source='0,0,16,16' mask='#FFFF00FF'&quot; button1hotimage=&quot;file='ConfigRes/scrollbar_h.png' source='17,0,33,16' mask='#FFFF00FF'&quot; button1pushedimage=&quot;file='ConfigRes/scrollbar_h.png' source='34,0,49,16' mask='#FFFF00FF'&quot; button1disabledimage=&quot;file='ConfigRes/scrollbar_h.png' source='54,90,70,106' mask='#FFFF00FF'&quot; button2normalimage=&quot;file='ConfigRes/scrollbar_h.png' source='0,17,16,33' mask='#FFFF00FF'&quot; button2hotimage=&quot;file='ConfigRes/scrollbar_h.png' source='17,17,33,33' mask='#FFFF00FF'&quot; button2pushedimage=&quot;file='ConfigRes/scrollbar_h.png' source='34,17,49,33' mask='#FFFF00FF'&quot; button2disabledimage=&quot;file='ConfigRes/scrollbar_h.png' source='54,108,70,124' mask='#FFFF00FF'&quot; thumbnormalimage=&quot;file='ConfigRes/scrollbar_h.png' source='0,38,16,56' corner='2,2,2,2' mask='#FFFF00FF'&quot; thumbhotimage=&quot;file='ConfigRes/scrollbar_h.png' source='17,38,33,56' corner='2,2,2,2' mask='#FFFF00FF'&quot; thumbpushedimage=&quot;file='ConfigRes/scrollbar_h.png' source='34,38,49,56' corner='2,2,2,2' mask='#FFFF00FF'&quot; thumbdisabledimage=&quot;file='ConfigRes/scrollbar_h.png' source='54,126,70,142' corner='2,2,2,2' mask='#FFFF00FF'&quot; railnormalimage=&quot;file='ConfigRes/scrollbar_h.png' source='0,66,16,82' corner='2,2,2,2' mask='#FFFF00FF'&quot; railhotimage=&quot;file='ConfigRes/scrollbar_h.png' source='17,66,33,82' corner='2,2,2,2' mask='#FFFF00FF'&quot; railpushedimage=&quot;file='ConfigRes/scrollbar_h.png' source='34,66,49,82' corner='2,2,2,2' mask='#FFFF00FF'&quot; raildisabledimage=&quot;file='ConfigRes/scrollbar_h.png' source='54,144,70,160' corner='2,2,2,2' mask='#FFFF00FF'&quot; bknormalimage=&quot;file='ConfigRes/scrollbar_h.png' source='0,90,16,113' corner='2,2,2,2' mask='#FFFF00FF'&quot; bkhotimage=&quot;file='ConfigRes/scrollbar_h.png' source='17,90,33,113' corner='2,2,2,2' mask='#FFFF00FF'&quot; bkpushedimage=&quot;file='ConfigRes/scrollbar_h.png' source='35,90,49,113' corner='2,2,2,2' mask='#FFFF00FF'&quot; bkdisabledimage=&quot;file='ConfigRes/scrollbar_h.png' source='54,162,70,178' corner='2,2,2,2' mask='#FFFF00FF'&quot; " />
+  <VerticalLayout name="window_root" bkimage="file='CommonRes/dlg_bg.png' corner='5,28,5,5' ">
+    <HorizontalLayout height="38">
+      <Label text="提示" height="16" padding="10,10,0,0" indexfont="Title" textcolor="#ff999999" />
+      <Control />
+      <Button name="closebtn" width="13" height="13" padding="0,14,10,0" normalimage="file='commonres\close_btn.svg' align='center,12,12'
+            svg-fill-color='#ff999999'
+            hot-svg-fill-color='#ffa00000'
+            pushed-svg-fill-color='#cca00000' decode='render'"/>
+    </HorizontalLayout>
+    <HorizontalLayout height="42" padding="40,15,0,0">
+      <Label height="42" width="42" bkimage="crash_handler/tip.png"/>
+      <VerticalLayout padding="18,0,0,0">
+        <Label text="客户端软件出现异常情况啦!T^T" height="14" textcolor="#ff999999" bordercolor1="#ffff0000"/>
+        <Label text="下载最新版试试哦" height="14" textcolor="#ff999999" padding="0,8,0,0"/>
+      </VerticalLayout>
+    </HorizontalLayout>
+    <HorizontalLayout height="32" padding="0,25,0,0">
+      <Control />
+      <Button name="download_client" text="下载新版客户端" width="120" height="32" align="center" textcolor="#ffffffff" 
+      bkcolor="#ff328000" hotbkcolor="#ff3fa900" pushedcolor="#ff358f00" disabledcolor="#ff444444"/>
+      <Control />
+    </HorizontalLayout>
+    <Text bkimage="file='crash_handler/service.png' source='0,0,15,14' dest='0,0,15,14'" textcolor="#ff999999" padding="40,12,0,0" height="32" width="260" text="<c #999999>遇到问题，可以联系</c><a http://cserver.iqiyi.com/index?e=9><c #45b000>在线客服</c></a><c #999999> 或 拨打24小时客服电话：</c><c #45b000><y -15>400-923-7171</c>" textpadding="20,0,0,0" showhtml="true" indexfont="tipfont"/>
+  </VerticalLayout>
+</Window>

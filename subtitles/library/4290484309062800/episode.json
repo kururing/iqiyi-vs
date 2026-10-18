@@ -1,0 +1,23 @@
+{
+  "tvid": "4290484309062800",
+  "title": "田耕纪第14集",
+  "albumId": "7714930311098201",
+  "order": 14,
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321688.1956851,
+  "provider": "iqiyi",
+  "vid": "3a26761f8b9212552f90281c5f1be104",
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 901
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "url": "http://meta.video.iqiyi.com/20260518/ff/c2/eac6e83497b98c18dbe112344aefc04a.xml",
+      "format": "xml"
+    }
+  ]
+}

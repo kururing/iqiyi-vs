@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Window>
+  <FileFolderItem name="fileFolderItem " height="40" >
+    <HorizontalLayout >
+      <CheckBox name="expand_collapse" animation="true" width="15" height="15" padding="12,10,0,0"
+          normalimage="file='skinplan\list/shrink.png' source='0,0,15,15'" 
+          hotimage="file='skinplan\list/shrink.png' source='15,0,30,15'" 
+          pushedimage="file='skinplan\list/shrink.png' source='15,0,30,15'" 
+          selectednormalimage="file='skinplan\list/expand.png' source='0,0,15,15'" 
+          selectedhotimage="file='skinplan\list/expand.png' source='15,0,30,15'" 
+          selectedpushedimage="file='skinplan\list/expand.png' source='15,0,30,15'" />
+      <Label name="name"  padding="4,10,0,0"  height="15" align="leftmiddle" showhtml="true" adjustwidth="true"
+             textcolor="list_item_text_nor" endellipsis="true" indexfont="yahei_16" />
+      <Label name="FileNum"  padding="5,10,0,0" width="20" height="15" align="left" textcolor="list_item_text_nor"  indexfont="yahei_16"/>
+      <Control />
+		<Button name="item_closebtn" visible="false" width="28" height="28" padding ="2,6,0,6" tooltip="从播放列表中删除"
+		   normalimage="file='newIcon/FileItem/normal/delete.png' source='0,0,56,56'"
+		   hotimage="file='newIcon/FileItem/hover/delete.png' source='0,0,56,56'"
+		   pushedimage="file='newIcon/FileItem/press/delete.png' source='0,0,56,56'"/>
+      <Control name="space" width="10"/>
+    </HorizontalLayout>
+  </FileFolderItem>
+</Window>

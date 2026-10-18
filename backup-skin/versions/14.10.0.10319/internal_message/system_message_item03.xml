@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<!--bordercolor="#ffff0000"-->
+<Window>
+ <VerticalLayout name="notify_template2" minheight="30" maxheight="30" >
+    <VerticalLayout>
+        <HorizontalLayout height="15" padding="94,7,0,2" >
+          <Button name="view_all" width="100" textcolor="#ff888888" hottextcolor="#ff5aa700" text="查看全部消息" endellipsis="true" font="1" />
+        </HorizontalLayout>
+       </VerticalLayout>
+  </VerticalLayout>
+</Window>

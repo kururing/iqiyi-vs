@@ -1,0 +1,23 @@
+{
+  "title": "花戎第13集",
+  "order": 13,
+  "vid": "e8b0118751a6938e72c20c69b9bda2cd",
+  "tvid": "6000701896157100",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337946.9562266,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 611
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/48/2a/5d4a92604df3eeb21a422a9888edf433.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

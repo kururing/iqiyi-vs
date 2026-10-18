@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window sizebox="4,3,4,4" caption="0,0,0,52" roundcorner="5,5">
+	<Font name="Tahoma" size="13" bold="false" italic="false" indexfont="skinFont1" />
+	<Font name="Microsoft YaHei" size="9" bold="false" italic="false" default="false" indexfont="yahei_s9"/>
+	<Font name="Microsoft YaHei" size="10" bold="false" italic="false" default="false" indexfont="yahei10"/>
+	<Font name="Microsoft YaHei" size="12" bold="false" italic="false" default="false" indexfont="yahei12"/>
+	<Font name="Microsoft YaHei" size="14" bold="false" italic="false" default="true" indexfont="yahei14"/>
+
+	<HorizontalLayout name="title_lay">
+		<HorizontalLayout name="back_lay" width="24" height="24" padding="16,18,0,0" >
+			<Button name="back_btn" width="24" height="24"
+			normalimage="file='commonres\arrow_back.svg'" userdata="back_btn" style="main_ui_style" visible="false" tooltip="返回"/>
+		</HorizontalLayout>
+		<Button name="personal_back_btn" width="28" height="16"
+			normalimage="file='commonres\arrow_back.svg' align='left,16,16'" userdata="back_btn" style="main_ui_style" padding="0,22,0,0," visible="false" tooltip="返回"/>
+		<TabSearchContainer name="search_bar" padding="6,14,20,0" userdata="search_col" height="32" width="320" align="right"/>
+		<Control name="search_placeholder"/>
+		<HorizontalLayout name="play_controller" width="160" height="30" padding="0,14,0,0" align="left">
+			<HorizontalLayout name="play_programs_layout" visible="false">
+				<Button name="play_btn" width="12" height="12" padding="0,9,0,0"
+				normalimage="file='commonres\play.svg' align='center,12,12'" userdata="svg_btn" style="main_ui_style"/>
+				<Button name="pause_btn" width="12" height="12" visible="false"  padding="0,9,0,0"
+				normalimage="file='commonres\pause.svg' align='center,12,12'" userdata="svg_btn" style="main_ui_style"/>
+				<HorizontalLayout name="programme_ani" width="142" padding="6,0,20,0">
+					<Label name="programme_lab3" width="142"  textcolor="title_text_normal" userdata="text_col" indexfont="yahei14"/>
+				</HorizontalLayout>
+				<Button name="cover_btn" width="148" padding="-148,0,0,0"/>
+			</HorizontalLayout>
+		</HorizontalLayout>
+		<VerticalLayout name="vip_layout" width="19" height="15" align="right" padding="20,22,0,0" >
+			<Button name="vip_toast" text="每月6元" borderround="7,7" visible="false" float="true" pos="10,1,40,15"
+			       gradient="linear startpoint='0,0' endpoint='1.0,1.0' colorstops=((#FFFF6C4B, 0) (#FFFF3D4E, 1.0))"
+			       textcolor="#E5FFFFFF" align="centre" textpadding="0,0,0,1" indexfont="yahei10" endellipsis="true" />
+			<Button name="vip_btn" width="19" height="15" padding="0,0,0,0" bkimage="file='commonres\vip_btn.svg' align='center,19,15'"/>
+		</VerticalLayout>
+		<Button name="game_btn" visible="false" width="18" height="18" padding="20,22,0,0" align="right"
+			normalimage="file='commonres\game.svg' align='center,18,18'" userdata="svg_btn" style="main_ui_style"/>
+		<HorizontalLayout width="6" height="6" padding="-1,20,0,0">
+			<Label name="gamedot" visible="false" width="6" height="6" bkimage="file='commonres\update_dot.svg'"/>
+		</HorizontalLayout>
+		<HorizontalLayout name="weather_lay" width="30" height="20" padding="20,21,0,0" visible="false">
+			<WeatherBtn name="weather_temperature_lab" width="30" height="20" indexfont="yahei12" padding="0,0,0,0" textpadding="18,0,0,0" textcolor="title_text_normal" userdata="text_col"/>
+		</HorizontalLayout>
+		<Label name="line_lab" width="1" height="20" padding="20,20,0,0"  gradient="line_gradient" userdata="line_col"/>
+		<Button name="menu_btn" tooltip="菜单" width="14" height="12" padding="20,24,0,0" align="right"
+			normalimage="file='commonres\menu_btn.svg' align='center,14,12'" userdata="svg_btn" style="main_ui_style"/>
+		<HorizontalLayout width="6" height="6" padding="-1,20,0,0">
+			<Label name="updatereddot" visible="false" width="6" height="6" bkimage="file='commonres\update_dot.svg'"/>
+		</HorizontalLayout>
+		<Button name="min_btn" tooltip="最小化" width="12" height="12" padding="15,25,0,0" align="right"
+			normalimage="file='commonres\min_btn.svg' align='center,12,2'" userdata="svg_btn" style="main_ui_style"/>
+		<Button name="max_btn" tooltip="最大化" width="12" height="16" padding="20,22,0,0" align="right"
+			normalimage="file='commonres\max_btn.svg' align='center,12,12'" userdata="svg_btn" style="main_ui_style"/>
+		<Button name="restore_btn" tooltip="还原窗口" visible="false" width="12" height="16"  align="right" padding="20,24,0,0"
+			normalimage="file='commonres\restore_btn.svg' align='center,12,12'" userdata="svg_btn" style="main_ui_style"/>
+		<Button name="close_btn" userdata="close_btn" style="close_style" svg-fill-color="mainui_close_normal_btn" tooltip="关闭" width="23" height="23" padding="20,19,15,0" align="right"/>
+	</HorizontalLayout>
+</Window>

@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Window size="400,282" caption="0,0,400,32" >
+  <Font name="微软雅黑" size="14" bold="true" italic="false" indexfont="yahei_14" />
+  <Font name="微软雅黑" size="12" bold="false" italic="false" default="true" />
+  <VerticalLayout bkimage="file='skinplan\public/dialog/wind_bk.png'" inset="1,1,1,1">
+  
+    <HorizontalLayout height="32" inset="12,1,1,0" bkimage="file='skinplan\public/dialog/border_title.png' corner='3,3,4,4'" >
+      <Label name="lab_caption" text="提示" align="leftmiddle" textcolor="list_clearfile_title" indexfont="yahei_14" />
+      <Button name="btn_close"  tooltip="关闭" height="24" width="24" align="center"  padding="11,3,4,4"  
+		    normalimage="file='skinplan\public/ctrl/public_close.png' source='0,0,24,24'"
+		    hotimage="file='skinplan\public/ctrl/public_close.png' source='24,0,48,24'"
+		    pushedimage="file='skinplan\public/ctrl/public_close.png' source='48,0,72,24'"
+		    disabledimage="file='skinplan\public/ctrl/public_close.png' source='72,0,96,24'" />
+    </HorizontalLayout>
+	<VerticalLayout inset="1,0,1,1" bkimage="file='skinplan\public/dialog/border_content.png' corner='3,3,4,4'">
+    <VerticalLayout bkimage="file='skinplan\public/dialog/main_bk.png' corner='2,1,2,1'" >
+	    <HorizontalLayout inset="25,0,33,0" >
+		  <Label width="54" height="54" bkimage="file='skinplan\public/ctrl/warning.png'" padding="0,26,26,44" />
+		  <VerticalLayout >
+		    <Text name="infoText" text="播放列表文件过多，可能导致程序启动变慢，<n><p 5>是否需要清理？</p>" singleline="false" 
+		        textcolor="wnd_label_text_title" padding="0,30,0,15" showhtml="true" height="40"/>
+            <VerticalLayout height="87" >		
+			<CheckBox name="check_thiry_clear" animation="true" text="删除超过30天未播放的文件" group="clear_file" 
+            textcolor="wnd_label_text_title" align="left" height="14" width="165"
+            textpadding="20,0,0,0" selectedtextcolor="wnd_label_text_title"
+            selectedhottextcolor="wnd_label_text_title" selectedpushedtextcolor="wnd_label_text_title"
+            normalimage="file='skinplan\public/ctrl/radio.png' source='0,0,14,14' dest='0,0,14,14'"
+            hotimage="file='skinplan\public/ctrl/radio.png'  source='14,0,28,14' dest='0,0,14,14'"
+            pushedimage="file='skinplan\public/ctrl/radio.png'  source='28,0,42,14' dest='0,0,14,14'"
+            disabledimage="file='skinplan\public/ctrl/radio.png' source='42,0,56,14' dest='0,0,14,14'"
+            selectednormalimage="file='skinplan\public/ctrl/radio.png'  source='56,0,70,14' dest='0,0,14,14'"
+            selectedhotimage="file='skinplan\public/ctrl/radio.png' source='70,0,84,14' dest='0,0,14,14'"
+            selectedpushedimage="file='skinplan\public/ctrl/radio.png' source='84,0,98,14' dest='0,0,14,14'"
+            selecteddisabledimage="file='skinplan\public/ctrl/radio.png' source='98,0,112,14' dest='0,0,14,14'"
+			/>
+
+			<CheckBox name="check_seven_clear" animation="true" text="删除超过7天未播放的文件" group="clear_file" 
+            align="left" textpadding="20,0,0,0" padding="0,10,0,0" height="14" width="160"
+            textcolor="wnd_label_text_title" selectedtextcolor="wnd_label_text_title" selected="false"
+            selectedhottextcolor="wnd_label_text_title" selectedpushedtextcolor="wnd_label_text_title"
+            normalimage="file='skinplan\public/ctrl/radio.png' source='0,0,14,14' dest='0,0,14,14'"
+            hotimage="file='skinplan\public/ctrl/radio.png'  source='14,0,28,14' dest='0,0,14,14'"
+            pushedimage="file='skinplan\public/ctrl/radio.png'  source='28,0,42,14' dest='0,0,14,14'"
+            disabledimage="file='skinplan\public/ctrl/radio.png' source='42,0,56,14' dest='0,0,14,14'"
+            selectednormalimage="file='skinplan\public/ctrl/radio.png'  source='56,0,70,14' dest='0,0,14,14'"
+            selectedhotimage="file='skinplan\public/ctrl/radio.png' source='70,0,84,14' dest='0,0,14,14'"
+            selectedpushedimage="file='skinplan\public/ctrl/radio.png' source='84,0,98,14' dest='0,0,14,14'"
+            selecteddisabledimage="file='skinplan\public/ctrl/radio.png' source='98,0,112,14' dest='0,0,14,14'"
+			/>
+
+            <CheckBox name="check_all_clear" animation="true" text="全部删除" group="clear_file" 
+            align="left" textpadding="20,0,0,0" padding="0,10,0,0" height="14" width="70"
+            textcolor="wnd_label_text_title" selectedtextcolor="wnd_label_text_title" selected="false"
+            selectedhottextcolor="wnd_label_text_title" selectedpushedtextcolor="wnd_label_text_title"
+            normalimage="file='skinplan\public/ctrl/radio.png' source='0,0,14,14' dest='0,0,14,14'"
+            hotimage="file='skinplan\public/ctrl/radio.png'  source='14,0,28,14' dest='0,0,14,14'"
+            pushedimage="file='skinplan\public/ctrl/radio.png'  source='28,0,42,14' dest='0,0,14,14'"
+            disabledimage="file='skinplan\public/ctrl/radio.png' source='42,0,56,14' dest='0,0,14,14'"
+            selectednormalimage="file='skinplan\public/ctrl/radio.png'  source='56,0,70,14' dest='0,0,14,14'"
+            selectedhotimage="file='skinplan\public/ctrl/radio.png' source='70,0,84,14' dest='0,0,14,14'"
+            selectedpushedimage="file='skinplan\public/ctrl/radio.png' source='84,0,98,14' dest='0,0,14,14'"
+            selecteddisabledimage="file='skinplan\public/ctrl/radio.png' source='98,0,112,14' dest='0,0,14,14'"
+			/>
+			
+		    <CheckBox name="check_no_clear" animation="true" text="不删除" group="clear_file" 
+            align="left" textpadding="20,0,0,0" padding="0,10,0,0" height="14" width="70"
+            textcolor="wnd_label_text_title" selectedtextcolor="wnd_label_text_title" selected="true"
+            selectedhottextcolor="wnd_label_text_title" selectedpushedtextcolor="wnd_label_text_title"
+            normalimage="file='skinplan\public/ctrl/radio.png' source='0,0,14,14' dest='0,0,14,14'"
+            hotimage="file='skinplan\public/ctrl/radio.png'  source='14,0,28,14' dest='0,0,14,14'"
+            pushedimage="file='skinplan\public/ctrl/radio.png'  source='28,0,42,14' dest='0,0,14,14'"
+            disabledimage="file='skinplan\public/ctrl/radio.png' source='42,0,56,14' dest='0,0,14,14'"
+            selectednormalimage="file='skinplan\public/ctrl/radio.png'  source='56,0,70,14' dest='0,0,14,14'"
+            selectedhotimage="file='skinplan\public/ctrl/radio.png' source='70,0,84,14' dest='0,0,14,14'"
+            selectedpushedimage="file='skinplan\public/ctrl/radio.png' source='84,0,98,14' dest='0,0,14,14'"
+            selecteddisabledimage="file='skinplan\public/ctrl/radio.png' source='98,0,112,14' dest='0,0,14,14'"
+			/>
+      </VerticalLayout>
+		</VerticalLayout>
+	</HorizontalLayout> 
+      <HorizontalLayout height="28" padding="29,0,25,25" >
+	      <CheckBox name="check_noprompt" text="不再询问" height="24" width="75" animation="true" textpadding="20,-9,0,0" padding="0,7,0,0"
+		       textcolor="wnd_label_text_title" hottextcolor="wnd_label_text_title" pushedtextcolor="wnd_label_text_title"
+		       selectedtextcolor="wnd_label_text_title" selectedhottextcolor="wnd_label_text_title" selectedpushedtextcolor="wnd_label_text_title" 
+		       normalimage="file='skinplan\public/ctrl/checkboxpicture.png' source='0,0,14,14' dest='0,0,14,14'"
+		       hotimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='14,0,28,14' dest='0,0,14,14'"
+		       pushedimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='28,0,42,14' dest='0,0,14,14'"
+		       disabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,0,56,14' dest='0,0,14,14'"
+		       selectednormalimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='0,14,14,28' dest='0,0,14,14'"
+		       selectedhotimage="file='skinplan\public/ctrl/checkboxpicture.png' source='14,14,28,28' dest='0,0,14,14'"
+		       selectedpushedimage="file='skinplan\public/ctrl/checkboxpicture.png' source='28,14,42,28' dest='0,0,14,14'"
+		       selecteddisabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,14,56,28' dest='0,0,14,14'" />	  
+	      <Control />
+        <Button name="btn_confirm" text="确定" animation="true" tooptip="确定" width="80" height="28" align="center" indexfont="setfont" padding="0,0,12,0"
+				textcolor="wnd_btn_ok_text_nor" hottextcolor="wnd_btn_ok_text_hot"
+				pushedtextcolor="wnd_btn_ok_text_pushed" disabledtextcolor="wnd_btn_ok_text_disable"
+			    normalimage="file='skinplan\public/ctrl/okbtn.png' source='0,0,80,30'"
+				hotimage="file='skinplan\public/ctrl/okbtn.png' source='80,0,160,30'"
+				pushedimage="file='skinplan\public/ctrl/okbtn.png' source='160,0,240,30'"
+				disabledimage="file='skinplan\public/ctrl/okbtn.png' source='240,0,320,30'" />      
+        <Button name="btn_cancel" tooptip="取消" animation="true" text="取消" width="80" height="28" align="center" indexfont="setfont"
+				textcolor="wnd_btn_cancel_text_nor" hottextcolor="wnd_btn_cancel_text_hot"
+				pushedtextcolor="wnd_btn_cancel_text_pushed" disabledtextcolor="wnd_btn_cancel_text_disable" 
+				normalimage="file='skinplan\public/ctrl/cancelbtn.png' source='0,0,80,30'"
+				hotimage="file='skinplan\public/ctrl/cancelbtn.png' source='80,0,160,30'"
+				pushedimage="file='skinplan\public/ctrl/cancelbtn.png' source='160,0,240,80'"
+				disabledimage="file='skinplan\public/ctrl/cancelbtn.png' source='240,0,320,30'"  />   
+      </HorizontalLayout>
+    </VerticalLayout>
+	</VerticalLayout>
+	
+  </VerticalLayout>
+</Window>

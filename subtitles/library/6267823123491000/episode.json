@@ -1,0 +1,23 @@
+{
+  "title": "花戎第7集",
+  "order": 7,
+  "vid": "bd05ae21d53264da420d09e591266885",
+  "tvid": "6267823123491000",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337946.893225,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 660
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/70/e8/8befa88c349d69eedc9e85f294263d09.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

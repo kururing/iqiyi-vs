@@ -1,0 +1,23 @@
+{
+  "title": "花戎第14集",
+  "order": 14,
+  "vid": "b25951a53ead16c5ae134c1c3944dd11",
+  "tvid": "5918880979721300",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337946.9582376,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 747
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/8d/77/51686abd0636303a4e5f8b2eb5ba990e.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

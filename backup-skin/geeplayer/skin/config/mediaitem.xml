@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Window>
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" default="true" indexfont="yahei_12"/>
+    <VerticalLayout padding="12,12,0,0" >
+		<CheckBox name="mediafile" animation="true" text="媒体文件" width="125" height="17" textpadding="18,0,0,0"
+		align="leftmiddle" textcolor="#F2FFFFFF" hottextcolor="#F2FFFFFF" selectedtextcolor="#F2FFFFFF"
+		selectedhottextcolor="#F2FFFFFF" selectedpushedtextcolor="#F2FFFFFF"
+		normalimage="file='geeIcon/public/ctrl/notselect.svg' dest='0,2,14,16' svg-fill-color='0x80FFFFFF'"
+		hotimage="file='geeIcon/public/ctrl/notselect.svg' dest='0,2,14,16' svg-fill-color='0xFFFFFFFF'"
+		pushedimage="file='geeIcon/public/ctrl/notselect.svg' dest='0,2,14,16' svg-fill-color='0x59FFFFFF'"
+		disabledimage="file='geeIcon/public/ctrl/notselect.svg' dest='0,2,14,16' svg-fill-color='0x59FFFFFF'"
+		selectednormalimage="file='geeIcon/public/ctrl/allselect.svg' dest='0,2,14,16' svg-fill-color='0x80FFFFFF'"
+		selectedhotimage="file='geeIcon/public/ctrl/allselect.svg' dest='0,2,14,16' svg-fill-color='0xFFFFFFFF'"
+		selectedpushedimage="file='geeIcon/public/ctrl/allselect.svg' dest='0,2,14,16' svg-fill-color='0x59FFFFFF'"
+		selecteddisabledimage="file='geeIcon/public/ctrl/allselect.svg' dest='0,2,14,16' svg-fill-color='0x59FFFFFF'"
+		partselectednormalimage="file='geeIcon/public/ctrl/partselect.svg' dest='0,2,14,16' svg-fill-color='0x80FFFFFF'"
+		partselectedhotimage="file='geeIcon/public/ctrl/partselect.svg' dest='0,2,14,16' svg-fill-color='0xFFFFFFFF'"
+		partselectedpushedimage="file='geeIcon/public/ctrl/partselect.svg' dest='0,2,14,16' svg-fill-color='0x59FFFFFF'"
+		partselecteddisabledimage="file='geeIcon/public/ctrl/partselect.svg' dest='0,2,14,16' svg-fill-color='0x59FFFFFF'"
+		/>
+		
+		<VerticalLayout name="mediaextcon" padding="25,15,0,0" >
+		<HorizontalLayout name="mediaext" height="18" >
+		</HorizontalLayout>
+		</VerticalLayout>
+    </VerticalLayout>	
+</Window>

@@ -1,0 +1,23 @@
+{
+  "title": "逐玉第2集",
+  "order": 2,
+  "vid": "4c6fdbbe1a92eb8bac1ff63a08ed8c62",
+  "tvid": "1740399080201000",
+  "albumId": "1976235836653801",
+  "albumTitle": "逐玉",
+  "albumTotal": 40,
+  "discoveredAt": 1792324394.7148502,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 742
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260420/f4/31/9aa5f448349f52f5d246b412ab5ab12b.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

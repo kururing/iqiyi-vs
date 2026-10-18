@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window >
+  <Font name="微软雅黑" size="14" bold="false" default="true" />
+  <Default name="Menu" value="bkimage=&quot;file='skinplan\menu/disc_bkimage.png' corner='16,24,16,16'&quot; inset=&quot;5,19,5,6&quot; itemtextpadding=&quot;37,8,0,10&quot; itemtextcolor=&quot;list_addfolder_normal_text&quot; itemhottextcolor=&quot;list_addfolder_hot_text&quot; itemselectedtextcolor=&quot;list_addfolder_selected_text&quot; itemhotimage=&quot;file='skinplan\menu\menu_item_bk.png' &quot; itemselectedbkimage=&quot;file='list\menu_itemhot.png' &quot; " />
+  <Default name="ChildMenu" value="bkimage=&quot;file='skinplan\menu/disc_menu_bk.png' corner='4,4,4,4'&quot; inset=&quot;2,6,2,6&quot; itemtextpadding=&quot;37,0,0,0&quot; itemtextcolor=&quot;list_addfolder_normal_text&quot; itemhottextcolor=&quot;list_addfolder_hot_text&quot; itemselectedtextcolor=&quot;list_addfolder_selected_text&quot; itemhotimage=&quot;file='skinplan\menu/menu_item_bk.png'&quot; itemselectedbkimage=&quot;file='skinplan\menu/menu_item_bk.png'&quot;" />
+
+  <Menu name="default_menu" vscrollbar="false" 
+        submenuarrownormalimage="file='skinplan\menu/disc_menu_more.png' source='0,0,4,7'"
+        submenuarrowhotimage="file='skinplan\menu/disc_menu_more.png' source='4,0,8,7'">
+        
+        <MenuElement name="menu_openfolder" text="打开文件夹...  " height="37"
+            iconnormalimage="file='skinplan\menu/icon_playerfolder.png' source='0,0,16,16' dest='15,10,31,26'"
+            iconhotimage="file='skinplan\menu/icon_playerfolder.png' source='16,0,32,16' dest='15,10,31,26'"
+            iconpushedimage="file='skinplan\menu/icon_playerfolder.png' source='32,0,48,16' dest='15,10,31,26'" />
+
+        <MenuElement name="menu_open_url" text="打开URL...  " height="37"
+            iconnormalimage="file='skinplan\menu/menu_open_url.png' source='0,0,16,16' dest='15,11,31,27'"
+            iconhotimage="file='skinplan\menu/menu_open_url.png' source='16,0,32,16' dest='15,11,31,27'"
+            iconpushedimage="file='skinplan\menu/menu_open_url.png' source='32,0,48,16' dest='15,11,31,27'" />
+    
+        <MenuElement name="menu_play_disc" text="播放光盘" height="37" arrowrightoffset="12" childmenuposoffset="0,0"
+            iconnormalimage="file='skinplan\menu/icon_playerdisc.png' source='0,0,16,16' dest='15,10,31,26'"
+            iconhotimage="file='skinplan\menu/icon_playerdisc.png' source='16,0,32,16' dest='15,10,31,26'"
+            iconpushedimage="file='skinplan\menu/icon_playerdisc.png' source='32,0,48,16' dest='15,10,31,26'" />
+
+		<MenuElement name="menu_play_cloud_disk" text="打开网盘...  " height="37" arrowrightoffset="12" childmenuposoffset="0,0"
+            iconnormalimage="file='skinplan\menu/icon_playercloud_disk.png' source='0,0,16,16' dest='15,10,31,26'"
+            iconhotimage="file='skinplan\menu/icon_playercloud_disk.png' source='16,0,32,16' dest='15,10,31,26'"
+            iconpushedimage="file='skinplan\menu/icon_playercloud_disk.png' source='32,0,48,16' dest='15,10,31,26'" />
+			
+		<MenuElement name="menu_play_share" text="快传... " height="37" arrowrightoffset="12" childmenuposoffset="0,0" 
+		    iconnormalimage="file='skinplan\menu/icon_playershare.png' source='0,0,16,16' dest='15,10,31,26'"
+            iconhotimage="file='skinplan\menu/icon_playershare.png' source='16,0,32,16' dest='15,10,31,26'" />
+        
+    </Menu>
+</Window>

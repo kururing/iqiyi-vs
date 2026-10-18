@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window bktrans="true" width="174" >
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" default="true" />
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="yahei_12" />
+  <Default name="Menu" value="bordersize=&quot;1&quot; inset=&quot;1,16,1,10&quot; itembkcolor=&quot;menu_bk&quot; itemtextpadding=&quot;44,0,0,0&quot; itemhotbkcolor=&quot;menu_hot_bk&quot; itemselectedbkcolor=&quot;menu_hot_bk&quot; itemtextcolor=&quot;menu_item_textnormal&quot; itemhottextcolor=&quot;menu_item_texthot&quot; itemselectedtextcolor=&quot;menu_item_texthot&quot; itemcheckedtextcolor=&quot;menu_item_textchecked&quot;" />
+  <Default name="SubMenu" value="bordersize=&quot;0&quot; menuspacing=&quot;1&quot; borderround=&quot;4,4&quot; inset=&quot;0,0,0,0&quot;" />
+  <Menu name="default_menu" width="174" vscrollbar="false" itemtextpadding="46,0,0,0" menubkimage="skinplan\title\menu_bk.png">
+    <MenuElement name="jijian_switch" style="s_menu_item" text="极简模式"
+                 iconnormalimage="file='menu\jijian_switch.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                 iconhotimage="file='menu\jijian_switch.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                 icondisabledimage="file='menu\jijian_switch.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'">
+		<HorizontalLayout name="switch_lay">
+            <Option name="jijian_option" normalimage="file='commonres\switch_off.svg' dest='115,10,143,26'" 
+                hotimage="file='commonres\switch_off.svg' dest='115,10,143,26'" 
+				selectedimage="file='commonres\switch_on.svg' dest='115,10,143,26'" 
+				selectedhotimage="file='commonres\switch_on.svg' dest='115,10,143,26'" selected="true"
+                 />
+        </HorizontalLayout>
+    </MenuElement>
+	<MenuElement name="menu_geeplayer" style="s_menu_item" text="播放本地文件"
+                 iconnormalimage="file='menu\geeplayer.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                 iconhotimage="file='menu\geeplayer.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                 icondisabledimage="file='menu\geeplayer.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'">
+    </MenuElement>
+	<MenuElement name="menu_add_lnk" style="s_menu_item" text="添加爱奇艺到桌面" 
+                 iconnormalimage="file='menu\add_lnk.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                 iconhotimage="file='menu\add_lnk.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                 icondisabledimage="file='menu\add_lnk.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'">
+    </MenuElement>
+    <MenuElement name="menu_recommand" style="s_menu_item" text="今日推荐"
+                 iconnormalimage="file='menu\recommand.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                 iconhotimage="file='menu\recommand.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                 icondisabledimage="file='menu\recommand.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'">
+    </MenuElement>
+    <MenuElement name="menu_config" style="s_menu_item" text="设置" 
+                 iconnormalimage="file='menu\config.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                 iconhotimage="file='menu\config.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                 icondisabledimage="file='menu\config.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'"
+                 />
+    <MenuElement name="menu_upgrade" style="s_menu_item" text="在线升级"
+                 iconnormalimage="file='menu\upgrade.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                 iconhotimage="file='menu\upgrade.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                 icondisabledimage="file='menu\upgrade.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'">
+    </MenuElement>
+    <MenuElement name="menu_online_help" style="s_menu_item" text="在线客服" 
+                 iconnormalimage="file='menu\online_help.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                 iconhotimage="file='menu\online_help.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                 icondisabledimage="file='menu\online_help.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'"
+                 />
+	<MenuElement name="menu_checkrepair" style="s_menu_item" text="反馈与修复"
+                 iconnormalimage="file='menu\repair.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                 iconhotimage="file='menu\repair.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                 icondisabledimage="file='menu\repair.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'"
+                 />
+    <!--MenuElement name="menu_feedback" style="s_menu_item" text="意见反馈"
+                 iconnormalimage="file='menu\feedback.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                 iconhotimage="file='menu\feedback.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                 icondisabledimage="file='menu\feedback.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'"
+                 /-->
+    <!-- 帮助子菜单开始... -->
+    <MenuElement name="menu_subroot_help" style="s_menu_item" text="帮助"
+                     iconnormalimage="file='menu\help.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                     iconhotimage="file='menu\help.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                     icondisabledimage="file='menu\help.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'">
+        <HorizontalLayout name="menu_more">
+            <Button name="sub_menu_arrow"
+                normalimage="file='commonres\right_arrow.svg' svg-fill-color='mainui_normal_btn_color' dest='123,14,135,26'" 
+                hotimage="file='commonres\right_arrow.svg' svg-fill-color='mainui_hot_btn_color' dest='123,14,135,26'" 
+                disabledimage="file='commonres\right_arrow.svg' svg-fill-color='mainui_disabled_btn_color' dest='123,14,135,26'" />
+        </HorizontalLayout>
+ 
+    </MenuElement>
+    <!-- ...帮助子菜单结束 -->
+    <MenuElement name="menu_exit" style="s_menu_item" text="退出应用"
+                 iconnormalimage="file='menu\exit.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                 iconhotimage="file='menu\exit.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                 icondisabledimage="file='menu\exit.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'"
+                 />
+  </Menu>
+</Window>

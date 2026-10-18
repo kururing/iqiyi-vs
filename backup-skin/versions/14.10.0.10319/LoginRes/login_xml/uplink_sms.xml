@@ -1,0 +1,34 @@
+﻿<?		xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window >
+    <VerticalLayout bkcolor="login_tip_bkcolor" name="uplink_sms_inner" borderround="4,4">
+		<Label name="title" text="发送短信验证" padding="0,32,0,0" indexfont="yahei_20" height="20" textcolor="login_qr_text_color" align="center"/>
+		<Label height="22" text="您接收的短信验证码次数已达上限" align="center"
+			 indexfont="yahei_14" textcolor="login_normal_text_color" lineheight="22" padding="0,16,0,0"/>
+        <Label height="22" text="为了您的账户安全，请发送短信验证" align="center"
+			 indexfont="yahei_14" textcolor="login_normal_text_color" lineheight="22"/>
+		<VerticalLayout width="296" height="130" padding="32,16,0,0" bordercolor="login_tip_inner_color" bkcolor="login_tip_inner_color" borderround="4,4">
+			<HorizontalLayout padding="24,24,0,0" height="14">	
+				<Label name="area_lab" text="中国大陆" indexfont="yahei_14" width="70" textcolor="login_normal_text_color"/>
+				<Label name="phone_num" padding="8,0,0,0" indexfont="yahei_14" textcolor="login_normal_text_color"/>
+				<Button name="upsms_change_btn" text="修改" textcolor="#ff00cc4c" indexfont="yahei_14"/>
+			</HorizontalLayout>		
+			<HorizontalLayout padding="24,20,0,0" height="14">	
+				<Label text="请编辑短信" indexfont="yahei_14" textcolor="login_normal_text_color" width="70" />
+				<Label name="content_lab" padding="8,0,0,0" indexfont="yahei_14" textcolor="login_normal_text_color"/>
+			</HorizontalLayout>
+			<HorizontalLayout padding="24,20,0,0" height="14">	
+				<Label text="发送到号码" indexfont="yahei_14" textcolor="login_normal_text_color" width="70" />
+				<Label name="service_num" padding="8,0,0,0" indexfont="yahei_14" textcolor="login_normal_text_color"/>
+			</HorizontalLayout>
+		</VerticalLayout>
+		<Control />
+	    <Button name="have_send_sms" text="我已经发送了" style="login_style" disabled-gradient="login_green_btn_gradient" width="296" padding="32,0,0,32" borderround="4,4" indexfont="yahei_16"/>
+        <VerticalLayout name="err_lay" float="true" pos="0,0,360,354" bkcolor="login_outtime_bkcolor" visible="false">
+            <Label bkimage="file='LoginRes/warning.svg' align='center,52,52' svg-fill-color='login_warning_icon_bkcolor'" padding="154,101,0,0" width="52" height="52"/>
+            <Label name="err_text" text="已超时，请刷新" textcolor="login_qr_text_color" align="center" padding="0,12,0,0" indexfont="yahei_16" height="16"/>
+            <Button name="refresh_btn" text="点击刷新" style="login_style" disabled-gradient="login_green_btn_gradient" padding="50,32,0,0" width="260" height="40" indexfont="yahei_16" borderround="4,4"/>
+        </VerticalLayout>
+        <Button name="uplink_close_btn" float="true" style="close_style" width="16" height="16" align="right" pos="332,12,348,28"/>
+	    <Button name="uplink_back_btn" float="true" width="16" height="16" pos="12,12,28,28" visible="false" normalimage="skinplan\login\back.svg" hotimage="LoginRes\hot_back.svg"/>
+    </VerticalLayout>
+</Window>

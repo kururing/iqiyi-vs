@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window >
+  <Font name="Microsoft YaHei" size="18" bold="false" italic="false" indexfont="yahei_18"/>
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="yahei_14"/>
+	<VerticalLayout name="login_res_inner" bkcolor="80000000">
+		<Control />
+		<VerticalLayout height="180">
+			<Label name="title_lab" height="18" text="登录成功" align="center" indexfont="yahei_18" textcolor="login_succ_textcolor"/>
+			<HorizontalLayout height="110" padding="0,25,0,11">
+				<Control />
+				<HorizontalLayout width="110" height="110" borderround="55" name="border"  bordercolor="FF00e138">
+					<ImageUrlLabel name="login_image" width="96" height="96" align="center" borderround="30,30" padding="6,6,0,0" borderround="48"/>
+				</HorizontalLayout>
+				<Control />
+			</HorizontalLayout>
+			<Label name="login_name" height="16" align="center" align="center"  indexfont="yahei_14"  textcolor="login_succ_textcolor"/>
+		</VerticalLayout>
+		<Control />
+	</VerticalLayout>
+</Window>

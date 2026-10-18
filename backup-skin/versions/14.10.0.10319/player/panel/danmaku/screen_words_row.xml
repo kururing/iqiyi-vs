@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<WeakHorizontalLayout width="224">
+	<WeakHorizontalLayout name="words_row" height="28" width="224" padding="0,0,0,14"  >
+		<WeakHorizontalLayout name="words_one" width="106" height="28" borderround="14,14" bordersize="1" padding="0,0,10,0" bordercolor="#FF666666">
+			<WeakButton  name="words_lable" text="哈哈哈哈哈"  width="60" height="17" padding="12,5,14,6" textcolor="#FFFFFFFF" hottextcolor="#FF00BE06" indexfont="yahei_12" align="leftmiddle"/>
+			<WeakButton name="delete" width="10" height="10" padding="0,9,11,9"  textcolor="player_control_normal_color" 						
+					normalimage="file='player/panel/danmaku/screen_setting/delete.svg' align='center,10,10' "
+					hotimage="file='player/panel/danmaku/screen_setting/delete_hover.svg' align='center,10,10' "
+					pushedimage="file='player/panel/danmaku/screen_setting/delete_pushed.svg' align='center,10,10' "
+							  />
+		</WeakHorizontalLayout>
+		<WeakHorizontalLayout name="words_two" width="106" height="28" borderround="14,14" bordersize="1" padding="0,0,2,0" bordercolor="#FF666666" >
+			<WeakButton  name="words_lable" text="哈哈哈哈哈"  width="60" height="17" padding="12,5,14,6" textcolor="#FFFFFFFF" hottextcolor="#FF00BE06" indexfont="yahei_12" align="leftmiddle"/>
+			<WeakButton name="delete" width="10" height="10" padding="0,9,11,9"  textcolor="player_control_normal_color" 						
+					normalimage="file='player/panel/danmaku/screen_setting/delete.svg' align='center,10,10' "
+					hotimage="file='player/panel/danmaku/screen_setting/delete_hover.svg' align='center,10,10' "
+					pushedimage="file='player/panel/danmaku/screen_setting/delete_pushed.svg' align='center,10,10' "
+							  />
+		</WeakHorizontalLayout>
+	</WeakHorizontalLayout>
+</WeakHorizontalLayout>

@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Window size="420,186">
+    <Include source="public/xml/default_font.xml" />
+  <Font name="HarmonyOS_Sans" size="16" charset="1" indexfont="HarmonyOS_Sans_16"/>
+
+  <VerticalLayout bkcolor="#F51C1D1F" bordercolor="#33FFFFFF" borderround="12,12,12,12">
+
+      <HorizontalLayout height="48" padding="20,0,16,0" >
+        <Label name="title" text="提示" padding="0,0,0,0" textcolor="#F2FFFFFF" indexfont="HarmonyOS_Sans_16" />
+        <Button name="btn_close"  height="16" width="16" padding="0,16,0,16"
+           bkimage="file='geeIcon/close.svg' align='center,16,16'  decode='render' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF'" />
+      </HorizontalLayout>
+    <VerticalLayout inset="1,0,1,1" >
+      <VerticalLayout >
+        <Label name="tip" text=""	height="22" padding="0,12,0,0" textcolor="#99FFFFFF" align="center"  indexfont="yahei_16"/>
+        <HorizontalLayout height="40"  padding="46,32,46,0">
+          <Button name="shutdown_confirm" text="立即执行"  width="150" indexfont="yahei_14" height="40"
+                    textcolor="#F2FFFFFF"  hottextcolor="#FFFFFFFF" pushedtextcolor="#99FFFFFF" disabledtextcolor="#66FFFFFF" textpadding="47,0,47,0"
+                    style="gold_gradient_btn_style" gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff00a8e6, 0) (#ff00b84d,0.5) (#ff00b84d, 1.0))"
+                    hot-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff1ac1ff, 0) (#ff00cc55, 0.5) (#ff00cc56, 1.0))"
+                    pushed-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff0082b3, 0) (#ff009940,0.5) (#ff009940, 1.0))"
+                    disabled-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff0082b3, 0) (#ff009940,0.5) (#ff009940, 1.0))" borderround="20,20,20,20"/>
+          <Button name="shutdown_cancel"  text="取消执行" width="150"  indexfont="yahei_14" height="40" padding="23,0,0,0"
+              textcolor="#F2FFFFFF"  hottextcolor="#FFFFFFFF" pushedtextcolor="#99FFFFFF"
+              bordercolor="#14FFFFFF" bkcolor="#0FFFFFFF" hotbkcolor="#1AFFFFFF" pushedbkcolor="#0AFFFFFF" borderround="20,20,20,20"/>
+        </HorizontalLayout>
+      </VerticalLayout>
+    </VerticalLayout>
+  </VerticalLayout>
+
+</Window>

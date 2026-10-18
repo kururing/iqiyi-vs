@@ -1,0 +1,23 @@
+{
+  "title": "花戎第31集",
+  "order": 31,
+  "vid": "0ba1dd6679a52f94805f9aa956a98125",
+  "tvid": "2756743208098600",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337948.1162245,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 722
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20240417/30/15/f9d126954f6a8ceaec9eea91cc55917b.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

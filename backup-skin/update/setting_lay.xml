@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window >
+<Font name="Microsoft YaHei" size="12" bold="false" italic="false" default="true" indexfont="yahei_font12"/> 
+<Font name="Microsoft YaHei" size="11" bold="false" italic="false" indexfont="yahei_font10"/> 
+    <VerticalLayout name="setting_con">
+	    <Label name="setting_lab" text="自定义设置（推荐）" textcolor="#ff999999" indexfont="yahei_font12" height="12"/>
+	    <CheckBox name="get_new_info" style="checkbox_render_style" textcolor="updatedlg_item_color" text="及时获取最新视频（允许开机自启、今日推荐、资讯热点）" indexfont="yahei_font12" selected="false" width="400" userdata="setoption1" textcolor="updatedlg_item_color"  padding="0,12,0,0" hottextcolor="updatedlg_item_color" pushedtextcolor="updatedlg_item_color" disabledtextcolor="updatedlg_item_color"
+			   selectedtextcolor="updatedlg_item_color" selectedhottextcolor="updatedlg_item_color"
+			   selectedpushedtextcolor="updatedlg_item_color"  selecteddisabledtextcolor="updatedlg_item_color"/>
+    </VerticalLayout>
+</Window>

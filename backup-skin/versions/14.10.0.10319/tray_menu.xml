@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window bktrans="true" width="174" >
+  <Font name="Microsoft YaHei" size="16" bold="false" italic="false" default="true" />
+  <Default name="Menu" value="bkcolor=&quot;menu_bk&quot; bordersize=&quot;1&quot; inset=&quot;1,16,1,10&quot; itemtextpadding=&quot;44,0,0,0&quot; itemhotbkcolor=&quot;menu_hot_bk&quot; itemselectedbkcolor=&quot;menu_bk&quot; itemtextcolor=&quot;menu_item_textnormal&quot; itemhottextcolor=&quot;menu_item_texthot&quot; itemselectedtextcolor=&quot;menu_item_texthot&quot; itemcheckedtextcolor=&quot;menu_item_textchecked&quot;" />
+  
+  <Menu name="default_menu" width="174" vscrollbar="false" itemtextpadding="42,0,0,0" borderround="4,4">
+    
+    <MenuElement name="menu_hide_mainpage" style="s_menu_item" text="隐藏爱奇艺"
+                 iconnormalimage="file='menu\hide_mainpage.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\hide_mainpage.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+				 icondisabledimage="file='menu\hide_mainpage.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 />
+    <MenuElement name="menu_open_mainpage" style="s_menu_item" text="打开爱奇艺" 
+				 iconnormalimage="file='menu\iqiyi_website.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\iqiyi_website.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+				 icondisabledimage="file='menu\iqiyi_website.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 />
+    <MenuElement name="menu_recommand" style="s_menu_item" text="今日推荐"
+                 iconnormalimage="file='menu\recommand.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\recommand.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+                 icondisabledimage="file='menu\recommand.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 />
+    <MenuElement name="menu_upgrade" style="s_menu_item" text="在线升级"
+				 iconnormalimage="file='menu\upgrade.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\upgrade.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+				 icondisabledimage="file='menu\upgrade.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 />
+    <MenuElement name="menu_online_help" style="s_menu_item" text="在线客服"  				 
+				 iconnormalimage="file='menu\online_help.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\online_help.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+				 icondisabledimage="file='menu\online_help.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 />
+	<MenuElement name="menu_checkfeedback" style="s_menu_item" text="反馈"
+                 iconnormalimage="file='menu\repair.svg' svg-fill-color='mainui_normal_btn_color' dest='18,10,34,26'"
+                 iconhotimage="file='menu\repair.svg' svg-fill-color='mainui_hot_btn_color' dest='18,10,34,26'"
+                 icondisabledimage="file='menu\repair.svg' svg-fill-color='mainui_disabled_btn_color' dest='18,10,34,26'"
+                 />
+    <!--MenuElement name="menu_feedback" style="s_menu_item" text="反馈与修复" 				 
+				 iconnormalimage="file='menu\feedback.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\feedback.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+				 icondisabledimage="file='menu\feedback.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 /-->
+    <MenuElement name="menu_config" style="s_menu_item" text="设置" 
+				 iconnormalimage="file='menu\config.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\config.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+				 icondisabledimage="file='menu\config.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 />
+    <MenuElement name="menu_iqiyi_about" style="s_menu_item" text="关于"
+                 iconnormalimage="file='menu\iqiyi_about.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\iqiyi_about.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+                 icondisabledimage="file='menu\iqiyi_about.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 />
+	<MenuElement name="menu_open_devtools" style="s_menu_item" text="调试器"
+                 iconnormalimage="file='menu\exit.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\exit.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+				 icondisabledimage="file='menu\exit.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 />
+	<MenuElement name="menu_open_taskmanager_windows" style="s_menu_item" text="资源管理器"
+                 iconnormalimage="file='menu\exit.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\exit.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+				 icondisabledimage="file='menu\exit.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 />
+	<MenuElement name="menu_repair_evergreenwebview2" style="s_menu_item" text="修复页面"
+                 iconnormalimage="file='menu\exit.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\exit.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+				 icondisabledimage="file='menu\exit.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 />
+	<MenuElement name="menu_tray_exit" style="s_menu_item" text="退出"
+                 iconnormalimage="file='menu\exit.svg' svg-fill-color='mainui_normal_btn_color' dest='14,10,30,26'"
+                 iconhotimage="file='menu\exit.svg' svg-fill-color='mainui_hot_btn_color' dest='14,10,30,26'"
+				 icondisabledimage="file='menu\exit.svg' svg-fill-color='mainui_disabled_btn_color' dest='14,10,30,26'"
+                 />
+  </Menu>
+</Window>

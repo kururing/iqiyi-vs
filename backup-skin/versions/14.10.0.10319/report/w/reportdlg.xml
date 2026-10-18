@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="370,286" caption="0,0,0,0" roundcorner="3,3">
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" default="true" indexfont="skinDefault" />
+    <VerticalLayout name="reportdlg" width="370" height="286">
+        <Label text="举报" padding="20,15,0,0" textcolor="#ff666666" width="330" />
+        <HorizontalLayout padding="20,13,0,0" height="102" >
+            <Label text="举报原因:" textcolor="#ff999999" width="60" height="14" align="left"/>
+            <VerticalLayout padding="8,0,0,0">
+                <!-- 第一排 -->
+                <HorizontalLayout name="report_info_layout1" padding="0,0,20,0">
+                </HorizontalLayout>
+                <HorizontalLayout name="report_info_layout2" padding="0,0,20,0">
+                </HorizontalLayout>
+                <HorizontalLayout name="report_info_layout3" padding="0,0,20,0">
+                    <Control />
+                </HorizontalLayout>
+            </VerticalLayout>
+        </HorizontalLayout>
+
+        <HorizontalLayout height="60" padding="20,0,20,0">
+            <Label text="其他原因:" width="60" height="14" align="left" textcolor="#ff999999"/>
+            <RichEdit name="reason_edit" style="border_edit_style" width="260" height="56" limittext="50" lineheight="18" padding="8,0,0,0"
+            tippadding="10,6,0,0"  textpadding="10,6,0,0" textcolor="#ff999999" focustextcolor="#ff999999"
+		   textpadding="6,0,0,0" nativebkcolor="#FFff00ff" disabledtextcolor="#FF666666" bkcolor="ffffffff"/>
+        </HorizontalLayout>
+        <HorizontalLayout width="40" height="12" padding="304,-20,30,0" indexfont="yahei_12">
+            <Label name="text_num" text="0" width="20" height="12" align="right" textcolor="#E600ff00" indexfont="yahei_12"/>
+            <Label text="/50" width="20" height="12" align="right" textcolor="#ff999999" indexfont="yahei_12"/>
+        </HorizontalLayout>
+        <HorizontalLayout align="bottom" height="36" padding="0,19,20,20">
+            <Control />
+            <Button name="submit_btn" style="pstyle_ok_btn_80_36" text="提 交"/> 
+            <Control width="20"/>
+            <Button name="cancel_btn" style="pstyle_cancel_btn_80_36" text="取 消"/>
+        </HorizontalLayout>
+    </VerticalLayout>
+</Window>

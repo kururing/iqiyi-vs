@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="347,126" caption="0,0,0,34">
+<Font name="Microsoft YaHei" size="12" bold="true" italic="false" default="true" indexfont="skinDefault" />
+<Font name="Microsoft YaHei" size="14" bold="true" italic="false" indexfont="TitleDefault" />
+<HorizontalLayout name="bubble_bkimage" float="true" pos="19,13" bkimage="bubble\\bubble.png">
+        <HorizontalLayout width="75" height="100" float="true" pos="19,13">
+            <Label name="tip_photo" width="75" height="100"/>
+        </HorizontalLayout>
+        <VerticalLayout float="true" pos="104,0">
+            <Label name="tip_title" text="双击桌面图标可以立即播放哦" padding="0,35,0,0" font="TitleDefault" textcolor="#FF333333"/>
+            <HorizontalLayout float="true" pos="0,70">
+                <Button name="getbtn" width="80" height="24" 
+                        text="我知道了" font="TitleDefault" textcolor="0xFFFFFFFF"
+                        normalimage="file='bubble\\play.png' source='0,0,86,26'" 
+                        hotimage="file='bubble\\play.png' source='0,26,86,52'" 
+                        selectedimage="file='bubble\\play.png' source='0,52,86,78'"
+                        disabledimage="file='bubble\\play.png' source='0,78,86,104'"
+                />
+            </HorizontalLayout>
+        </VerticalLayout>
+        <Button name="close" width="11" height="10" float="true" pos="326,13"
+                    normalimage = "file='bubble\\close.png' source='0,0,10,10'"
+                    hotimage = "file='bubble\\close.png' source='11,0,21,10'"
+                    selectedimage = "file='bubble\\close.png' source='22,0,33,10'">
+        </Button>
+</HorizontalLayout>
+</Window>

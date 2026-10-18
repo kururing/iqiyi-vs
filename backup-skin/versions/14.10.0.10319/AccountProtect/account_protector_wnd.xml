@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="514,364" caption="0,0,514,41" roundcorner="4,4">
+  <Font name="Microsoft YaHei" size="14" bold="false" indexfont="yahei_14" default="true" />
+  <Font name="Microsoft YaHei" size="15" bold="true" indexfont="yahei_15b" />
+  <VerticalLayout bkimage="file='AccountProtect/account_security_wnd.png'">
+    <HorizontalLayout height="41" >
+      <Control />
+      <Button name="btn_close" width="18" height="21" padding="0,8,8,12"
+        normalimage="file='AccountProtect/close.png' source='0,0,18,21'"
+        hotimage="file='AccountProtect/close.png' source='18,0,36,21'"
+        pushedimage="file='AccountProtect/close.png' source='36,0,54,21'"
+       />
+    </HorizontalLayout>
+    <VerticalLayout height="220" inset="39,45,39,29">      
+      <HorizontalLayout height="60">
+        <Control width="38" height="38" bkimage="file='AccountProtect/warning.png'" />
+        <VerticalLayout padding="20,0,0,0">
+          <Label text="您的账号在多台设备同时播放视频，存在极高的盗号风险。" textcolor="0xFF0770F7" align="left" />
+          <Label text="为保护您的账号安全，请尽快退登其他设备或修改密码。"  textcolor="0xFF0770F7" align="left" />
+        </VerticalLayout>
+      </HorizontalLayout>
+      <Control  />
+      <Label text="想继续观看？请关闭其他设备下的视频播放。" textcolor="0xFF666666" align="left" padding="60,0,0,0"  />
+      <HorizontalLayout>        
+        <Label align="left" showhtml="true" width="62" text="然后点击" textcolor="0xFF666666" padding="60,0,0,0"  />
+        <Button name="btn_retry" align="left" showhtml="true" width="30" text="<u><c #009F69>重试</c></u>"   />
+        <Control />
+      </HorizontalLayout>
+      <Label text="如非本人操作，建议您立即修改密码。" textpadding="60,0,0,0" textcolor="0x999999" align="left"  />
+    </VerticalLayout>
+    <HorizontalLayout height="100" inset="0,0,0,50">
+      <Control />
+      <Button name="btn_modify" text="修改密码" indexfont="yahei_15b" textcolor="0xFFFFFF" width="120" height="35" align="middle"
+        normalimage="file='ConfigRes/configres_button.png' source='0,0,77,29'"
+        hotimage="file='ConfigRes/configres_button.png' source='0,29,77,58'"
+        pushedimage="file='ConfigRes/configres_button.png' source='0,58,77,87'"
+        />
+      <Control name="ctrl_gap" width="27" />
+      <Button name="btn_ignore" text="以非会员观看" indexfont="yahei_15b"  textcolor="0xFFFFFF" width="120" height="35"  align="middle"
+        normalimage="file='ConfigRes/configres_button.png' source='0,0,77,29'"
+        hotimage="file='ConfigRes/configres_button.png' source='0,29,77,58'"
+        pushedimage="file='ConfigRes/configres_button.png' source='0,29,77,87' "
+        />
+      <Control />
+    </HorizontalLayout>
+  </VerticalLayout>	
+</Window>

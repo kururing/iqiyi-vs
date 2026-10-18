@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+	<Font name="微软雅黑" size="12" bold="false" italic="false" default="true"/>
+	<Container name="pagedriverContainer"  width="421" height="260" >
+		<VerticalLayout >
+			<Control height="1" width="391"  padding="0,24,31,0" bkimage="file='ConfigRes/repair_feed/line.svg' svg-fill-color='config_div_bk'"/>
+            <Label text="其他修复" textcolor="config_txt_hot" width="70" height="16" font="yahei_bold_14" padding="0,20,0,0"/>
+			<HorizontalLayout padding="0,20,0,0" height="38">
+				·<VerticalLayout width="291" height="38">
+					<Label text="恢复出厂设置" textcolor="config_txt_hot" height="14" font="yahei_12" align="left"/>
+					<Label text="恢复所有配置成出厂时。" textcolor="config_txt_normal" height="14" padding="0,10,0,0" align="left" font="yahei_12"/>
+				</VerticalLayout>
+				<Button name="repair_recover" style="green_border_btn_style" text="恢复设置" width="80" height="32" indexfont="yahei_14" padding="30,3,20,3"/> 
+			</HorizontalLayout>
+			<HorizontalLayout padding="0,20,0,0" height="38">
+				·<VerticalLayout width="291" height="38">
+					<Label text="清除本地缓存" textcolor="config_txt_hot" height="14" font="yahei_12" align="left"/>
+					<Label text="清除本地缓存的图片、数据等文件。" textcolor="config_txt_normal" height="14" padding="0,10,0,0" align="left" font="yahei_12"/>
+				</VerticalLayout>
+				<Button name="repair_clearcache" style="green_border_btn_style" text="清除缓存" width="80" height="32" indexfont="yahei_14" padding="30,3,20,3"/> 
+			</HorizontalLayout>
+			<HorizontalLayout padding="0,20,0,0" height="38">
+				·<VerticalLayout width="291" height="38">
+					<Label text="hosts清空" textcolor="config_txt_hot" height="14" font="yahei_12" align="left"/>
+					<Label text="清空错误的hosts设置。" textcolor="config_txt_normal" height="14" padding="0,10,0,0" align="left" font="yahei_12"/>
+				</VerticalLayout>
+				<Button name="repair_clearhost" style="green_border_btn_style" text="立即清空" width="80" height="32" indexfont="yahei_14" padding="30,3,20,3"/> 
+			</HorizontalLayout>
+			
+			<Control height="1" width="391"  padding="0,24,31,0" />
+        </VerticalLayout>
+	</Container>
+</Window>

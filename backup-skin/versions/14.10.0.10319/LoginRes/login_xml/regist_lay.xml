@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="360,440" caption="0,0,0,38" roundcorner="6,6">
+    <VerticalLayout >
+      <HorizontalLayout height="19" padding="16,20,0,0" bordercolor="#ff00ff00">
+		<Button name="return_btn" width="43" text="返回" textpadding="15,0,0,0" indexfont="yahei_14" bkimage="file='commonres/left_arrow.svg' dest='0,2,14,16'" textcolor="b318191e"/>
+		<Label name="title" text="注册账号" padding="90,0,0,0" indexfont="yahei_16" height="21" textcolor="#cc000000"/>
+		<Label name="sub_title" text="为了您的账号安全，请绑定一个手机号" align="center" visible="false"/>
+	  </HorizontalLayout>
+		<!--登录布局-->
+		<VerticalLayout name="regist_sms_lay" padding="28,55,28,0">
+
+		</VerticalLayout>
+    </VerticalLayout>
+</Window>

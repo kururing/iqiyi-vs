@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+  <Font name="微软雅黑" size="10" bold="false" italic="false" indexfont="yahei_10"/>
+  <Font name="IQYHT" size="10" charset="1" indexfont="iqiyi_10b"/>
+  <Font name="Tahoma" size="14" bold="false" italic="false" default="false" indexfont="player_14size" />
+  <Font name="微软雅黑" size="16" bold="false" italic="false" indexfont="yahei_16"/>
+
+  <VerticalLayout name="PlayerCtrl"  height="64" padding="0,0,0,0">
+    <HorizontalLayout name="ctrlLayout" height="48" padding="24,0,24,16">
+      <HorizontalLayout width="176" align="left" name="left_lay">
+        <Button name="ctrl_dlna" animation="true"  enabled="false" 
+            width="32" height="32" tooltip="投屏" padding="0,8,0,8"
+bkimage="file='geeIcon/ctrl_dlna.svg' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF' disabled-svg-fill-color='0x40FFFFFF'" />
+        <Button name="ctrl_snap" animation="true" enabled="false" 
+            width="32" height="32"  tooltip="截图" padding="16,8,0,8"
+bkimage="file='geeIcon/ctrl_snap.svg' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF' disabled-svg-fill-color='0x40FFFFFF'" />
+      </HorizontalLayout>
+      <Control />
+      <HorizontalLayout width="240" align="center"  name="center_lay">
+        <Button name="ctrl_stop" animation="true"  width="32" height="32" padding="0,8,0,8"  enabled="false" 
+ bkimage="file='geeIcon/ctrl_stop.svg' svg-fill-color='0xFFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF' disabled-svg-fill-color='0x40FFFFFF' " />
+        <Button name="ctrl_last" animation="true"  width="32" height="32" padding="16,8,16,8"
+bkimage="file='geeIcon/ctrl_prev.svg' svg-fill-color='0xFFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF' disabled-svg-fill-color='0x40FFFFFF' " />
+        <Button name="ctrl_play" tag="0" animation="true" padding="0,0,0,0" width="48" height="48" 
+   bkimage="file='geeIcon/ctrl_play.svg'  svg-fill-color='0xFFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF'"/>
+      <Button name="ctrl_next" animation="true"  width="32" height="32" padding="16,8,16,8"
+ bkimage="file='geeIcon/ctrl_next.svg' svg-fill-color='0xFFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF' disabled-svg-fill-color='0x40FFFFFF' " />
+      <Button name="btn_playorder" animation="true"  width="32" height="32" padding="0,8,0,8"
+ bkimage="file='geeIcon/playorder/single.svg' svg-fill-color='0xFFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF' disabled-svg-fill-color='0x40FFFFFF' " />
+      </HorizontalLayout>
+      <Control />
+      <HorizontalLayout align="right" width="176" name="right_lay">
+        <VoiceSliderBox name="ctrl_mute" animation="true"  width="32" height="32" padding="0,8,16,8"
+            normalimage="file='geeIcon/ctrl_volume.svg'  svg-fill-color='0xBFFFFFFF'"
+            hotimage="file='geeIcon/ctrl_volume.svg'  svg-fill-color='0xFFFFFFFF'"
+            pushedimage="file='geeIcon/ctrl_volume.svg'svg-fill-color='0x80FFFFFF'"
+            disabledimage="file='geeIcon/ctrl_volume.svg'svg-fill-color='0x80FFFFFF'"
+            selectednormalimage="file='geeIcon/ctrl_mute.svg'svg-fill-color='0xBFFFFFFF'"
+            selectedhotimage="file='geeIcon/ctrl_mute.svg'  svg-fill-color='0xFFFFFFFF'"
+            selectedpushedimage="file='geeIcon/ctrl_mute.svg'  svg-fill-color='0x80FFFFFF'"
+            selecteddisabledimage="file='geeIcon/ctrl_mute.svg'  svg-fill-color='0x80FFFFFF'"
+            partnormalimage="file='geeIcon/ctrl_volume.svg'  svg-fill-color='0xBFFFFFFF'"
+            parthotimage="file='geeIcon/ctrl_volume.svg'  svg-fill-color='0xFFFFFFFF'"
+            partpushedimage="file='geeIcon/ctrl_volume.svg'  svg-fill-color='0x80FFFFFF'"
+            partdisabledimage="file='geeIcon/ctrl_volume.svg'  svg-fill-color='0x80FFFFFF'"/>
+        <Button name="ctrl_speed"  animation="true" enabled="false" width="32" height="32" padding="0,8,16,8" 
+                textfont="iqiyi_10b" textcolor="#BFFFFFFF" hottextcolor="0xFFFFFFFF" pushedtextcolor="0x80FFFFFF" disabledtextcolor="0x40FFFFFF"
+bkimage="file='geeIcon/ctrl_speed.svg' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF' disabled-svg-fill-color='0x40FFFFFF'" />
+        <Button name="ctrl_image" animation="true" enabled="false" width="32" height="32"  tooltip="播放调节" padding="0,8,16,8"
+bkimage="file='geeIcon/ctrl_tool.svg' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF' disabled-svg-fill-color='0x40FFFFFF'" />
+        <CheckBox name="ctrl_full" animation="true" width="32" height="32" enabled="false" padding="0,8,0,8"
+            normalimage="file='geeIcon/ctrl_full.svg'  svg-fill-color='0xBFFFFFFF'"
+            hotimage="file='geeIcon/ctrl_full.svg'  svg-fill-color='0xFFFFFFFF'"
+            pushedimage="file='geeIcon/ctrl_full.svg'svg-fill-color='0x80FFFFFF'"
+            disabledimage="file='geeIcon/ctrl_full.svg'svg-fill-color='0x40FFFFFF'"
+            selectednormalimage="file='geeIcon/topexitfull.svg'svg-fill-color='0xBFFFFFFF'"
+            selectedhotimage="file='geeIcon/topexitfull.svg'  svg-fill-color='0xFFFFFFFF'"
+            selectedpushedimage="file='geeIcon/topexitfull.svg'  svg-fill-color='0x80FFFFFF'"
+            selecteddisabledimage="file='geeIcon/topexitfull.svg'  svg-fill-color='0x40FFFFFF'"/>
+      </HorizontalLayout>
+    </HorizontalLayout>
+  </VerticalLayout>
+</Window>

@@ -1,0 +1,23 @@
+{
+  "title": "田耕纪第4集",
+  "order": 4,
+  "vid": "92624f519b2377afde355d7ce0d64a3c",
+  "tvid": "6143487417263800",
+  "albumId": "7714930311098201",
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321734.2242913,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 824
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260518/33/8d/8e21c5489a43a97919a14efab9a6c20b.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

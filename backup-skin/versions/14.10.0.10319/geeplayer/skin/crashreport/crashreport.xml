@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="480,428" caption="0,0,0,32" >
+  <Include source="public\xml\default_font.xml" />
+  <Include source="crashreport\peeler_vscrollbar.xml" />
+  <VerticalLayout name="crashreportCon" >
+    <HorizontalLayout height="32"  bkimage="file='crashreport\res/imgborder_title.png' corner='3,3,3,3'">
+	  	  <Label name="title" text="爱奇艺万能播放器" algin="leftmiddle" width="300" textcolor="ff666666" textpadding="16,0,0,0" indexfont="yahei_14" />
+	  	  <Control />
+	  	  <Button name="closebtn" animation="false" height="24" width="24" padding="0,3,4,4"
+	  		      normalimage="file='crashreport\res/imgpopup_close.png' source='0,0,24,24'"
+	  		      hotimage="file='crashreport\res/imgpopup_close.png' source='24,0,48,24'"
+	  		      pushedimage="file='scrashreport\res/imgpopup_close.png' source='48,0,72,24'"
+	  		      disabledimage="file='crashreport\res/imgpopup_close.png' source='72,0,96,24'" />
+	</HorizontalLayout>
+    <VerticalLayout name="crashreport_container" visible="true" bkimage="file='crashreport\res/main_bk.png' corner='1,1,1,1'">
+      <VerticalLayout inset="1,0,1,1" padding="19,0,19,0">
+
+		<HorizontalLayout padding="0,0,0,0" name="banner_error" height="52" visible="true" >
+			    <Label text="程序遇到问题需要关闭，我们对此引起的不便深表歉意。" width="320" textcolor="FF666666" indexfont="yahei_12"/>
+			    <Control bkimage="file='crashreport\res/titleicon.png' source='0,0,27,27'" height="36" width="36" padding="50,6,0,0"/>
+        </HorizontalLayout>
+
+		<Control bkimage="file='crashreport\res/menu_line.png' source='5,0,15,1'" height="2" padding="0,0,0,0"/>
+		
+		<VerticalLayout padding="28,0,0,0" name="banner_info" height="256" visible="true" >
+			<VerticalLayout width="400" height="50">
+				<Label name="label_error" text="我们已经产生了一个关于此错误的报告，请您填写下方信息帮助我们改善" padding="0,15,0,0" width="400" height="14" textcolor="FF666666" indexfont="yahei_12" />
+				<Label text="产品质量" padding="0,5,0,0" width="392" height="14" textcolor="FF666666" indexfont="yahei_12" />
+			</VerticalLayout>
+			<VerticalLayout width="160" padding="0,5,0,0" height="16">  
+			  <CheckBox name="chk_restart" text="重新启动程序" width="160" animation="true" textpadding="18,-1,0,0" align="leftmiddle"
+				  textcolor="ff666666" hottextcolor="ff666666" selectedtextcolor="ff666666" wholedisplay="true" indexfont="yahei_12"
+				  selectedhottextcolor="ff666666" selectedpushedtextcolor="ff666666" height="14"
+				  normalimage="file='crashreport\res/checkboxpicture.png' source='0,0,14,14' dest='0,0,14,14'"
+				  hotimage="file='crashreport\res/checkboxpicture.png'  source='14,0,28,14' dest='0,0,14,14'"
+				  pushedimage="file='crashreport\res/checkboxpicture.png'  source='28,0,42,14' dest='0,0,14,14'"
+				  disabledimage="file='crashreport\res/checkboxpicture.png' source='42,0,56,14' dest='0,0,14,14'"
+				  selectednormalimage="file='crashreport\res/checkboxpicture.png'  source='0,14,14,28' dest='0,0,14,14'"
+				  selectedhotimage="file='crashreport\res/checkboxpicture.png' source='14,14,28,28' dest='0,0,14,14'"
+				  selectedpushedimage="file='crashreport\res/checkboxpicture.png' source='28,14,42,28' dest='0,0,14,14'"
+				  selecteddisabledimage="file='crashreport\res/checkboxpicture.png' source='42,14,56,28' dest='0,0,14,14'" />
+			</VerticalLayout>
+			<VerticalLayout padding="0,6,0,0" height="58">
+			  <Label text="联系方式（QQ/手机/Email）" name="label_contact" width="392" align="leftmiddle" textcolor="FF444444" indexfont="yahei_12" />
+			  <Edit name="editLink" animation="false" height="28" width="392" padding="0,9,0,0" 
+			  indexfont="yahei_12" bkcolor="0x00ffffff"  textcolor="FF666666" nativebkcolor="ffffffff"
+			  normalimage="file='crashreport\res/text.png' source='0,0,60,26' corner='2,2,2,2' "
+			  hotimage="file='crashreport\res/text.png' source='60,0,120,26' corner='2,2,2,2'"
+			  focusedimage="file='crashreport\res/text.png' source='120,0,180,26' corner='2,2,2,2' "/>
+			</VerticalLayout>
+			<VerticalLayout padding="0,12,0,0" height="110">
+			  <Label text="程序出错前您所做的操作：" width="392" height="14" textcolor="FF444444" indexfont="yahei_12" />
+			  <RichEdit name="eidtsuggest" animation="false" padding="0,13,0,0" multiline="true" height="80" indexfont="yahei_12" bkcolor="0x00ffffff"
+				vscrollbar="true" autovscroll="true" textcolor="FF666666" nativebkcolor="ffffffff" width="392"
+				 normalimage="file='crashreport\res/text.png' source='0,0,60,26' corner='2,2,2,2' "
+				 hotimage="file='crashreport\res/text.png' source='60,0,120,26' corner='2,2,2,2'"
+				 focusedimage="file='crashreport\res/text.png' source='120,0,180,26' corner='2,2,2,2' "/>
+			</VerticalLayout>
+		 </VerticalLayout>
+		 
+		 <HorizontalLayout padding="10,10,0,0" height="20" >
+		  <Button name="btnHere" text="查看错误报告详情"  width="150" algin="leftmiddle" height="20" 
+		          textcolor="ff00bf00" indexfont="yahei_12" />
+		  <Button name="btnCopyDetail" text="复制详情"  width="80" algin="leftmiddle" height="20"  padding="20,0,0,0"
+		          textcolor="ff00bf00" indexfont="yahei_12" />
+		  <Button name="btnSaveAsTxt" text="另存为文本"  width="80" algin="leftmiddle" height="20"  padding="20,0,0,0"
+		          textcolor="ff00bf00" indexfont="yahei_12" />
+        </HorizontalLayout>
+		
+		<Control bkimage="file='crashreport\res/menu_line.png' source='5,0,15,1'" height="2" padding="0,6,0,0"/>
+		
+		<HorizontalLayout padding="0,6,0,0" height="27">
+			<Label name="label_QQ" text="如有问题请加QQ群：" align="left" width="116" textcolor="FF666666" 
+				indexfont="yahei_12" padding="0,0,0,0" />
+			<Button name="copybtn" text="151628392" tooltip="点击复制" align="left" width="60" textcolor="FF00bf00" padding="0,3,0,0"/>
+			<Label name="label_server" text="，我们会有专人为您服务。" align="left" width="148" textcolor="FF666666" indexfont="yahei_12"/>
+			<Button name="cancelbtn" animation="true" text="关闭" width="80" padding="16,3,0,0" indexfont="yahei_12" align="center"
+			  textcolor="ff333333" hottextcolor="ff333333" height="24" shortcut="D"
+			  pushedtextcolor="wnd_btn_cancel_text_pushed" disabledtextcolor="wnd_btn_cancel_text_disable" 
+			  normalimage="file='crashreport\res/cancelbtn.png' source='0,0,80,28'"
+			  hotimage="file='crashreport\res/cancelbtn.png' source='80,0,160,28'"
+			  pushedimage="file='crashreport\res/cancelbtn.png' source='160,0,240,28'"
+			  disabledimage="file='crashreport\res/cancelbtn.png' source='240,0,320,28'"/>
+			 <Button name="senderrorbtn" animation="true" text="发送错误报告" width="80" padding="16,3,0,0" indexfont="yahei_12" align="center"
+			  textcolor="ff333333" hottextcolor="ff333333" height="24" visible="false"
+			  pushedtextcolor="wnd_btn_cancel_text_pushed" disabledtextcolor="wnd_btn_cancel_text_disable" 
+			  normalimage="file='crashreport\res/cancelbtn.png' source='0,0,80,28'"
+			  hotimage="file='crashreport\res/cancelbtn.png' source='80,0,160,28'"
+			  pushedimage="file='crashreport\res/cancelbtn.png' source='160,0,240,28'"
+			  disabledimage="file='crashreport\res/cancelbtn.png' source='240,0,320,28'"/>
+			 <Button name="debugbtn" animation="true" text="调试" width="80" padding="16,3,0,0" indexfont="yahei_12" align="center"
+			  textcolor="ff333333" hottextcolor="ff333333" height="24" visible="false"
+			  pushedtextcolor="wnd_btn_cancel_text_pushed" disabledtextcolor="wnd_btn_cancel_text_disable" 
+			  normalimage="file='crashreport\res/cancelbtn.png' source='0,0,80,28'"
+			  hotimage="file='crashreport\res/cancelbtn.png' source='80,0,160,28'"
+			  pushedimage="file='crashreport\res/cancelbtn.png' source='160,0,240,28'"
+			  disabledimage="file='crashreport\res/cancelbtn.png' source='240,0,320,28'"/>
+		</HorizontalLayout>
+
+      </VerticalLayout>
+    </VerticalLayout>
+
+  </VerticalLayout>
+
+</Window>

@@ -1,0 +1,190 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window>
+  <Font name="微软雅黑" size="16" bold="false" default="true" />
+  <Font name="微软雅黑" size="14" bold="false" italic="false" indexfont="yahei_14" />
+  <Include source="public/xml/default_menu_bkimage.xml" />
+  <Menu name="default_menu" vscrollbar="false" bkcolor="#E61C1D1F" borderround="12,12,12,12" bordercolor="#33FFFFFF">
+    <MenuElement  name="menu_open"  text="打开" height="48"  width="188" childmenuposoffset="-10,0" childmenulayered="true" borderround="8,8,8,8"
+      iconnormalimage="file='geeIcon/open.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      iconhotimage="file='geeIcon/open.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      iconpushedimage="file='geeIcon/open.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'">
+      <HorizontalLayout width="188">
+      <Label width="16" height="16" padding="164,16,0,32" bkimage="file='geeIcon/right_arrow.svg' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF'"/>
+      </HorizontalLayout>
+      <MenuElement name="menu_open_local_file"    text="打开文件" width="148" height="48"  borderround="8,8,8,8"
+      iconnormalimage="file='geeIcon/openfile.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      iconhotimage="file='geeIcon/openfile.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      iconpushedimage="file='geeIcon/openfile.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+      <MenuElement name="menu_open_local_folder"    text="打开文件夹" width="148" height="48"  borderround="8,8,8,8"
+      iconnormalimage="file='geeIcon/openfolder.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      iconhotimage="file='geeIcon/openfolder.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      iconpushedimage="file='geeIcon/openfolder.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+      <MenuElement name="menu_open_url"    text="打开URL" width="148" height="48"  borderround="8,8,8,8"
+      iconnormalimage="file='geeIcon/openurl.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      iconhotimage="file='geeIcon/openurl.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      iconpushedimage="file='geeIcon/openurl.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+    </MenuElement>
+    <MenuElement name="menu_play_sequence"    text="播放顺序" height="48"  borderround="8,8,8,8"
+      iconnormalimage="file='geeIcon/list/sub/play_sequence.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      iconhotimage="file='geeIcon/list/sub/play_sequence.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      iconpushedimage="file='geeIcon/list/sub/play_sequence.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"
+	   icondisabledimage="file='geeIcon/list/sub/play_sequence.svg' dest='14,16,30,32' svg-fill-color='0x40FFFFFF'">
+      <HorizontalLayout width="188">
+        <Label width="16" height="16" padding="164,16,0,32" bkimage="file='geeIcon/right_arrow.svg' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF'"/>
+      </HorizontalLayout>
+      <MenuElement name="menu_sub_play_sequence" width="156" height="48"  borderround="8,8,8,8" userdata="2" tag="0"
+iconnormalimage="file='geeIcon/list/sub/play_sequence.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+iconhotimage="file='geeIcon/list/sub/play_sequence.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+iconpushedimage="file='geeIcon/list/sub/play_sequence.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"
+iconcheckedimage="file='geeIcon/list/sub/play_sequence.svg' dest='14,16,30,32' svg-fill-color='0xFF1FBF47'">
+        <HorizontalLayout  width="156">
+          <Label text="顺序播放" name="play2" height="48" borderround="0,0,8,8"  width="128" textpadding="40,0,0,0"
+          textcolor="#F2FFFFFF" hottextcolor="#F2FFFFFF" />
+          <Label name="check2" visible="false" width="16" height="16" padding="0,16,0,32" bkimage="file='geeIcon/checked.svg' svg-fill-color='0xFF00B84D'"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_sub_play_loop" width="156" height="48"  borderround="8,8,8,8" userdata="5" tag="0"
+iconnormalimage="file='geeIcon/list/sub/play_loop.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+iconhotimage="file='geeIcon/list/sub/play_loop.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+iconpushedimage="file='geeIcon/list/sub/play_loop.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"
+iconcheckedimage="file='geeIcon/list/sub/play_loop.svg' dest='14,16,30,32' svg-fill-color='0xFF1FBF47'">
+        <HorizontalLayout  width="156">
+          <Label text="顺序循环" name="play5" height="48" borderround="0,0,8,8"  width="128" textpadding="40,0,0,0"
+          textcolor="#F2FFFFFF" hottextcolor="#F2FFFFFF" />
+          <Label name="check5" visible="false" width="16" height="16" padding="0,16,0,32" bkimage="file='geeIcon/checked.svg' svg-fill-color='0xFF00B84D'"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_sub_play_single" width="156" height="48"  borderround="8,8,8,8" userdata="1" tag="0"
+      iconnormalimage="file='geeIcon/list/sub/play_single.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      iconhotimage="file='geeIcon/list/sub/play_single.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      iconpushedimage="file='geeIcon/list/sub/play_single.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"
+	    iconcheckedimage="file='geeIcon/list/sub/play_single.svg' dest='14,16,30,32' svg-fill-color='0xFF1FBF47'">
+        <HorizontalLayout  width="156">
+          <Label text="单个播放" name="play1" height="48" borderround="0,0,8,8"  width="128" textpadding="40,0,0,0"
+          textcolor="#F2FFFFFF" hottextcolor="#F2FFFFFF" />
+          <Label name="check1" visible="false" width="16" height="16" padding="0,16,0,32" bkimage="file='geeIcon/checked.svg' svg-fill-color='0xFF00B84D'"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_sub_play_single_loop" width="156" height="48"  borderround="8,8,8,8" userdata="4" tag="0"
+      iconnormalimage="file='geeIcon/list/sub/play_single_loop.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      iconhotimage="file='geeIcon/list/sub/play_single_loop.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      iconpushedimage="file='geeIcon/list/sub/play_single_loop.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"
+	    iconcheckedimage="file='geeIcon/list/sub/play_single_loop.svg' dest='14,16,30,32' svg-fill-color='0xFF1FBF47'">
+        <HorizontalLayout  width="156">
+          <Label text="单个循环" name="play4" height="48" borderround="0,0,8,8"  width="128" textpadding="40,0,0,0"
+          textcolor="#F2FFFFFF" hottextcolor="#F2FFFFFF" />
+          <Label name="check4" visible="false" width="16" height="16" padding="0,16,0,32" bkimage="file='geeIcon/checked.svg' svg-fill-color='0xFF00B84D'"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_sub_play_random" width="156" height="48" borderround="8,8,8,8" userdata="3" tag="0"
+      iconnormalimage="file='geeIcon/list/sub/play_random.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      iconhotimage="file='geeIcon/list/sub/play_random.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      iconpushedimage="file='geeIcon/list/sub/play_random.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"
+    iconcheckedimage="file='geeIcon/list/sub/play_random.svg' dest='14,16,30,32' svg-fill-color='0xFF1FBF47'">
+        <HorizontalLayout  width="156">
+          <Label text="随机播放" name="play3" height="48" borderround="0,0,8,8"  width="128" textpadding="40,0,0,0"
+          textcolor="#F2FFFFFF" hottextcolor="#F2FFFFFF" />
+          <Label name="check3" visible="false" width="16" height="16" padding="0,16,0,32" bkimage="file='geeIcon/checked.svg' svg-fill-color='0xFF00B84D'"/>
+        </HorizontalLayout>
+      </MenuElement>
+    </MenuElement>
+    <MenuElement  name="menu_abplay_control"  text="A-B循环播放" height="48"  borderround="8,8,8,8"
+      iconnormalimage="file='geeIcon/list/sub/play_ab.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      iconhotimage="file='geeIcon/list/sub/play_ab.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      iconpushedimage="file='geeIcon/list/sub/play_ab.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"
+	   icondisabledimage="file='geeIcon/list/sub/play_ab.svg' dest='14,16,30,32' svg-fill-color='0x40FFFFFF'">
+      <HorizontalLayout width="188">
+        <Label name="lab_ab" width="16" height="16" padding="164,16,0,32" bkimage="file='geeIcon/right_arrow.svg' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF'  disabled-svg-fill-color='0x40FFFFFF'"/>
+      </HorizontalLayout>
+      <MenuElement name="menu_sub_play_ab_play_a"    text="设置A点"  width="212" height="48"  borderround="8,8,8,8">
+        <HorizontalLayout width="198">
+          <Label name="lab_a" align="right" text="" textcolor="#99FFFFFF" font="yahei_14"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_sub_play_ab_play_b"    text="设置B点" width="212" height="48"  borderround="8,8,8,8">
+        <HorizontalLayout width="198">
+          <Label name="lab_b" align="right" text="" textcolor="#99FFFFFF" font="yahei_14"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_sub_play_ab_play_c"    text="取消A-B循环播放" width="212" height="48"  borderround="8,8,8,8">
+        <HorizontalLayout width="198">
+          <Label name="lab_c" align="right" text="" textcolor="#99FFFFFF" font="yahei_14"/>
+        </HorizontalLayout>
+      </MenuElement>
+    </MenuElement>
+    <MenuElement  name="menu_skip_title_trailer"  text="跳过片头片尾" height="48"  borderround="8,8,8,8"
+  iconnormalimage="file='geeIcon/list/sub/play_ht.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+  iconhotimage="file='geeIcon/list/sub/play_ht.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+  iconpushedimage="file='geeIcon/list/sub/play_ht.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"
+ icondisabledimage="file='geeIcon/list/sub/play_ht.svg' dest='14,16,30,32' svg-fill-color='0x40FFFFFF'">
+      <HorizontalLayout width="188">
+        <Label name="lab_skip" width="16" height="16" padding="164,16,0,32" bkimage="file='geeIcon/right_arrow.svg' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF'  disabled-svg-fill-color='0x40FFFFFF'"/>
+      </HorizontalLayout>
+      <MenuElement name="menu_set_head"    text="设置片头点"  width="290" height="48"  borderround="8,8,8,8">
+        <HorizontalLayout width="290">
+          <Label textpadding="150,0,0,0" text="跳过之前的片头内容" textcolor="#99FFFFFF" font="yahei_14"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_set_tail"    text="设置片尾点" width="290" height="48"  borderround="8,8,8,8">
+        <HorizontalLayout width="290">
+          <Label textpadding="150,0,0,0" text="跳过之后的片尾内容" textcolor="#99FFFFFF" font="yahei_14"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_skip_open"    text="取消跳过片头片尾" width="290" height="48"  borderround="8,8,8,8"/>
+    </MenuElement>
+    <MenuElement name="menu_sub_shut_after_complete"    text="本次播放完成后" height="48" borderround="8,8,8,8"
+  iconnormalimage="file='geeIcon/list/sub/play_shut.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+  iconhotimage="file='geeIcon/list/sub/play_shut.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+  iconpushedimage="file='geeIcon/list/sub/play_shut.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"
+ icondisabledimage="file='geeIcon/list/sub/play_shut.svg' dest='14,16,30,32' svg-fill-color='0x40FFFFFF'">
+      <HorizontalLayout width="188" userdata="-1">
+        <Label name="lab_shut_after" width="16" height="16" padding="164,16,0,32" bkimage="file='geeIcon/right_arrow.svg' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF'  disabled-svg-fill-color='0x40FFFFFF'"/>
+      </HorizontalLayout>
+      <MenuElement name="menu_sub_no_action"  height="48" userdata="0" width="136" borderround="8,8,8,8" textpadding="14,0,0,0">
+        <HorizontalLayout  width="136">
+          <Label text="无动作" name="shut_name0" height="48" borderround="0,0,8,8"  width="106" textpadding="14,0,0,0"
+          textcolor="#F2FFFFFF" hottextcolor="#F2FFFFFF" />
+          <Label name="shut_chk0" visible="false" width="16" height="16" padding="0,16,0,16" bkimage="file='geeIcon/checked.svg' svg-fill-color='0xFF00B84D'"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_sub_shut"  height="48" userdata="1" width="136" borderround="8,8,8,8" textpadding="14,0,0,0">
+        <HorizontalLayout  width="136">
+          <Label text="关机" name="shut_name1" height="48" borderround="0,0,8,8"  width="106" textpadding="14,0,0,0"
+          textcolor="#F2FFFFFF" hottextcolor="#F2FFFFFF" />
+          <Label name="shut_chk1" visible="false" width="16" height="16" padding="0,16,0,16" bkimage="file='geeIcon/checked.svg' svg-fill-color='0xFF00B84D'"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_sub_lock_screen" height="48" userdata="2"  width="136" borderround="8,8,8,8" textpadding="14,0,0,0">
+        <HorizontalLayout  width="136">
+          <Label text="锁屏" name="shut_name2" height="48" borderround="0,0,8,8"  width="106" textpadding="14,0,0,0"
+          textcolor="#F2FFFFFF" hottextcolor="#F2FFFFFF" />
+          <Label name="shut_chk2" visible="false" width="16" height="16" padding="0,16,0,16" bkimage="file='geeIcon/checked.svg' svg-fill-color='0xFF00B84D'"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_sub_sleep"  height="48" userdata="3"  width="136" borderround="8,8,8,8" textpadding="14,0,0,0">
+        <HorizontalLayout  width="136">
+          <Label text="睡眠" name="shut_name3" height="48" borderround="0,0,8,8"  width="106" textpadding="14,0,0,0"
+          textcolor="#F2FFFFFF" hottextcolor="#F2FFFFFF" />
+          <Label name="shut_chk3" visible="false" width="16" height="16" padding="0,16,0,16" bkimage="file='geeIcon/checked.svg' svg-fill-color='0xFF00B84D'"/>
+        </HorizontalLayout>
+      </MenuElement>
+      <MenuElement name="menu_sub_exit"   height="48" userdata="5" width="136" borderround="8,8,8,8" textpadding="14,0,0,0">
+        <HorizontalLayout  width="136">
+          <Label text="退出播放器" name="shut_name5" height="48" borderround="0,0,8,8"  width="106" textpadding="14,0,0,0"
+          textcolor="#F2FFFFFF" hottextcolor="#F2FFFFFF" />
+          <Label name="shut_chk5" visible="false" width="16" height="16" padding="0,16,0,16" bkimage="file='geeIcon/checked.svg' svg-fill-color='0xFF00B84D'"/>
+        </HorizontalLayout>
+      </MenuElement>
+    </MenuElement>
+    <MenuElement name="menu_setting" text="设置" height="48"  borderround="8,8,8,8"
+      iconnormalimage="file='geeIcon/setting.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      iconhotimage="file='geeIcon/setting.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      iconpushedimage="file='geeIcon/setting.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"/>
+    <MenuElement name="menu_file_attr" text="查看文件信息" height="48"  borderround="8,8,8,8" enabled="false"
+      iconnormalimage="file='geeIcon/about.svg' dest='14,16,30,32' svg-fill-color='0xBFFFFFFF'"
+      iconhotimage="file='geeIcon/about.svg' dest='14,16,30,32' svg-fill-color='0xFFFFFFFF'"
+      iconpushedimage="file='geeIcon/about.svg' dest='14,16,30,32' svg-fill-color='0x80FFFFFF'"
+		icondisabledimage="file='geeIcon/about.svg' dest='14,16,30,32' svg-fill-color='0x40FFFFFF'"/>
+
+  </Menu>
+</Window>

@@ -1,0 +1,23 @@
+{
+  "title": "花戎第6集",
+  "order": 6,
+  "vid": "b8c72fa82b1d764fd52285d9ac16f577",
+  "tvid": "5606036299112000",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337946.8792322,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 693
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/3a/ca/dc5dee011b22c41d50daf35bc07339f8.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

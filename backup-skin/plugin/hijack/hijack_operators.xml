@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Window size="402,256" caption="0,0,0,32" roundcorner="4,4" >
+<Font name="微软雅黑" size="14" bold="false" indexfont="yahei_14" default="false" />
+<Font name="微软雅黑" size="12" bold="false" indexfont="yahei_12" default="false" />
+<Font name="宋体" size="12" bold="false" indexfont="songti_12" default="false" />
+<Font name="宋体" size="12" bold="false" indexfont="songti_12_underline" underline="true" default="false" />
+<Font name="微软雅黑" size="12" bold="false" indexfont="yahei_12_underline" underline="true" default="false" />
+<VerticalLayout bkimage="plugin/hijack/bk.png" >
+	<HorizontalLayout height="32">
+		<Label textcolor="0xFF777777" indexfont="yahei_14" text="提示" width="28" height="14" padding="18,10,0,0"/>
+		<Control />
+		<Button name="hijack_close"  padding="0,10,10,0" width="13" height="12"
+			normalimage="file='plugin/hijack/close.png' source='0,0,13,12'"
+			hotimage="file='plugin/hijack/close.png' source='13,0,26,12'"
+			pushedimage="file='plugin/hijack/close.png' source='26,0,39,12'"/>
+    </HorizontalLayout>
+	<VerticalLayout>
+		<Label textcolor="0xFF999999" indexfont="yahei_14" text="尊敬的用户" height="14" padding="0,20,0,0" align="center" />
+		<Label textcolor="0xFF999999" indexfont="yahei_14" text="由于运营商劫持，您的爱奇艺客户端暂时无法正常运行。" height="14" padding="0,12,0,0" align="center" />
+		<Label textcolor="0xFF45b000" indexfont="yahei_14" text="请尽快联系您的运营商！" height="14" padding="0,12,0,0" align="center" />
+		<Label textcolor="0xFF999999" indexfont="yahei_12" text="请将以下地址告知我们:" height="12" padding="0,25,0,0" align="center"  />
+		<Button textcolor="0xFFcccccc" indexfont="songti_12_underline" name="hijack_url" height="12" padding="14,8,14,0" align="center" tooltip="单击可进行复制" endellipsis="true" 
+				hottextcolor="0xFF45b000" />
+		
+		<Control />
+		<HorizontalLayout height="12" padding="22,0,0,14">
+			<Label textcolor="0xFF999999" bkimage="file='plugin/hijack/phone.png'" width="16" indexfont="yahei_12" />
+			<Label textcolor="0xFF999999" padding="8,0,0,0" text="加入QQ群:" width="59" indexfont="yahei_12" />
+			<Button name="serverQQ"  textcolor="0xFF45b000" indexfont="songti_12"  padding="8,0,0,0" width="49" />
+			<Label textcolor="0xFF999999"  padding="8,0,0,0" text="或" width="12" indexfont="yahei_12"/>
+			<Label textcolor="0xFF999999" padding="8,0,0,0" text="拨打24小时客服电话:" width="114" indexfont="yahei_12"/>
+			<Label textcolor="0xFF45b000" padding="8,0,0,0" text="400-800-7171" name="server_number" indexfont="songti_12"/>
+		</HorizontalLayout>
+    </VerticalLayout>
+</VerticalLayout>
+</Window>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="542,374" caption="0,0,0,39" roundcorner="5,5">
+  <Font name="Microsoft YaHei" size="14" bold="false" italic="false" default="true" indexfont="skinDefault" />
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="NotConnectFont"/>
+  <Font name="Microsoft YaHei" size="12" underline="true" bold="false" italic="false" indexfont="UnderLineFont" />
+
+  <VerticalLayout name="Sharedlg" style="popwnd_bk_style">
+    <HorizontalLayout name="title" bordersize="1" height="33" >
+      <Label text="分享" style="popwnd_title_style" width="60" height="24"/>
+      <Control />
+      <Button name="BtnClose" style="s_close_btn_13"/>
+    </HorizontalLayout>
+    <HorizontalLayout  bordersize="1" padding="2,0,2,2" width="540" bkcolor="#ff242424">
+      <VerticalLayout name="inter_loading"  align="center">
+        <Gif name="Shareloading" bordersize="1" width="32" height="32" textcolor="#FF000000" disabledtextcolor="#FFAAA6A7"gif="Shareloading.gif" padding="252,135,0,0"/>
+        <Label bordersize="1" height="19" text="正在加载,请稍候..." textcolor="#ff333333" indexfont="skinDefault" padding="215,20,0,0"/>
+        <Control bordersize="1" />
+      </VerticalLayout>
+      <VerticalLayout width="542" name="ShareInterNotConnect" visible="false" >
+        <Label name="spaceship" bordersize="1" width="112" height="173" textcolor="#FF000000" disabledtextcolor="#FFAAA6A7" align="center" bkimage="file=&apos;spaceship.png&apos;" padding="215,60,0,0"/>
+        <Label bordersize="1" height="40" text="哎呀,数据跑去火星啦,检查网络试试~" textcolor="#ff333333" indexfont="skinDefault" padding="164,20,0,0"/>
+      </VerticalLayout>
+    </HorizontalLayout>
+  </VerticalLayout>
+</Window>

@@ -1,0 +1,23 @@
+{
+  "title": "花戎第36集",
+  "order": 36,
+  "vid": "da6d9888b106dc02a1ef16bcfb2456fa",
+  "tvid": "1471673520089000",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337948.1302261,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 543
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/83/96/633ede3bbb4ea0a49f7297db33f2b49f.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

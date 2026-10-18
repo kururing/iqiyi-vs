@@ -1,0 +1,6 @@
+{
+  "translations": {},
+  "sourceHash": "10d06a54d56394c952e981007ef9ef2802a1457dc85fefc266e3bdf9e6f6feb2",
+  "albumTitleVi": "",
+  "lastError": "API dịch HTTP 429: [{ \"error\": { \"code\": 429, \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded fo"
+}

@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="400,230" caption="0,0,0,32" >
+	<Include source="public/xml/default_font.xml" />
+	<Font name="微软雅黑" size="12" bold="false" italic="false" default="true"/>
+	
+  <VerticalLayout name="commondlg" >
+
+    <HorizontalLayout height="32" inset="12,1,1,0" bkimage="file='geeIcon/public/dialog/border_title.png' corner='3,3,4,4'" bkcolor="#FF1c1d1f">
+      <Label name="lab_caption" text="提示" align="leftmiddle" textcolor="#ff777777" indexfont="yahei_14" />
+      <Button name="btn_close"  animation="true" tooltip="关闭" width="24" height ="24" align="center" padding="11,4,5,4" 
+				normalimage="file='geeIcon/public/ctrl/public_close.png' source='0,0,24,24'"
+				hotimage="file='geeIcon/public/ctrl/public_close.png' source='24,0,48,24'"
+				pushedimage="file='geeIcon/public/ctrl/public_close.png' source='48,0,72,24'"
+				disabledimage="file='geeIcon/public/ctrl/public_close.png' source='72,0,96,24'" 
+              
+              />
+    </HorizontalLayout>
+
+	<VerticalLayout >
+	<VerticalLayout inset="1,0,1,1" bkimage="file='geeIcon/public/dialog/border_content.png' corner='3,3,4,4'">
+	<VerticalLayout bkimage="file='geeIcon/public/dialog/main_bk.png' corner='1,1,1,1'">
+		<HorizontalLayout inset="25,0,11,0" >
+			<Label width="54" height="54" bkimage="file='geeIcon/public/ctrl/warning.png'" padding="0,45,26,45" />
+			<Label name="lab_content" text="内容" width="268" height="143" textcolor="#FFCCCCCC" singleline="false" align="leftmiddle" indexfont="yahei_12" showhtml="true" 
+			/>
+			<Text name="txt_content" text="内容" width="268" height="143" textcolor="#FFCCCCCC" singleline="false" align="leftmiddle" indexfont="yahei_12" showhtml="true" visible="false"
+			/>    
+		</HorizontalLayout>
+		  
+		<HorizontalLayout height="54" inset="29,1,0,25" >
+		    <CheckBox name="check_noprompt" text="不再询问"  width="75" animation="true" textpadding="20,0,0,0" visible="false"
+				textcolor="#ffffffff" hottextcolor="#ffffffff" pushedtextcolor="#FF8E958C" 
+				selectedtextcolor="#ffffffff" selectedhottextcolor="#ffffffff" selectedpushedtextcolor="#FF8E958C" 
+				normalimage="file='geeIcon/public/ctrl/checkboxpicture.png' source='0,0,14,14' dest='0,7,14,21'"
+				hotimage="file='geeIcon/public/ctrl/checkboxpicture.png'  source='14,0,28,14' dest='0,7,14,21'"
+				pushedimage="file='geeIcon/public/ctrl/checkboxpicture.png'  source='28,0,42,14' dest='0,7,14,21'"
+				disabledimage="file='geeIcon/public/ctrl/checkboxpicture.png' source='42,0,56,14' dest='0,7,14,21'"
+				selectednormalimage="file='geeIcon/public/ctrl/checkboxpicture.png'  source='0,14,14,28' dest='0,7,14,21'"
+				selectedhotimage="file='geeIcon/public/ctrl/checkboxpicture.png' source='14,14,28,28' dest='0,7,14,21'"
+				selectedpushedimage="file='geeIcon/public/ctrl/checkboxpicture.png' source='28,14,42,28' dest='0,7,14,21'"
+				selecteddisabledimage="file='geeIcon/public/ctrl/checkboxpicture.png' source='42,14,56,28' dest='0,7,14,21'" />	  
+		    <Control name="ctrl_no_width_l"/>
+			<Button name="btn_ok" text="确定" animation="true"  width="80" align="center" indexfont="yahei_12" 
+				textcolor="#ffffffff" hottextcolor="#ffffffff"
+				pushedtextcolor="#ffcccccc" disabledtextcolor="#FF777777"
+				normalimage="file='geeIcon/public/ctrl/okbtn.png' source='0,0,80,30'" 
+				hotimage="file='geeIcon/public/ctrl/okbtn.png' source='80,0,160,30'" 
+				pushedimage="file='geeIcon/public/ctrl/okbtn.png' source='160,0,240,30'" 
+				disabledimage="file='geeIcon/public/ctrl/okbtn.png' source='240,0,320,30'"/>
+				
+		    <Button name="btn_no" visible="false" animation="true" text="否" width="80" padding="12,0,0,0" align="center" indexfont="yahei_12"
+				textcolor="#ffeeeeee" hottextcolor="#ffffffff"
+				pushedtextcolor="#ffcccccc" disabledtextcolor="#FF444444" 
+				normalimage="file='geeIcon/public/ctrl/cancelbtn.png' source='0,0,80,30'" 
+				hotimage="file='geeIcon/public/ctrl/cancelbtn.png' source='80,0,160,30'" 
+				pushedimage="file='geeIcon/public/ctrl/cancelbtn.png' source='160,0,240,80'" 
+				disabledimage="file='geeIcon/public/ctrl/cancelbtn.png' source='240,0,320,30'" />
+
+          <Button name="btn_cancel"  animation="true" text="取消" width="80" padding="12,0,0,0" align="center" indexfont="yahei_12"
+				textcolor="#ffeeeeee" hottextcolor="#ffffffff"
+				pushedtextcolor="#ffcccccc" disabledtextcolor="#FF444444"
+				normalimage="file='geeIcon/public/ctrl/cancelbtn.png' source='0,0,80,30'"
+				hotimage="file='geeIcon/public/ctrl/cancelbtn.png' source='80,0,160,30'"
+				pushedimage="file='geeIcon/public/ctrl/cancelbtn.png' source='160,0,240,80'"
+				disabledimage="file='geeIcon/public/ctrl/cancelbtn.png' source='240,0,320,30'" />
+          <Control name="ctrl_no_width_r" visible="false" />
+          <Control name="ctrl_fix_25_r" width="25" />
+		</HorizontalLayout>
+		</VerticalLayout>
+	</VerticalLayout>
+	</VerticalLayout>
+</VerticalLayout>
+</Window>

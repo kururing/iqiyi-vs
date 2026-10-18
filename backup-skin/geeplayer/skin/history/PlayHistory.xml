@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="326,397">
+  <Font name="Microsoft YaHei" size="12" bold="false" italic="false" default="true" />
+  <Font name="Microsoft YaHei" size="12" bold="true" italic="false" indexfont="yahei_12b"/>
+  <Default name="VScrollBar" value="width=&quot;8&quot; button1normalimage=&quot;file='skinplan\frame/scroll.png' 
+    source='0,0,8,8' mask='0xFFFF00FF'&quot; button1hotimage=&quot;file='skinplan\frame/scroll.png' 
+    source='8,0,16,8' mask='0xFFFF00FF'&quot; button1pushedimage=&quot;file='skinplan\frame/scroll.png' 
+    source='16,0,24,8' mask='0xFFFF00FF'&quot; button1disabledimage=&quot;file='skinplan\frame/scroll.png' 
+    source='24,0,32,8' mask='0xFFFF00FF'&quot; button2normalimage=&quot;file='skinplan\frame/scroll.png' 
+    source='0,22,8,30' mask='0xFFFF00FF'&quot; button2hotimage=&quot;file='skinplan\frame/scroll.png' 
+    source='8,22,16,30' mask='0xFFFF00FF'&quot; button2pushedimage=&quot;file='skinplan\frame/scroll.png' 
+    source='16,22,24,30' mask='0xFFFF00FF'&quot; button2disabledimage=&quot;file='skinplan\frame/scroll.png'
+    source='24,22,32,30' mask='0xFFFF00FF'&quot; thumbnormalimage=&quot;file='skinplan\frame/scroll.png' 
+    source='0,8,8,22' corner='0,3,0,3' mask='0xFFFF00FF'&quot; thumbhotimage=&quot;
+    file='skinplan\frame/scroll.png' source='8,8,16,22' corner='0,3,0,3' mask='0xFFFF00FF'&quot; 
+    thumbpushedimage=&quot;file='skinplan\frame/scroll.png' source='16,8,24,22' corner='0,3,0,3' 
+    mask='0xFFFF00FF'&quot; thumbdisabledimage=&quot;file='skinplan\frame/scroll.png' 
+    source='24,8,32,22' corner='0,3,0,3' mask='0xFFFF00FF'&quot;" />
+  <VerticalLayout inset="5,0,5,0" bkimage="file='skinplan\history/bk.png' xtiled='false' ytiled= 'false' corner='6,10,6,39'" >
+    <Container name="list_container" inset="0,8,2,0" >
+    </Container>
+    <Container name="empty_container" visible="false" padding="109,123,109,123" >
+      <Label name="empty_tip" textcolor="history_empty_text" width="98" height="82" bkimage="file='skinplan\history/empty.png'" align="center" text="还没有播放记录" textpadding="0,60,0,0" />
+    </Container>
+    <HorizontalLayout name="bottom_layout" height="39" padding="0,0,0,1">
+      <Control width="12"/>
+      <CheckBox name="quit_clear_check" animation="true" text="退出时清空播放记录" width="140" height="18" padding="0,10,0,0"
+         textpadding="20,0,0,2" align="leftmiddle" textcolor="history_clear_text" selectedtextcolor="history_clear_text" selectedhottextcolor="history_clear_text"
+         hottextcolor="history_clear_text"  selectedtextcolor="history_clear_text" selectedhottextcolor="history_clear_text"
+         selectedpushedtextcolor="history_clear_text"
+         normalimage="file='skinplan\public/ctrl/checkboxpicture.png' source='0,0,14,14' dest='0,0,14,14'"
+         hotimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='14,0,28,14' dest='0,0,14,14'"
+         pushedimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='28,0,42,14' dest='0,0,14,14'"
+         disabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,0,56,14' dest='0,0,14,14'"
+         selectednormalimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='0,14,14,28' dest='0,0,14,14'"
+         selectedhotimage="file='skinplan\public/ctrl/checkboxpicture.png' source='14,14,28,28' dest='0,0,14,14'"
+         selectedpushedimage="file='skinplan\public/ctrl/checkboxpicture.png' source='28,14,42,28' dest='0,0,14,14'"
+         selecteddisabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,14,56,28' dest='0,0,14,14'"
+         partselectednormalimage="file='skinplan\public/ctrl/checkboxpicture.png'  source='0,28,14,42' dest='0,0,14,14'"
+         partselectedhotimage="file='skinplan\public/ctrl/checkboxpicture.png' source='14,28,28,42' dest='0,0,14,14'"
+         partselectedpushedimage="file='skinplan\public/ctrl/checkboxpicture.png' source='28,28,42,42' dest='0,0,14,14'"
+         partselecteddisabledimage="file='skinplan\public/ctrl/checkboxpicture.png' source='42,28,56,42' dest='0,0,14,14'"
+				/>
+      <Control />
+      <Button name="clear_all" width="12" height="13" animation ="true"
+        tooltip="清空全部" padding="0,10,0,0" 
+        normalimage="file='skinplan\public/ctrl/clear.png' source='0,0,12,13' dest='0,0,12,13'"
+        hotimage="file='skinplan\public/ctrl/clear.png' source='12,0,24,13' dest='0,0,12,13'"
+        pushedimage="file='skinplan\public/ctrl/clear.png' source='12,0,24,13' dest='0,0,12,13'"
+        disabledimage="file='skinplan\public/ctrl/clear.png' source='0,0,12,13' dest='0,0,12,13'"/>
+      <Control width ="20" />
+    </HorizontalLayout>
+  </VerticalLayout>
+</Window>

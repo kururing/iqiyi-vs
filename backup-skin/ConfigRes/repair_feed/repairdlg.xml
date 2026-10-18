@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="570,438" caption="0,0,0,38">
+    <Font name="微软雅黑" size="14" bold="false" italic="false" default="true" />
+	<Font name="微软雅黑" size="12" bold="false" italic="false"  indexfont="yahei_12"/>
+	<Font name="微软雅黑" size="14" bold="false" italic="false"  indexfont="yahei_14"/>
+	<Font name="微软雅黑" size="16" bold="false" italic="false"  indexfont="yahei_16"/>
+	<Font name="微软雅黑" size="14" bold="true" italic="false"  indexfont="yahei_bold_14"/>
+	<Font name="微软雅黑" size="16" bold="true" italic="false"  indexfont="yahei_bold_16"/>
+	<Default name="VScrollBar" value="showbutton1=&quot;false&quot; showbutton2=&quot;false&quot; width=&quot;4&quot; thumbnormalimage=&quot;file='skinplan/PreferencesCenter/scrollbar.png' source='0,0,4,40' corner='0,6,0,6'&quot; thumbhotimage=&quot;file='skinplan/PreferencesCenter/scrollbar.png' source='4,0,8,40' corner='0,6,0,6'&quot; thumbpushedimage=&quot;file='skinplan/PreferencesCenter/scrollbar.png' source='8,0,12,40' corner='0,6,0,6'&quot; " />
+	
+    <VerticalLayout name="ConfigmainCon" style="popwnd_bk_style" bkcolor="config_right_bk" padding="1,1,1,1">
+        <HorizontalLayout height="40">
+            <Control width="117" bkcolor="config_left_bk"/>
+			<HorizontalLayout name="ConfigCon">
+				<Control />
+			    <Button name="close_button" width="12" padding="0,10,10,18" style="close_style" tooltip="关闭" />
+			</HorizontalLayout>
+        </HorizontalLayout>
+        <HorizontalLayout name="ConfigCon" height="528" >
+            <VerticalLayout width="117"  bkcolor="config_left_bk">
+                <Option name="feedback_option" text="反馈" style="s_config_option" hottextcolor="config_txt_hot" textpadding="24,0,0,0" font="yahei_14" padding="0,29,0,0"/>
+				<Option name="player_trouble_option" text="播放异常" style="s_config_option" hottextcolor="config_txt_hot" textpadding="24,0,0,0" font="yahei_14" />
+				<Option name="voice_trouble_option" text="声音异常" style="s_config_option" hottextcolor="config_txt_hot" textpadding="24,0,0,0" font="yahei_14" />
+				<Option name="show_trouble_option" text="展示异常" style="s_config_option" hottextcolor="config_txt_hot" textpadding="24,0,0,0" font="yahei_14" />
+                <Option name="driver_trouble_option" text="驱动修复" style="s_config_option" hottextcolor="config_txt_hot" textpadding="24,0,0,0" font="yahei_14" />
+                <Option name="other_trouble_option" text="其他修复" style="s_config_option" hottextcolor="config_txt_hot" textpadding="24,0,0,0" font="yahei_14" />
+            </VerticalLayout>
+            <VerticalLayout name="page_container" bordersize="1" height="396" width="421" padding="30,0,0,0" vscrollbar="true"/>
+        </HorizontalLayout>
+		<Label text="反馈与修复" float="true" pos="0,27,117,44" font="yahei_bold_16" textcolor="config_icon" align="center" />
+    </VerticalLayout>
+</Window>

@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Window >
+  <VerticalLayout  name="MidCon" width="32" height="84">
+    <Button name="BtnExpand" visible="false" tooltip="展开列表栏" height="84"
+	        normalimage="file='frame/leftear/expand.png'"
+            hotimage="file='frame/leftear/expand_h.png'"
+            pushedimage="file='frame/leftear/expand_p.png'"
+			/>
+    <Button name="BtnCollapse" visible="false"  tooltip="收起列表栏" height="84"
+		normalimage="file='frame/leftear/collapse.png'"
+		hotimage="file='frame/leftear/collapse_h.png'"
+		pushedimage="file='frame/leftear/collapse_p.png'"
+			/>
+  </VerticalLayout>
+</Window>

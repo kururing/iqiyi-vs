@@ -1,0 +1,23 @@
+{
+  "title": "花戎第11集",
+  "order": 11,
+  "vid": "92dd417552b392f23af7c57c7194be2d",
+  "tvid": "8865236138341000",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337946.9062254,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 797
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/6f/1a/d52d3a83455af65d669d2425e341b6b7.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

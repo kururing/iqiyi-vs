@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="358,162" caption="0,0,0,34">
+<Font name="Microsoft YaHei" size="12" bold="false" italic="false" default="true" indexfont="skinDefault" />
+<Font name="Microsoft YaHei" size="10" bold="false" italic="false" indexfont="skinSmall" />
+<VerticalLayout style="popwnd_bk_style">
+  <HorizontalLayout height="34">
+    <Label name="title" style="popwnd_title_style" text="提示" />
+    <Control />
+	<Label name="num" textcolor="#ffff6e1e" align="right" padding="0,0,3,0" visible="false"/>
+	<Label name="count_down_txt" text="后自动关闭" width="60" textcolor="#ff666666" padding="0,0,20,0" visible="false"/>
+    <Control />
+    <Button name="closebtn" style="close_style" align="right" padding="0,10,10,0" width="13" height="13"/>
+  </HorizontalLayout>
+  <HorizontalLayout padding="0,0,0,0">
+    <Control width="32"/>
+	<Label name="tip_icon" width="44" height="44" bkimage="file='commonres/warnning.svg' align='center,44,44'" padding="0,17,20,0" />
+	<VerticalLayout padding="0,23,32,0" >
+		<HorizontalLayout>
+			<Label name="tip_text" text="" textcolor="common_tip_text_color" singleline="false"/>
+		</HorizontalLayout>
+		<Label name="tip_sub_text" height="12" text="" textcolor="common_tip_sub_text_color" indexfont="skinSmall" padding="0,2,0,0"/>
+		<CheckBox name="check" style="checkbox_style" text="不在提示" height ="14" visible="false" padding="0,10,0,0"/>
+		<Control />
+	</VerticalLayout>
+  </HorizontalLayout>
+  <HorizontalLayout height="32">
+    <Control />
+    <Button name="btnOK" text="确认" style="green_gradient_btn_style" width="80" height="32"/>
+    <Control width="20" name="tip_dlg_button_padding"/>
+    <Button name="btnCancel" text="取消" style="cancel_btn_style" width="80" height="32"/>
+    <Control />
+  </HorizontalLayout>
+  <Control height="20" />
+</VerticalLayout>
+</Window>

@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+	<Font name="微软雅黑" size="12" bold="false" italic="false" default="true"/>
+	<Container name="pagefeedContainer"  width="421" height="96">
+		<VerticalLayout>
+            <Label text="反馈" textcolor="config_txt_hot" width="70" height="16" font="yahei_bold_14"/>
+			<HorizontalLayout padding="0,20,0,0" height="60">
+				·<VerticalLayout width="291" height="60">
+					<Label text="意见反馈" textcolor="config_txt_hot" height="14" font="yahei_12" align="left"/>
+					<Label text="对产品功能或使用体验上有任何问题或建议，欢迎随时" textcolor="config_txt_normal" height="14" padding="0,10,0,0" align="left" font="yahei_12"/>
+					<Label text="反馈。" textcolor="config_txt_normal" height="14" padding="0,8,0,0" align="left" font="yahei_12"/>
+				</VerticalLayout>
+				<Button name="feed_button" style="green_border_btn_style" text="意见反馈" width="80" height="32" indexfont="yahei_14" padding="30,14,20,14"/> 
+			</HorizontalLayout>
+			
+        </VerticalLayout>
+	</Container>
+</Window>

@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- PCA服务进程支持小弹窗 320x334 -->
+<Window size="320,334" sizebox="4,4,4,4" roundcorner="8,8">
+  <Font name="微软雅黑" size="12" bold="false" italic="false" default="true" indexfont="yahei_font12"/>
+  <Font name="微软雅黑" size="14" bold="false" italic="false" indexfont="yahei_font14"/>
+  <Font name="微软雅黑" size="16" bold="true" italic="false" indexfont="yahei_font16"/>
+  <VerticalLayout name="root_lay" width="320" height="334" bkcolor="#ccffffff" borderround="8,8" insets="4,4,4,4" bordercolor="#1a000000">
+    <!-- Figma 3-248：顶部主视觉区 320×180，圆角仅上方 8px，展示剧集主视觉（如太平年） -->
+    <Label name="top_image" width="320" height="180" bkcolor="#ff1a1a1a" bkimage="file='fragment_nook/top.png' decode='render'"/>
+    <!-- 内容区 -->
+    <VerticalLayout name="content_container" height="154" bkcolor="#ccffffff" padding="0,0,0,0">
+		<VerticalLayout padding="16,10,16,10">
+		  <!-- 标题栏：logo + 爱奇艺；关闭按钮 16×16 距右 16，使用 nook_close.svg -->
+		  <HorizontalLayout height="16" padding="0,0,0,0">
+			<Label name="logo_ico" width="14" height="14" bkimage="file='fragment_nook/ico.png' decode='render'" padding="1,1,0,0"/>
+			<Label text="爱奇艺" name="iqiyi_txt" height="14" padding="4,1,0,0" align="left" valign="center" textcolor="#ff00000000" indexfont="yahei_font14"/>
+			<Control />
+		    <Button name="more_btn" width="16" height="16" padding="0,0,0,0"
+			normalimage="file='fragment_nook/nook_more.svg' dest='0,0,16,16' svg-fill-color='0xBF000000' decode='render'"
+			hotimage="file='fragment_nook/nook_more.svg' dest='0,0,16,16' svg-fill-color='0xFF000000' decode='render'"
+			pushedimage="file='fragment_nook/nook_more.svg' dest='0,0,16,16' svg-fill-color='0x80000000' decode='render'"/>
+		    <Button name="close_btn" width="16" height="16" padding="16,0,0,0"
+			normalimage="file='fragment_nook/nook_close.svg' dest='0,0,16,16' svg-fill-color='0xBF000000' decode='render'"
+			hotimage="file='fragment_nook/nook_close.svg' dest='0,0,16,16' svg-fill-color='0xFF000000' decode='render'"
+			pushedimage="file='fragment_nook/nook_close.svg' dest='0,0,16,16' svg-fill-color='0x80000000' decode='render'"/>
+		  </HorizontalLayout>
+
+		  <Label name="title_label" width="288" height="16" text="精彩内容随时看" align="left" valign="top" textcolor="#FF000000" indexfont="yahei_font16" padding="0,16,0,0"/>
+		  <Label name="title_label_2" width="288" height="16" text="" align="left" valign="top" textcolor="#FF000000" indexfont="yahei_font16" padding="0,0,0,0" visible="false" endellipsis="true"/>
+		  <Label name="desc_label" width="288" height="14" text="打开爱奇艺客户端，畅享更多精彩" align="left" valign="top" textcolor="#99000000" indexfont="yahei_font14" padding="0,8,0,0"/>
+		  <Label name="desc_label_2" width="288" height="14" text="" align="left" valign="top" textcolor="#99000000" indexfont="yahei_font14" padding="0,0,0,0" visible="false" endellipsis="true"/>
+		  <Button name="play_btn" width="288" height="40" padding="0,16,0,16" text="立刻播放" textcolor="#ff111214" textpadding="18,0,0,0" indexfont="yahei_font14" bkcolor="#ffFFFFFF" hotbkcolor="#FFD4D4D4" pushedbkcolor="#FF939393" borderround="8,8" bkimage="file='fragment_nook/play.svg' dest='104,13,118,27' svg-fill-color='0xff111214' decode='render'" bordercolor="#0f000000"/>
+	  </VerticalLayout>
+    </VerticalLayout>
+  </VerticalLayout>
+</Window>

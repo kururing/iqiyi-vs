@@ -1,0 +1,10 @@
+﻿<?		xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window >
+    <VerticalLayout bkcolor="#ffffffff" name="freeze_lay_inner">
+	    <Label width="48" height="48" bkimage="LoginRes\warning_tip.svg" padding="128,40,0,0"/>
+		<Label name="warning_lab" text="账号已被冻结" align="center" padding="0,18,0,0" height="63"  indexfont="yahei_16"
+		singleline="false"/>
+
+	    <Button name="switch_acc_btn" text="使用其他账号登录" style="login_style" padding="0,36,0,0" align="center"/>	
+    </VerticalLayout>
+</Window>

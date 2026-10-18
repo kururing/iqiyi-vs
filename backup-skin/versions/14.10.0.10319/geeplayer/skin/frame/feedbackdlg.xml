@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="551,460" caption="0,0,0,32">
+  <Include source="public\xml\default_font.xml" />
+  <Font name="微软雅黑" size="20" bold="false" italic="false" indexfont="yahei_20" />
+  <VerticalLayout name="feedbackCon" style="popwnd_bk_style"  bkcolor="#F51C1D1F" bordercolor="#33FFFFFF" borderround="12,12,12,12" >
+    <HorizontalLayout height="48" padding="20,0,16,0" >
+      <Label name="win_name" text="反馈与修复" padding="0,13,0,0" textcolor="#F2FFFFFF" indexfont="yahei_16" />
+      <Button name="closebtn"  height="16" width="16" padding="0,16,0,16" 
+         bkimage="file='geeIcon/close.svg' align='center,16,16' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF'" />
+    </HorizontalLayout>
+		<VerticalLayout name="feedback_con">
+			<VerticalLayout inset="1,0,1,1">
+				<VerticalLayout >
+          <HorizontalLayout padding="0,12,0,0" height="20">
+            <Label text="播放遇到问题？"  textcolor="#99FFFFFF" width="142"  height="20"  textpadding="44,0,0,0" indexfont="yahei_14"
+               bkimage="file='geeIcon/warning.svg' dest='24,2,40,18' svg-fill-color='0x80FFFFFF'"/>
+            <Button name="fixbtn" text="一键修复" indexfont="yahei_14" align="center" width="80" height="20" textcolor="#FFFFFFFF" padding="0,0,0,0" textpadding="6,0,16,0"
+               bkimage="file='geeIcon/right_arrow.svg' dest='66,4,80,18' svg-fill-color='0xFFFFFFFF'"/>
+          </HorizontalLayout>
+					<HorizontalLayout padding="0,8,0,0" height="20">
+            <Label name="infoLabel1" text="需要咨询问题？请加QQ群："  textcolor="#99FFFFFF" width="220"  height="20"  textpadding="44,0,0,0" indexfont="yahei_14"
+               bkimage="file='geeIcon/warning.svg' dest='24,2,40,18' svg-fill-color='0x80FFFFFF'"/>
+						<Button name="copybtn" text="34099222" tooltip="点击复制" indexfont="yahei_14" align="center" width="68" height="20" textcolor="#FFFFFFFF" padding="4,0,0,0"/>
+						<Label name="infoLabel2" text="，我们会有专人为您服务。" padding="16,0,0,0" align="center" width="140" height="20" textcolor="#99FFFFFF" indexfont="yahei_14"/>
+					</HorizontalLayout>
+          <Label name="suggestLabel" text="意见建议：" padding="24,16,0,0" width="76" textcolor="#F2FFFFFF" indexfont="yahei_14" />
+          <TextField name="eidtsuggest" padding="24,8,24,0" multiline="true" indexfont="yahei_12" width="503"  height="120"
+                    vscrollbar="true" autovscroll="true" textcolor="#FF999999" focustextcolor="#FFFFFFFF"  style="edit_style"
+                    bkcolor="#33000000" borderround="8,8,8,8" bordercolor="#1AFFFFFF" focusbordercolor="#66FFFFFF" autohscroll="false"
+                   tip="请填写意见建议" tiptextcolor="#4DFFFFFF" textpadding="16,12,0,0" caretcolor="#FFFFFFFF" caretwidth="1" caretheight="14"/>
+
+          <Label name="label_contact" text="联系方式：" padding="24,16,0,0" width="76" textcolor="#F2FFFFFF" indexfont="yahei_14"/>
+          <TextField name="editLink" padding="24,8,24,36" multiline="false" tip="为了更好处理您的反馈与建议，请填写QQ号/微信号" tiptextcolor="#4DFFFFFF"
+                     indexfont="yahei_12" width="503"  height="41" caretcolor="#FFFFFFFF" caretwidth="1" caretheight="14"
+                bkcolor="#33000000"  textcolor="#4DFFFFFF" textpadding="16,0,0,0" focustextcolor="#FFFFFFFF"  style="edit_style"
+                borderround="8,8,8,8" bordercolor="#1AFFFFFF"  focusbordercolor="#66FFFFFF"/>
+          <Button name="submitbtn"  text="提交" enable="false"  indexfont="yahei_14" width="245" height="40"  padding="153,0,153,0"
+                  textcolor="#F2FFFFFF"  hottextcolor="#FFFFFFFF" pushedtextcolor="#99FFFFFF" disabledtextcolor="#66FFFFFF" textpadding="95,0,94,0"
+                  style="gold_gradient_btn_style" gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff00a8e6, 0) (#ff00b84d,0.5) (#ff00b84d, 1.0))"
+                  hot-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff1ac1ff, 0) (#ff00cc55, 0.5) (#ff00cc56, 1.0))"
+                  pushed-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff0082b3, 0) (#ff009940,0.5) (#ff009940, 1.0))"
+                  disabled-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff0082b3, 0) (#ff009940,0.5) (#ff009940, 1.0))" borderround="20,20,20,20"/>
+				</VerticalLayout>
+			</VerticalLayout>
+		</VerticalLayout>
+
+		<VerticalLayout name="thanks_container" visible="false" bkimage="file='geeIcon/public/dialog/main_bk.png' corner='1,1,1,1' " style="popwnd_bk_style" >
+			<VerticalLayout inset="33,26,33,24" bkimage="file='geeIcon/public/dialog/border_content.png' corner='3,3,4,4'">
+				<HorizontalLayout height="168" >
+					<Control />
+					<VerticalLayout width="300">
+						<Label bkimage="geeIcon/frame/suggestok.png" width="94" height="94" padding="100,0,0,0" />
+						<Label text="感谢您的反馈!" align="center" textcolor="#99FFFFFF" height="18" indexfont="yahei_18" padding="0,26,0,10" />
+						<Label text="我们会尽快为您处理" align="center" textcolor="#99FFFFFF" height="12" indexfont="yahei_12" />
+					</VerticalLayout>
+					<Control />
+				</HorizontalLayout>
+				<Label text="特别提示：" textcolor="#F2FFFFFF" height="14" name="test" padding="0,20,0,12" indexfont="yahei_12b" />
+				<Label text="1.为了解决问题，爱奇艺的工作人员可能会联系您" height="14" indexfont="yahei_12" padding="0,0,0,10" textcolor="#99FFFFFF" />
+				<Button name="cancelbtn" animation="true" text="关闭" width="80" height="28" align="center" indexfont="yahei_12"
+					textcolor="#F2FFFFFF" disabledtextcolor="#99FFFFFF" padding="127,26,0,0"
+					normalimage="file='geeIcon/public/ctrl/cancelbtn.png' source='0,0,80,28'"
+					hotimage="file='geeIcon/public/ctrl/cancelbtn.png' source='80,0,160,28'"
+					pushedimage="file='geeIcon/public/ctrl/cancelbtn.png' source='160,0,240,28'"
+					disabledimage="file='geeIcon/public/ctrl/cancelbtn.png' source='240,0,320,28'"/>
+			</VerticalLayout>
+		</VerticalLayout>
+
+    <VerticalLayout name="fix_con"  visible="false">
+      <VerticalLayout >
+          <Label name="fiximg" padding="252,32,251,12" width="48" height="48" bkimage="file='geeIcon/fixing.svg'"/>
+          <Label name="fixtip" text="修复中…"  height="28" textcolor="#E6FFFFFF" align="center" indexfont="yahei_20"/>
+          <Button name="rebootbtn"  text="立即重启" visible="false" indexfont="yahei_14" width="245" height="40"  padding="153,36,153,0"
+                  textcolor="#F2FFFFFF"  hottextcolor="#FFFFFFFF" pushedtextcolor="#99FFFFFF" disabledtextcolor="#66FFFFFF" textpadding="94,0,93,0"
+                  style="gold_gradient_btn_style" gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff00a8e6, 0) (#ff00b84d,0.5) (#ff00b84d, 1.0))"
+                  hot-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff1ac1ff, 0) (#ff00cc55, 0.5) (#ff00cc56, 1.0))"
+                  pushed-gradient="linear startpoint='0,0.5' endpoint='1,0.5' colorstops=((#ff0082b3, 0) (#ff009940,0.5) (#ff009940, 1.0))" borderround="20,20,20,20"/>
+      </VerticalLayout>
+    </VerticalLayout>
+    
+	</VerticalLayout>
+
+</Window>

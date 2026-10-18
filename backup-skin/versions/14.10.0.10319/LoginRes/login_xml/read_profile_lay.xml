@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window >
+  <Font name="Microsoft YaHei" size="16" bold="false" italic="false" indexfont="yahei_16"/>
+  <Font name="Microsoft YaHei" size="20" bold="false" italic="false" indexfont="yahei_20"/>
+  <Font name="Microsoft YaHei" size="13" bold="false" italic="false" indexfont="yahei_13" default="true"/>
+    <VerticalLayout bkcolor="login_tip_bkcolor" name="read_profile_inner" bordercolor="login_tip_bordercolor" borderround="4,4">
+        <Label name="title" text="请阅读并同意" align="center" indexfont="yahei_20"  textcolor="login_qr_text_color" padding="0,31,0,0" height="20"/>
+        <HorizontalLayout height="14" padding="0,16,0,0">
+            <Control />
+            <Button name="protocal_btn" text="《用户协议》" textcolor="login_tip_protocal_color" indexfont="yahei_14" width="78"/>
+            <Label text="和" textcolor="login_normal_text_color" indexfont="yahei_14" width="14"/>
+            <Button name="policies_btn" text="《隐私政策》" textcolor="login_tip_protocal_color" indexfont="yahei_14" width="78"/>
+            <Control />
+        </HorizontalLayout>
+        <HorizontalLayout height="40" padding="0,32,0,0">
+            <Control />
+            <Button name="read_profile_agree_btn" text="同意并登录" textcolor="login_agree_textcolor" style="login_style" width="140" height="40" indexfont="yahei_16" borderround="4,4"/>
+            <Control width="16"/>
+            <Button name="cancel_btn" text="取消" bkcolor="login_cancel_bkcolor" width="140" height="40" indexfont="yahei_16" textcolor="login_cancel_textcolor" borderround="4,4"/>
+            <Control />
+        </HorizontalLayout>
+    </VerticalLayout>
+</Window>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window>
+	<Font name="微软雅黑" size="14" bold="false" default="true" />
+  <Include source="public/xml/default_menu_bkimage.xml" />
+  <Include source="public\xml\default_vscrollbar.xml" />
+  
+	<Menu name="menu" width="198" vscrollbar="true" 
+    submenuarrownormalimage="file='newIcon/normal/expand.png' source='0,0,24,24'"
+    submenuarrowhotimage="file='newIcon/hover/expand.png' source='0,0,24,24'"
+    submenuarrowpushimage="file='newIcon/press/expand.png' source='0,0,24,24'"
+		menudivisioniamge="file='skinplan\menu/menu_line.png' corner='2,0,2,0'" >
+
+		<MenuElement name="menu_play"    text="播放" height="36" width="198"
+         iconnormalimage="file='newIcon/PlayerRButton/normal/play_control.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconhotimage="file='newIcon/PlayerRButton/hover/play_control.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconpushedimage="file='newIcon/PlayerRButton/press/play_control.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconcheckedimage="file='newIcon/PlayerRButton/normal/play_control.png' source='0,0,32,32' dest='16,10,32,26'"/>
+
+		<MenuElement name="menu_delete_selected"  text="删除选中项" height="36"
+         iconnormalimage="file='newIcon/playList/normal/delete_selected_item.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconhotimage="file='newIcon/playList/hover/delete_selected_item.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconpushedimage="file='newIcon/playList/press/delete_selected_item.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconcheckedimage="file='newIcon/playList/normal/delete_selected_item.png' source='0,0,32,32' dest='16,10,32,26'"/>
+
+		<MenuElement name="menu_delete_invalid"  text="删除无效文件" height="36"
+         iconnormalimage="file='newIcon/playList/normal/delete_invalid_files.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconhotimage="file='newIcon/playList/hover/delete_invalid_files.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconpushedimage="file='newIcon/playList/press/delete_invalid_files.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconcheckedimage="file='newIcon/playList/normal/delete_invalid_files.png' source='0,0,32,32' dest='16,10,32,26'"/>
+		
+		<MenuElement name="menu_delete_all"  text="清除播放列表" height="36"
+         iconnormalimage="file='newIcon/playList/normal/clear_playlist.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconhotimage="file='newIcon/playList/hover/clear_playlist.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconpushedimage="file='newIcon/playList/normal/clear_playlist.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconcheckedimage="file='newIcon/playList/normal/clear_playlist.png' source='0,0,32,32' dest='16,10,32,26'"/>
+
+		<MenuElement id ="-1" userdata="wn_tvg" height="8" enabled="false"/>
+		<MenuDivision  height="1" bkimage="file='skinplan\menu/menu_line.png' corner='2,0,2,0'" />
+		<MenuElement id ="-1" userdata="wn_tvg" height="8" enabled="false"/>
+		<MenuElement name="menu_play_sequence"    text="播放顺序" height="36"  childmenuposoffset="-10,0" childmenulayered="true" 
+         iconnormalimage="file='newIcon/playList/normal/play_order.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconhotimage="file='newIcon/playList/hover/play_order.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconpushedimage="file='newIcon/playList/press/play_order.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconcheckedimage="file='newIcon/playList/normal/play_order.png' source='0,0,32,32' dest='16,10,32,26'">
+			<MenuElement name="menu_sub_play_single" userdata="1" text="单个播放" height="36" width="150" textpadding="16,0,0,0"
+			 iconcheckednormalimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"
+			 iconcheckedhotimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"/>
+			<MenuElement name="menu_sub_play_sequence" userdata="2" text="顺序播放" height="36" textpadding="16,0,0,0"
+			 iconcheckednormalimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"
+			 iconcheckedhotimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"/>
+			<MenuElement name="menu_sub_play_single_loop" userdata="4" text="单个循环" height="36" textpadding="16,0,0,0"
+			 iconcheckednormalimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"
+			 iconcheckedhotimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"/>
+			<MenuElement name="menu_sub_play_loop" userdata="5" text="顺序循环" height="36" textpadding="16,0,0,0"
+			 iconcheckednormalimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"
+			 iconcheckedhotimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"/>
+			<MenuElement name="menu_sub_play_random" userdata="3" text="随机播放" height="36" textpadding="16,0,0,0"
+			 iconcheckednormalimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"
+			 iconcheckedhotimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"/>
+		</MenuElement>
+		
+		<MenuElement text="排序" height="36" width="160"  childmenuposoffset="-10,0" childmenulayered="true" 
+         iconnormalimage="file='newIcon/playList/normal/sort_btn.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconhotimage="file='newIcon/playList/hover/sort_btn.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconpushedimage="file='newIcon/playList/press/sort_btn.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconcheckedimage="file='newIcon/playList/normal/sort_btn.png' source='0,0,32,32' dest='16,10,32,26'">
+			<MenuElement name="sort_by_name"  text="按名称排序" height="36" width="150" textpadding="16,0,0,0"
+			 iconcheckednormalimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"
+			 iconcheckedhotimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"/>
+			<MenuElement name="sort_by_size"  text="按大小排序" height="36" width="150" textpadding="16,0,0,0"
+			 iconcheckednormalimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"
+			 iconcheckedhotimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"/>
+			<MenuElement name="sort_by_type"  text="按类型排序" height="36" width="150" textpadding="16,0,0,0"
+			 iconcheckednormalimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"
+			 iconcheckedhotimage="file='newIcon/switch/check.png' source='0,0,32,32'  dest='130,10,146,26'"/>
+		</MenuElement>
+		<MenuElement id ="-1" userdata="wn_tvg" height="8" enabled="false"/>
+		<MenuDivision  height="1" bkimage="file='skinplan\menu/menu_line.png' corner='2,0,2,0'" />
+		<MenuElement id ="-1" userdata="wn_tvg" height="8" enabled="false"/>
+		<MenuElement name="menu_open_file_dir"    text="打开文件所在位置" height="36"
+         iconnormalimage="file='newIcon/playList/normal/open_file_path.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconhotimage="file='newIcon/playList/hover/open_file_path.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconpushedimage="file='newIcon/playList/press/open_file_path.png' source='0,0,32,32' dest='16,10,32,26'"
+         iconcheckedimage="file='newIcon/playList/normal/open_file_path.png' source='0,0,32,32' dest='16,10,32,26'"/>
+	</Menu>
+</Window>

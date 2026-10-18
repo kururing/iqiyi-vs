@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window size="570,440" caption="0,0,0,44" >
+    <Font name="Microsoft YaHei" size="16" bold="false" italic="false" default="false" indexfont="yahei_16"/>
+    <Font name="Microsoft YaHei" size="12" bold="false" italic="false" default="true" indexfont="default"/>
+    <Font name="Microsoft YaHei" size="14" bold="false" italic="false" indexfont="yahei_14"/>
+    <Font name="Microsoft YaHei" size="10" bold="false" italic="false" indexfont="yahei_10"/>
+    <Font name="Microsoft YaHei" size="12" bold="false" italic="false" indexfont="yahei_12"/>
+
+    <HorizontalLayout name="third_item_lay" width="195" height="30" bkcolor="feedback_nor_btn_bkcolor" borderround="2,2" padding="12,12">
+		<Label name="third_prob_item" textcolor="feedback_sub_textcolor" indexfont="yahei_12" align="left" width="195" padding="0,9,0,0" height="12" textpadding="8,0,7,0"/>
+		<HorizontalLayout name="feed_lay" bkcolor="feedback_hot_btn_bkcolor"  padding="-195,0,0,0" width="195" height="30"  visible="false">
+			<Control />
+			<Control gradient="feedback_btn_gradient" bkcolor11="#ffd8d8d8" width="34"/>
+			<HorizontalLayout name="feedback_btn_lay" bkcolor="feedback_repair_lay_bkcolor">
+				<Button name="feedback_btn" text="反馈" textcolor="feedback_nor_repair_textcolor" hottextcolor="feedback_hot_repair_textcolor" indexfont="yahei_12" width="24" height="12" padding="0,9,8,0" />
+				<HorizontalLayout name="repair_lay" width="40" padding="0,0,0,0" visible="false">
+					<Label width="1" height="10" bkcolor="feedback_vline_bkcolor" padding="0,10,7,0"/>
+				    <Button name="repair_btn" text="修复" textcolor="feedback_nor_repair_textcolor" hottextcolor="feedback_hot_repair_textcolor" indexfont="yahei_12" width="24"  height="12"  padding="0,9,8,0"/>
+				</HorizontalLayout>
+			</HorizontalLayout>
+		</HorizontalLayout>
+    </HorizontalLayout>
+</Window>

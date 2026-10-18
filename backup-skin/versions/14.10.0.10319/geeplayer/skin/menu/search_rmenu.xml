@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window bktrans="true">
+  <Font name="微软雅黑" size="12" bold="false" default="true" />
+  <Font name="微软雅黑" size="14" bold="true"/>
+  <Include source="public/xml/default_menu_bkimage.xml" />
+  <Menu name="default_menu" width="136" vscrollbar="true"
+    submenuarrownormalimage="file='skinplan\menu/menu_more.png' source='0,0,4,7'"
+    submenuarrowhotimage="file='skinplan\menu/menu_more.png' source='4,0,8,7'"
+    submenuchecknorimage="file='skinplan\menu/item_selected.png' source='0,0,16,16' dest='8,5,24,21'"
+    submenucheckhotimage="file='skinplan\menu/item_selected.png' source='16,0,32,16' dest='8,5,24,21'"
+    menudivisioniamge="file='skinplan\menu/menu_line.png'" >
+    <MenuElement id="217107" text="播放" height="26" width="160"
+      iconnormalimage="file='skinplan\menu/play_menu_icon.png' source='0,0,16,16' dest='8,5,24,21'"
+      iconhotimage="file='skinplan\menu/play_menu_icon.png' source='16,0,32,16' dest='8,5,24,21'" />
+    <MenuElement id="217092"  text="删除选中项" height="26" width="160"/>
+    <MenuElement id="217116"  text="定位到列表所在位置" height="26" width="160"/>
+    <MenuElement id="217100"  text="打开所在文件夹" height="26" width="160"/>
+  </Menu>
+</Window>

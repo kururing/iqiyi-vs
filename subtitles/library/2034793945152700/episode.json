@@ -1,0 +1,23 @@
+{
+  "provider": "iqiyi",
+  "title": "花戎第1集",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "order": 1,
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "url": "http://meta.video.iqiyi.com/20260810/7e/5c/75d1105a040e7d22158cc0b283c5d168.xml",
+      "format": "xml"
+    }
+  ],
+  "discoveredAt": 1792337945.0376549,
+  "vid": "2d9d1fba8ccf4ee104e878b27a983588",
+  "tvid": "2034793945152700",
+  "albumTotal": 36,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 812
+  }
+}

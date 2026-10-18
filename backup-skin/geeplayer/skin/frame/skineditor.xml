@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="725,535" sizebox="8,8,8,8" caption="0,0,0,38" mininfo="725,535" >
+  <Include source="public\xml\defaultfont.xml" />
+  <VerticalLayout name="skinpeeler" bkimage="file='BKImage/2.jpg'" bordersize="1" bordercolor="color_wind_inner_bordercolor" inset="1,1,1,1">
+
+    <HorizontalLayout name="title" height="38">
+      <Label name="lab_caption" text="编辑皮肤" align="leftmiddle" textcolor="0xFFFFFFFF" indexfont="yahei_14b" textpadding="20,0,0,0" />
+      <Button name="btn_close"  tooltip="关闭" height="18" width="18" align="center" padding="0,12,10,0"
+		    normalimage="file='skinplan\public/ctrl/public_close.png' source='0,0,18,18'"
+		      hotimage="file='skinplan\public/ctrl/public_close.png' source='18,0,36,18'"
+		      pushedimage="file='skinplan\public/ctrl/public_close.png' source='36,0,54,18'"
+		      disabledimage="file='skinplan\public/ctrl/public_close.png' source='54,0,72,18'" />
+    </HorizontalLayout>
+
+    <HorizontalLayout bkcolor="0xFFEEEEEE" >
+		<RectTracker name="tracker" trackerlinecolor="0xFF000000" bkimage="file='BKImage/21.jpg'" foreimage="file='bkimage/1.jpg' dest='50,50,250,250'"/>
+    </HorizontalLayout>
+
+    <HorizontalLayout name="lay_panel" height="50" >
+      <Button name="btn_rotate_l"  width="36" height="30" tooltip="向左旋转90度" padding="10,10,5,10" 
+		normalimage="file=&apos;frame/feedback.png&apos; source=&apos;0,0,16,15&apos;"
+        hotimage="file=&apos;frame/feedback.png&apos; source=&apos;16,0,32,15&apos;"
+        pushedimage="file=&apos;frame/feedback.png&apos; source=&apos;32,0,48,15&apos;"
+        disabledimage="file=&apos;frame/feedback.png&apos; source=&apos;48,0,64,15&apos;"
+	  />
+      <Button name="btn_rotate_r" width="36" height="35"  tooltip="向右旋转90度" padding="5,10,5,10" 
+		normalimage="file=&apos;frame/feedback.png&apos; source=&apos;0,0,16,15&apos;"
+        hotimage="file=&apos;frame/feedback.png&apos; source=&apos;16,0,32,15&apos;"
+        pushedimage="file=&apos;frame/feedback.png&apos; source=&apos;32,0,48,15&apos;"
+        disabledimage="file=&apos;frame/feedback.png&apos; source=&apos;48,0,64,15&apos;"
+	  />
+      <Button name="btn_flip" width="36" height="35" tooltip="左右翻转" padding="5,10,5,10" 
+		normalimage="file=&apos;frame/feedback.png&apos; source=&apos;0,0,16,15&apos;"
+        hotimage="file=&apos;frame/feedback.png&apos; source=&apos;16,0,32,15&apos;"
+        pushedimage="file=&apos;frame/feedback.png&apos; source=&apos;32,0,48,15&apos;"
+        disabledimage="file=&apos;frame/feedback.png&apos; source=&apos;48,0,64,15&apos;"
+	  />
+      <Button name="btn_reduce" width="36" height="35" tooltip="缩小背景" padding="5,10,5,10" 
+		normalimage="file=&apos;frame/feedback.png&apos; source=&apos;0,0,16,15&apos;"
+        hotimage="file=&apos;frame/feedback.png&apos; source=&apos;16,0,32,15&apos;"
+        pushedimage="file=&apos;frame/feedback.png&apos; source=&apos;32,0,48,15&apos;"
+        disabledimage="file=&apos;frame/feedback.png&apos; source=&apos;48,0,64,15&apos;"
+	  />
+      <Label name="lab_size" width="80" height="35" tooltip="向右旋转90度" padding="5,10,5,10" />
+      <Button name="btn_enlarge" width="36" height="35" tooltip="放大背景" padding="5,10,5,10" 
+		normalimage="file=&apos;frame/feedback.png&apos; source=&apos;0,0,16,15&apos;"
+        hotimage="file=&apos;frame/feedback.png&apos; source=&apos;16,0,32,15&apos;"
+        pushedimage="file=&apos;frame/feedback.png&apos; source=&apos;32,0,48,15&apos;"
+        disabledimage="file=&apos;frame/feedback.png&apos; source=&apos;48,0,64,15&apos;"
+	  />
+      <Button name="btn_revert" width="70" height="35" padding="5,10,5,10" 
+		normalimage="file=&apos;frame/feedback.png&apos; source=&apos;0,0,16,15&apos;"
+        hotimage="file=&apos;frame/feedback.png&apos; source=&apos;16,0,32,15&apos;"
+        pushedimage="file=&apos;frame/feedback.png&apos; source=&apos;32,0,48,15&apos;"
+        disabledimage="file=&apos;frame/feedback.png&apos; source=&apos;48,0,64,15&apos;"
+	  />
+      <Button name="btn_select" width="70" height="35" padding="5,10,5,10" 
+		normalimage="file=&apos;frame/feedback.png&apos; source=&apos;0,0,16,15&apos;"
+        hotimage="file=&apos;frame/feedback.png&apos; source=&apos;16,0,32,15&apos;"
+        pushedimage="file=&apos;frame/feedback.png&apos; source=&apos;32,0,48,15&apos;"
+        disabledimage="file=&apos;frame/feedback.png&apos; source=&apos;48,0,64,15&apos;"
+	  />
+      
+      <Control width="1" bordersize="1" bordercolor="0xFFEEEEEE" height="35" padding="5,10,5,10" />
+      
+      <Button name="btn_save"   width="70" height="35" padding="5,10,5,10" text="确定"  />
+      <Button name="btn_cancel" width="70" height="35" padding="5,10,5,10" text="取消" />
+
+    </HorizontalLayout>
+  </VerticalLayout>
+</Window>

@@ -1,0 +1,23 @@
+{
+  "title": "花戎第17集",
+  "order": 17,
+  "vid": "30165ef1bac540e5ead99f5adef8f38e",
+  "tvid": "7559310138269000",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337946.9682252,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 627
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/ba/e3/b8ead472bb650f335cd4bf400766b7ed.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

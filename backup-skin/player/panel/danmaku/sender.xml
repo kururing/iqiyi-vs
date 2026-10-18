@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window >
+	<Font name="微软雅黑" size="14" bold="false" italic="false" default="false" indexfont="yahei_14"/>
+
+	<HorizontalLayout height="36" bkcolor="#99373843" borderround="2,2" >
+	    <Control width="12" maxwidth="12" />
+		
+      <WeakOption name="danmaku_setting" height="26" maxheight="26" width="26" maxwidth="26" padding="0,5,0,0" tooltip="弹幕发送设置" group="danmaku_setting" keyboard="false"
+          normalimage="file='player/panel/danmaku/text_send_setting.svg' align='center' 
+							svg-fill-color='player_text_color'
+			        hot-svg-fill-color='player_text_hotcolor'
+			        pushed-svg-fill-color='player_text_pushedcolor'"/>
+	        
+	    <Label name="avatar_photo"  height="26" maxheight="26" width="26" maxwidth="26" padding="0,5,0,0"  visible="false" />
+      <Control name="danmaku_spllit" width="1" maxwidth="1" height="16"   padding="9,10,0,0" bkimage="file='player/panel/danmaku/widget/split_line.png'"/>
+   		<Label name="avatar_name" width="40"  height="14" padding="8,9,0,9" textcolor="#FFFFFFFF" indexfont="yahei_14" visible="false" />
+		
+		
+			<HorizontalLayout name="danmaku_hor_context" height="22" maxheight="22" padding="0,6,0,0">
+				   
+           <DanmakuEdit name="danmaku_edit" height="20" padding="0,1,0,1" textpadding="8,0,8,0" bkcolor="#01D8D8D8"
+                tip="弹幕来一波…"  tippadding="10,0,8,0" tiptextcolor="#FFCCCCCC" 
+                textcolor="player_text_color" disabledtextcolor="player_text_disabledcolor" readonly="false" 
+                indexfont="yahei_14" nativebkcolor="#00373843" caretcolor="#ffffffff"/>
+					
+					<Button name="danmaku_login" text="登录" float="true" visible="true" pos="7,2,34,22"
+                textcolor="#ff0adc09" hottextcolor="player_text_hotcolor" pushedtextcolor="player_text_pushedcolor" align="left" indexfont="yahei_14"/>
+          <Button name="danmaku_register" text="注册" float="true" visible="true" pos="49,2,76,22"
+                textcolor="#ff0adc09" hottextcolor="player_text_hotcolor" pushedtextcolor="player_text_pushedcolor" align="left" indexfont="yahei_14"/>
+				
+          <Control width="5" maxwidth="5" />
+      </HorizontalLayout>
+		
+      <Button name="danmaku_send" text="发送" textcolor="player_text_color" disabledtextcolor="player_text_disabledcolor"   enabled="false" width="62" maxwidth="62" tooltip="发送弹幕"  indexfont="yahei_14"
+      					borderround="2,2" bkcolor="#99494949" hotbkcolor="#FF0FE10E" pushedbkcolor="#FF17A326" disabledbkcolor="#99494949"/>
+
+	</HorizontalLayout>
+</Window>

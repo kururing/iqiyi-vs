@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="364,324" caption="0,0,0,32" roundcorner="4,4">
+<Font name="Microsoft YaHei" size="20" bold="false" italic="false" indexfont="yahei_20"/>
+<Font name="Microsoft YaHei" size="13" bold="false" italic="false" default="true" indexfont="yahei_13"/>
+<Font name="Microsoft YaHei" size="12" bold="false" italic="false" default="true" indexfont="yahei_12"/>
+<Font name="Microsoft YaHei" size="16" bold="false" italic="false" default="true" indexfont="yahei_16"/>
+<Font name="Microsoft YaHei" size="14" bold="false" italic="false" default="true" indexfont="yahei_14"/>
+
+    <VerticalLayout name="download_interact_dlg" bkcolor="#ff252528" bordercolor="#99000000">
+		<HorizontalLayout bordersize="0" height="32">
+			<Control />
+			<Button name="close_btn" style="close_style" width="16" height1="16" padding="0,12,12,0"/>
+		</HorizontalLayout>
+	    <VerticalLayout name="open_vip_lay">
+			<VerticalLayout height="64">
+				<Label name="title1" text="开通VIP会员" indexfont="yahei_20" height="32" lineheight="32" textcolor="e6ffffff" align="center"/>
+				<Label name="title2" text="享2-3个并行下载特权" height="32" indexfont="yahei_20" lineheight="32" textcolor="e6ffffff" align="center"/>
+			</VerticalLayout >
+			<HorizontalLayout height="14" padding="60,24,0,0">
+				<Label width="74" height="1" bkcolor="#1cf7e1c1" padding="0,7,20,0"/>
+				<Label width="56" height="14" text="会员尊享" textcolor="fff7e1c1" />
+				<Label width="74" height="1" bkcolor="#1cf7e1c1" padding="20,7,0,0"/>
+			</HorizontalLayout>
+			<HorizontalLayout height="74" padding="32,16,0,0">
+				<VerticalLayout width="60">
+					<ImgLabel name="lab_1" bkimage="file='download\res\rights1.svg' align='center,48,48'" width="48" height="48" enable="false" padding="6,0,0,0"/>
+					<Label name="text_1" text="下载加速" textcolor="#b3f7e1c1" height="18" padding="0,8,0,0"  indexfont="yahei_13" align="center"/>
+				</VerticalLayout>
+				<VerticalLayout width="60" padding="20,0,0,0">
+					<ImgLabel name="lab_2" bkimage="file='download\res\rights2.svg' align='center,48,48'" width="48" height="48" enable="false"  padding="6,0,0,0"/>
+					<Label name="text_2" text="并行下载" textcolor="#b3f7e1c1" height="18" padding="0,8,0,0" indexfont="yahei_13" align="center"/>
+				</VerticalLayout>
+				<VerticalLayout width="60" padding="20,0,0,0">
+					<ImgLabel name="lab_3" bkimage="file='download\res\rights3.svg' align='center,48,48'"  width="48" height="48" enable="false"  padding="6,0,0,0"/>
+					<Label name="text_3" text="边下边播" textcolor="#b3f7e1c1" height="18"padding="0,8,0,0"  indexfont="yahei_13" align="center"/>
+				</VerticalLayout>
+				<VerticalLayout width="60" padding="20,0,0,0">
+					<ImgLabel name="lab_4" bkimage="file='download\res\rights4.svg' align='center,48,48'"  width="48" height="48" enable="false"  padding="6,0,0,0"/>
+					<Label name="text_4" text="预约下载" textcolor="#b3f7e1c1" height="18"padding="0,8,0,0" indexfont="yahei_13" align="center"/>
+				</VerticalLayout>
+			</HorizontalLayout>
+
+			<Button name="open_vip_btn" text="立即开通" style="gold_gradient_btn_style" width="300" height="40" gradient="gold_btn_normal_gradient" padding="32,28,0,0"
+				align="center" textcolor="#ff4d2d00" hottextcolor="#ff4d2d00" hot-gradient="download_gold_btn_hot_gradient" indexfont="yahei_16" />
+			<HorizontalLayout name="login_lay" height="30">
+			    <Label text="已是会员？" textcolor="#80ffffff" indexfont="yahei_13" align="right" padding="112,12,0,0" width="65"/>
+				<Button name="login_btn" text="立即登录>" width="132" padding="0,12,0,0" textcolor="#80ffffff" indexfont="yahei_13" align="left" hottextcolor="#b300CC4C"/>
+			</HorizontalLayout>
+			<Label name="qipao_lab" width="60" height="18" float="true" pos="272,212,332,230" textcolor="#ffffffff" align="center" visible="false" indexfont="yahei_12"
+			text="限时特惠" gradient="qipao_lab_download_gradient"/>
+		</VerticalLayout>
+		<VerticalLayout name="upgrade_vip_lay" height="228" visible="false">
+			<VerticalLayout height="64">
+				<Label name="title1" text="升级至V5" indexfont="yahei_20" lineheight="32" height="32" textcolor="e6ffffff" indexfont="yahei_20" align="center"/>
+				<Label name="title2" text="可解锁4-5个并行下载特权" indexfont="yahei_20" lineheight="32" height="32" textcolor="e6ffffff" indexfont="yahei_20" align="center"/>
+			</VerticalLayout >
+			<HorizontalLayout height="14" padding="60,24,0,0">
+				<Label width="74" height="1" bkcolor="#1cf7e1c1"  padding="0,7,20,0"/>
+				<Label width="56" height="14" text="升级秘籍" textcolor="fff7e1c1" indexfont="yahei_14"/>
+				<Label width="74" height="1" bkcolor="#1cf7e1c1"  padding="20,7,20,0"/>
+			</HorizontalLayout>
+			<Label text="每日观影满60分钟成长值最高+10点" height="14" padding="0,12,0,0" textcolor="fff7e1c1" align="center" indexfont="yahei_14"/>
+			<Button name="known_btn" text="知道了"style="gold_gradient_btn_style" width="300" height="40" gradient="gold_btn_normal_gradient" padding="32,24,0,0"   textcolor="#ff4d2d00" hottextcolor="#ff4d2d00" hot-gradient="download_gold_btn_hot_gradient" align="center"  indexfont="yahei_16"/>
+		</VerticalLayout>
+    </VerticalLayout>
+</Window>

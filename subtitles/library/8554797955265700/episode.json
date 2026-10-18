@@ -1,0 +1,23 @@
+{
+  "title": "花戎第15集",
+  "order": 15,
+  "vid": "bfd39b4a7225829a0872f9ae05bb023c",
+  "tvid": "8554797955265700",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337946.9602263,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 646
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/c6/f6/e705854ba366c44e02a7f757101ef7ca.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+    <RecommandDataItem name="recommand_item_container" height="42" padding ="20,14,10,0">
+    	<Control name="pic" width="36" height="36" bkimage="file='skinplan/login/userinfo/default_face.svg' align='center,36,36'"  borderround="18,18" padding="0,2,0,0"/>
+    	<VerticalLayout height="40" padding="10,0,0,0">
+    		<Label name="user_name" text="主标题" height="20" endellipsis="true" textcolor="PreferencesCenter_title_normal" padding="0,0,0,4"/>
+			<Label name="subtitle" text="副标题" height="14" indexfont="font_12" endellipsis="true" textcolor="PreferencesCenter_subtitle_normal"/>
+        </VerticalLayout>
+		<Button name="addbtn" style="green_gradient_btn_style" text="  +订阅" height="22" width="50" padding="0,8,0,0" indexfont="font_12" align="left" 
+		    />
+		<Button name="updatebtn" text="查更新" height="22" width="50" padding="0,8,0,0" indexfont="font_12" borderround="2,2" visible="false"
+			textcolor="PreferencesCenter_updatebtn_normal" hottextcolor="PreferencesCenter_updatebtn_hover" pushedtextcolor="PreferencesCenter_updatebtn_press"
+			bordercolor="PreferencesCenter_updatebtn_normal" hotbordercolor="PreferencesCenter_updatebtn_hover" pushedbordercolor="PreferencesCenter_updatebtn_press" />
+    </RecommandDataItem>
+
+</Window>

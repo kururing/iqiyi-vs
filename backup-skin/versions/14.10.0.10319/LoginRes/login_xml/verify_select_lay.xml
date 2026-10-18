@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="360,354" caption="0,0,0,38" roundcorner="6,6">
+    <VerticalLayout name="bind_select_inner" bkcolor="login_tip_bkcolor">
+	<Label name="title" text="安全验证" align="center" indexfont="yahei_20"  textcolor="login_qr_text_color" padding="0,32,0,0"/>
+	<Label name="sub_title" text="手机号已被微信账号绑定，仅可作为本账号的登录身份验证，不能绑定本账号。" align="center" visible1="false" padding="32,16,0,0" singleline="false"  width="296" height="66" textcolor="login_normal_text_color" indexfont="yahei_12" lineheight="20"/>
+	<Button name="continue_login" text="继续登录" style="login_style" width="296" indexfont="yahei_16" padding="32,96,0,0" />	
+	<Button name="bind_other" text="绑定其他手机号" height="40" width="296" padding="32,12,0,0" indexfont="yahei_16" bkcolor="login_cancel_bkcolor" textcolor="login_cancel_textcolor" borderround="4,4"/>			
+    <Button name="bind_select_close_btn" float="true" style="close_style" width="16" height="16" align="right" pos="332,12,348,28"/>	
+    </VerticalLayout>
+</Window>

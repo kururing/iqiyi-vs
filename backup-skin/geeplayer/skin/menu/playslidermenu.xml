@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window >
+  <Font name="微软雅黑" size="12" bold="false" default="true" /> 
+  <Font name="微软雅黑" size="12" bold="true" indexfont="Font1" />
+  <Include source="public/xml/default_menu_bkimage.xml" />	
+	
+	<Menu name="default_menu" width="150" 
+		submenuarrownormalimage="file='skinplan\menu/menu_more.png' source='0,0,4,7'"
+		submenuarrowhotimage="file='skinplan\menu/menu_more.png' source='4,0,8,7'"
+		submenuchecknorimage="file='skinplan\menu/item_selected.png' source='0,0,16,16' dest='8,5,24,21'"
+		submenucheckhotimage="file='skinplan\menu/item_selected.png' source='16,0,32,16' dest='8,5,24,21'"
+		menudivisioniamge="file='skinplan\menu/menu_line.png' corner='2,0,2,0'" >
+    
+		<MenuElement name="menu_skip_open" text="跳过片头片尾" height="26" textpadding="15,0,0,0"
+        iconcheckednormalimage="file='skinplan\menu/item_selected.png' source='0,0,16,16' dest='8,5,24,21'"
+        iconcheckedhotimage="file='skinplan\menu/item_selected.png' source='16,0,32,16' dest='8,5,24,21'"         
+    />
+    <MenuDivision  height="1" bkimage="file='skinplan\menu/menu_line.png' corner='2,0,2,0'" />
+		<MenuElement name="menu_set_head" text="设置片头" height="26" textpadding="15,0,0,0"/>
+		<MenuElement name="menu_set_tail" text="设置片尾" height="26" textpadding="15,0,0,0"/>
+    
+		<MenuDivision  height="1" bkimage="file='skinplan\menu/menu_line.png' corner='2,0,2,0'" />
+		<MenuElement name="menu_ab_a" text="设置A点" height="26" textpadding="15,0,0,0"/>
+		<MenuElement name="menu_ab_b"  text="设置B点" height="26" textpadding="15,0,0,0"/> 
+		<MenuElement name="menu_ab_cancel" text="取消A-B重复" height="26" textpadding="15,0,0,0"/> 
+	</Menu>
+</Window>

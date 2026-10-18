@@ -1,0 +1,23 @@
+{
+  "title": "田耕纪第9集",
+  "order": 9,
+  "vid": "ec96f2fad5561816f5ad7f2999334989",
+  "tvid": "7126942746535700",
+  "albumId": "7714930311098201",
+  "albumTitle": "田耕纪",
+  "albumTotal": 26,
+  "discoveredAt": 1792321734.2282956,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 968
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260518/ab/c6/81b5539c8e864bc60768133c22e843ee.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

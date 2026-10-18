@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+  <Include source="public\xml\default_font.xml" />
+  <Default name="VScrollBar" value="width=&quot;8&quot; minthumbheight=&quot;60&quot; button1normalimage=&quot;file='catcher/scroll.png' 
+    source='0,0,8,8' mask='0xFFFF00FF'&quot; button1hotimage=&quot;file='catcher/scroll.png' 
+    source='8,0,16,8' mask='0xFFFF00FF'&quot; button1pushedimage=&quot;file='catcher/scroll.png' 
+    source='16,0,24,8' mask='0xFFFF00FF'&quot; button1disabledimage=&quot;file='catcher/scroll.png' 
+    source='24,0,32,8' mask='0xFFFF00FF'&quot; button2normalimage=&quot;file='catcher/scroll.png' 
+    source='0,22,8,30' mask='0xFFFF00FF'&quot; button2hotimage=&quot;file='catcher/scroll.png' 
+    source='8,22,16,30' mask='0xFFFF00FF'&quot; button2pushedimage=&quot;file='catcher/scroll.png' 
+    source='16,22,24,30' mask='0xFFFF00FF'&quot; button2disabledimage=&quot;file='catcher/scroll.png'
+    source='24,22,32,30' mask='0xFFFF00FF'&quot; thumbnormalimage=&quot;file='catcher/scroll.png' 
+    source='0,8,8,22' corner='0,3,0,3' mask='0xFFFF00FF'&quot; thumbhotimage=&quot;
+    file='catcher/scroll.png' source='8,8,16,22' corner='0,3,0,3' mask='0xFFFF00FF'&quot; 
+    thumbpushedimage=&quot;file='catcher/scroll.png' source='16,8,24,22' corner='0,3,0,3' 
+    mask='0xFFFF00FF'&quot; thumbdisabledimage=&quot;file='catcher/scroll.png' 
+    source='24,8,32,22' corner='0,3,0,3' mask='0xFFFF00FF'&quot;" />
+  <CatcherFrame name="root" >
+    <ScreenCatcher name="screencatcher" visible="false" float="true" >
+    </ScreenCatcher>
+    <Label name="labelSizeTip" visible="false" height="24" width="80" bkimage="file='catcher/bk.png' corner='10,10,10,10'"
+     float="true"   align="vcenter" textcolor="0xFFCCCCCC" indexfont="yahei_12"  />
+    <VerticalLayout bkimage="file='catcher/bk.png' corner='10,10,10,10'" 
+          visible="false" name="infoPanel" float="true"  width="180" height="191">
+      <CursorMagnifier name="cursorMagnifier" bkcolor="0xffffffff" padding="3,3,3,0"
+                       height="125"/>
+      <Label name="labSize"  padding="7,6,0,0" height="11" 
+             align="leftmiddle" textcolor="0xFFCCCCCC" indexfont="yahei_12"  />
+      <HorizontalLayout height="15" padding="7,4,0,0">
+        <Label name="labColor" align="lefttop" padding="0,1,0,0" textcolor="0xFFCCCCCC" indexfont="yahei_12"  />
+        <Control name="ctrlCursorColor" float="true" padding="0,8,0,0" bordercolor="0xff000000" height="12" width="12"
+                 pos="-1,3,-13,15"/>
+      </HorizontalLayout>
+      <Label name="labelTipCopy" padding="7,6,0,0" height="14" text="双击可以复制截图"
+             align="leftmiddle" textcolor="0xFFCCCCCC" indexfont="yahei_12"  />
+    </VerticalLayout>
+    </CatcherFrame>
+</Window>

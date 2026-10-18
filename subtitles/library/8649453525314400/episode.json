@@ -1,0 +1,23 @@
+{
+  "title": "花戎第19集",
+  "order": 19,
+  "vid": "0f5c69682af841b63e3bf6598a196bb4",
+  "tvid": "8649453525314400",
+  "albumId": "4363481399406601",
+  "albumTitle": "花戎",
+  "albumTotal": 36,
+  "discoveredAt": 1792337946.980224,
+  "downloadProgress": {
+    "stage": "ready",
+    "cues": 805
+  },
+  "tracks": [
+    {
+      "lid": "1",
+      "name": "",
+      "format": "xml",
+      "url": "http://meta.video.iqiyi.com/20260810/64/8b/6cf9fa78f9939d5465151a7b3a4ed5e4.xml"
+    }
+  ],
+  "provider": "iqiyi"
+}

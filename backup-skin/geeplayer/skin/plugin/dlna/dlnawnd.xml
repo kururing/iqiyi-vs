@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="804,528" >
+	<Include source="public/xml/default_font.xml" />
+	<Font name="微软雅黑" size="12" bold="false" italic="false" indexfont="yahei_12" default="true" />
+	<Font name="微软雅黑" size="16" bold="false" italic="false" indexfont="yahei_16" />
+	<Font name="微软雅黑" size="20" bold="false" italic="false" indexfont="yahei_20"  />
+	<Include source="public\xml\default_vscrollbar.xml" />
+  
+  <VerticalLayout bkcolor="#F51C1D1F" borderround="12,12,12,12" bordercolor="#33FFFFFF">
+    <HorizontalLayout name="hlayTitle" height="48" padding="20,0,16,0">
+      <Label text="投屏到电视" padding="0,13,0,0" textcolor="#F2FFFFFF" indexfont="yahei_16"/>
+      <Control />
+      <Button name="btnClose"  height="16" width="16" padding="0,16,0,16"
+         bkimage="file='geeIcon/close.svg' align='center,16,16' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF'" />
+    </HorizontalLayout>
+    <VerticalLayout >
+	 <VerticalLayout>
+     <VerticalLayout name="hLaySearch" height="135">
+      <Label text="正在搜索投屏设备…" indexfont="yahei_20" height="32" textcolor="#F2FFFFFF" textpadding="36,0,0,0"
+             padding="292,10,0,0" bkimage="file='geeIcon/dlna/search.svg' dest='0,0,32,32' svg-fill-color='0xFF00C452'"/>
+       <Label align="center" height="20" textcolor="0x99FFFFFF" indexfont="yahei_14" 
+              text="确保当前设备与投屏接收方 (电视等设备) 处于同一WiFi下" padding="0,4,0,0"/>
+       <HorizontalLayout height="20" padding="44,32,44,0">
+         <Label align="left" height="20" textcolor="0x99FFFFFF" indexfont="yahei_14" text="设备列表"/>
+       <Button name="btnRefresh" text="刷新"  enabled="false" width="48" height="20"
+   textcolor="0xF2FFFFFF" hottextcolor="0xFFFFFFFF"  pushedtextcolor="0x99FFFFFF" disabledtextcolor="0x01FFFFFF"
+       animation="true" indexfont="yahei_14" align="right" textpadding="20,0,0,0"
+bkimage="file='geeIcon/dlna/refresh.svg' dest='0,2,16,18' svg-fill-color='0xBFFFFFFF' hot-svg-fill-color='0xFFFFFFFF' pushed-svg-fill-color='0x80FFFFFF' disabled-svg-fill-color='0x01FFFFFF'" />
+         </HorizontalLayout>
+     </VerticalLayout>
+
+     <VerticalLayout name="hLayError" visible="false" width="724" height="305" bkcolor="0x33000000" borderround="8,8,8,8" bordercolor="#1AFFFFFF" padding="40,0,40,0">
+       <HorizontalLayout padding="0,40,0,0" >
+         <Control />
+         <Label name="emptylabel" align="center" width="154" height="154" bkimage="file='geeIcon/list/empty.png' source='0,0,308,308'"/>
+         <Control />
+       </HorizontalLayout>
+       <Label padding="332,0,332,95"  width="60" height="18"  indexfont="yahei_12" text="未发现设备" textcolor="#99FFFFFF" />
+     </VerticalLayout>
+     
+    <VerticalLayout name="vLaySuccess" width="724" height="305" bkcolor="0x33000000" borderround="8,8,8,8" bordercolor="#1AFFFFFF" padding="40,0,40,0">
+      <VerticalLayout name="listDevice" visible="false" width="712" vscrollbar="true" padding="6,6,6,0">
+      </VerticalLayout>
+    </VerticalLayout>
+   </VerticalLayout>
+	  </VerticalLayout>
+  </VerticalLayout>
+
+</Window>

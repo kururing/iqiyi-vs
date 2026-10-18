@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="358,256"  >
+  <Font name="微软雅黑" size="14" bold="false" italic="false"  indexfont="yahei_14"/>	
+  
+  <WeakVerticalLayout >
+	  <WeakVerticalLayout name="danmaku_sender_root" bkcolor="player_pop_window_bkcolor" borderround="8,8">
+		<WeakVerticalLayout name="avatar_layout" height="122" visible="false">
+			<WeakControl height="20"/>
+			<WeakLabel text="角色弹幕" width="90" height="16" padding="30,0,0,0" textcolor="#FFFFFFFF" indexfont="yahei_14" />
+				
+			<WeakControl height="12"/>
+				<WeakHorizontalLayout height="48" padding="2,0,6,0">
+					<WeakButton name="left_button"  width="22" height="22" tooltip="" padding="0,13,0,13" 
+						normalimage="file='player/panel/danmaku/widget/arrow_left.svg' 
+						svg-fill-color='player_control_normal_color'
+								hot-svg-fill-color='player_control_hover_color'
+								pushed-svg-fill-color='player_control_press_color'
+								disabled-svg-fill-color='player_control_disable_color' "/>
+					<WeakControl name="left_button_noshow"  width="22" height="22"  padding="0,13,0,13" visible="false" /> 
+					<WeakOption name="avatar_1" width="54" tag="1" enabled="false"
+								selectedimage="file='player/panel/danmaku/widget/avatar_selected.svg'  dest='0,0,48,48'" /> 
+					<WeakControl width="10"/> 
+					<WeakOption name="avatar_2" width="54" tag="2" enabled="false"
+								selectedimage="file='player/panel/danmaku/widget/avatar_selected.svg'  dest='0,0,48,48'" /> 
+					<WeakControl width="10"/>
+					<WeakOption name="avatar_3" width="54" tag="3" enabled="false"
+								selectedimage="file='player/panel/danmaku/widget/avatar_selected.svg'  dest='0,0,48,48'" /> 
+					<WeakControl width="10"/>
+					<WeakOption name="avatar_4" width="54" tag="4" enabled="false"
+								selectedimage="file='player/panel/danmaku/widget/avatar_selected.svg'  dest='0,0,48,48'" /> 
+					<WeakControl width="10"/>
+					<WeakOption name="avatar_5" width="54" tag="5" enabled="false"
+								selectedimage="file='player/panel/danmaku/widget/avatar_selected.svg'  dest='0,0,48,48'" /> 
+									  
+					<WeakButton name="right_button"  width="22" height="22" tooltip="" padding="0,13,0,13" 
+							normalimage="file='player/panel/danmaku/widget/arrow_right.svg' 
+							svg-fill-color='player_control_normal_color'
+									hot-svg-fill-color='player_control_hover_color'
+									pushed-svg-fill-color='player_control_press_color'
+									disabled-svg-fill-color='player_control_disable_color'  " />
+					<WeakControl name="right_button_noshow"  width="22" height="22"  padding="0,13,0,13"  visible="false"/>
+				</WeakHorizontalLayout>
+				
+				<WeakHorizontalLayout height="16" padding="14,0,20,0">
+					<WeakLabel name="avatar_name_1"  width="56" align="center" padding="5,0,0,0" textcolor="#FFFFFFFF" indexfont="yahei_14"  endellipsis="true"/>
+					<WeakLabel name="avatar_name_2"  width="56" align="center" padding="9,0,0,0" textcolor="#FFFFFFFF" indexfont="yahei_14"  endellipsis="true"/>
+					<WeakLabel name="avatar_name_3"  width="56" align="center" padding="9,0,0,0" textcolor="#FFFFFFFF" indexfont="yahei_14"  endellipsis="true"/>
+					<WeakLabel name="avatar_name_4"  width="56" align="center" padding="9,0,0,0" textcolor="#FFFFFFFF" indexfont="yahei_14"  endellipsis="true"/>
+					<WeakLabel name="avatar_name_5"  width="56" align="center" padding="9,0,0,0" textcolor="#FFFFFFFF" indexfont="yahei_14"  endellipsis="true"/>
+				</WeakHorizontalLayout>
+				
+				<WeakControl height="14"/>
+		</WeakVerticalLayout>
+		<WeakControl height="16"/>
+		<WeakLabel text="彩色文字" width="90" height="14" padding="30,0,0,0" textcolor="#FFFFFFFF" indexfont="yahei_14" />
+		
+		<WeakControl />
+		<WeakHorizontalLayout height="48" padding="18,2,4,0" borderround="8,8">
+			<WeakOption name="danmaku_color_1" width="46" tag="1" group="danmaku_color" userdata="0x00FFFFFF" 
+			bkimage="file='player/panel/danmaku/widget/danmu_color.svg' dest='10,11,36,37' svg-fill-color='#FFFFFFFF'" 
+				hotimage="file='player/panel/danmaku/widget/hover_color.svg' dest='10,11,36,37'" 
+				  selectedimage="file='player/panel/danmaku/widget/color_selected.svg'  dest='5,6,41,42'" />
+			<WeakOption name="danmaku_color_2" width="46" tag="2" group="danmaku_color" userdata="0x0000FF10" 
+			 bkimage="file='player/panel/danmaku/widget/danmu_color.svg'  dest='10,11,36,37' svg-fill-color='#FF00FF10'" 
+				hotimage="file='player/panel/danmaku/widget/hover_color.svg'  dest='10,11,36,37'" 
+				  selectedimage="file='player/panel/danmaku/widget/color_selected.svg'   dest='5,6,41,42'"
+				  foreimage="file='player/panel/danmaku/widget/vip_corner.svg' dest='28,10,46,21'" />
+			<WeakOption name="danmaku_color_3" width="46" tag="3" group="danmaku_color" userdata="0x00FEF102" 
+			 bkimage="file='player/panel/danmaku/widget/danmu_color.svg' dest='10,11,36,37' svg-fill-color='#FFFEF102'" 
+				hotimage="file='player/panel/danmaku/widget/hover_color.svg'  dest='10,11,36,37'" 
+				  selectedimage="file='player/panel/danmaku/widget/color_selected.svg'  dest='5,6,41,42'"
+				  foreimage="file='player/panel/danmaku/widget/vip_corner.svg' dest='28,10,46,21'"				  />
+			<WeakOption name="danmaku_color_4" width="46" tag="4" group="danmaku_color" userdata="0x00FF3E3E" 
+			 bkimage="file='player/panel/danmaku/widget/danmu_color.svg'  dest='10,11,36,37' svg-fill-color='#FFFF3E3E'" 
+				hotimage="file='player/panel/danmaku/widget/hover_color.svg'  dest='10,11,36,37'" 
+				  selectedimage="file='player/panel/danmaku/widget/color_selected.svg'   dest='5,6,41,42'" 
+				  foreimage="file='player/panel/danmaku/widget/vip_corner.svg' dest='28,10,46,21'"/>
+			<WeakOption name="danmaku_color_5" width="46" tag="5" group="danmaku_color" userdata="0x00FFA3DA" 
+				bkimage="file='player/panel/danmaku/widget/danmu_color.svg'  dest='10,11,36,37' svg-fill-color='#FFFFA3DA'" 
+					hotimage="file='player/panel/danmaku/widget/hover_color.svg'  dest='10,11,36,37'" 
+					  selectedimage="file='player/panel/danmaku/widget/color_selected.svg'   dest='5,6,41,42'" 
+					  foreimage="file='player/panel/danmaku/widget/vip_corner.svg' dest='28,10,46,21'"/>
+			<WeakOption name="danmaku_color_6" width="56" tag="6" group="danmaku_color" userdata="0x00D8B67E" 
+				bkimage="file='player/panel/danmaku/widget/color_vip.png'  dest='10,11,36,37'" 
+					hotimage="file='player/panel/danmaku/widget/hover_color.svg'  dest='10,11,36,37'" 
+					  selectedimage="file='player/panel/danmaku/widget/color_selected.svg'   dest='5,6,41,42'"
+					  foreimage="file='player/panel/danmaku/widget/vip5_corner.svg' dest='28,10,56,21'" />
+			<WeakOption name="danmaku_color_7" width="56" tag="7" group="danmaku_color"  userdata="0x0020FFF3"
+				bkimage="file='player/panel/danmaku/widget/color_v5.png'  dest='10,11,36,37'" 
+					hotimage="file='player/panel/danmaku/widget/hover_color.svg'  dest='10,11,36,37'" 
+					  selectedimage="file='player/panel/danmaku/widget/color_selected.svg'   dest='5,6,41,42'"
+					  foreimage="file='player/panel/danmaku/widget/vip5_corner.svg' dest='28,10,56,21'" />
+		</WeakHorizontalLayout>
+		<WeakControl height="18" />
+	  </WeakVerticalLayout>
+	  <WeakControl height="40"  bkcolor="#01010000"/>
+  </WeakVerticalLayout>
+</Window>
