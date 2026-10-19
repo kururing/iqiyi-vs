@@ -2,7 +2,7 @@ window.__iqiyiViDict = {"关闭":"Đóng","取消":"Hủy","提示":"Thông báo
 window.__iqiyiViTitles = {"大梦归离":"Đại Mộng","逍遥":"Tiêu Dao","白月梵星":"Bạch Nguyệt Phạn Tinh","苍兰诀":"Thương Lan Quyết","长安十二时辰":"Trường An Thập Nhị Thời Thần","庆余年":"Khánh Dư Niên","陈情令":"Trần Tình Lệnh","陈情令之生魂":"Trần Tình Lệnh: Sinh Hồn","琅琊榜":"Lang Nha Bảng","甄嬛传":"Chân Hoàn Truyện","如懿传":"Như Ý Truyện","芈月传":"Mị Nguyệt Truyện","延禧攻略":"Diên Hy Công Lược","知否知否应是绿肥红瘦":"Minh Lan Truyện","锦衣之下":"Cẩm Y Chi Hạ","琉璃":"Lưu Ly","陈情令之乱魄":"Trần Tình Lệnh: Loạn Phách","赘婿":"Chuế Tế","雪中悍刀行":"Tuyết Trung Hãn Đao Hành","山河令":"Sơn Hà Lệnh","长风渡":"Trường Phong Độ","一念关山":"Nhất Niệm Quan Sơn","宁安如梦":"Ninh An Như Mộng","莲花楼":"Liên Hoa Lầu","长相思":"Trường Tương Tư","云之羽":"Vân Chi Vũ","七时吉祥":"Thất Thời Cát Tường","狐妖小红娘":"Hồ Yêu Tiểu Hồng Nương","烈焰":"Liệt Diễm","捕风者":"Bộ Phong Giả","天工开物":"Thiên Công Khai Vật","凡人修仙传":"Phàm Nhân Tu Tiên Truyện","与凤行":"Dữ Phụng Hành","花戎":"Hoa Nhung","护心":"Hộ Tâm","田耕纪":"Điền Canh Ký","狂飙":"Cuồng Phong","罚罪":"Phạt Tội","破冰行动":"Phá Băng Hành Động","沉默的真相":"Chân Tướng Im Lặng","隐秘的角落":"Góc Khuất Bí Mật","漫长的季节":"Mùa Dài","三大队":"Tam Đại Đội","黑土无言":"Hắc Thổ Vô Ngôn","城中之城":"Thành Trong Thành","一瓯春":"Nhất Âu Xuân","楚乔传":"Sở Kiều Truyện","极限挑战":"Thử Thách Cực Hạn","喜剧之王单口季":"Vua Hài Độc Thoại","青春有你":"Thanh Xuân Có Bạn","周生如故":"Châu Sinh Như Cố","武庚纪":"Vũ Canh Ký","两不疑":"Lưỡng Bất Nghi","灵剑山":"Linh Kiếm Sơn","月上重火":"Nguyệt Thượng Trùng Hỏa","仙剑奇侠传":"Tiên Kiếm Kỳ Hiệp Truyện","斗罗大陆":"Đấu La Đại Lục","将夜":"Tương Dạ","青云志":"Thanh Vân Chí","锦衣夜行":"Cẩm Y Dạ Hành","锦衣卫":"Cẩm Y Vệ","开端":"Khai Đoan","绣春刀":"Tú Xuân Đao","无间":"Vô Gian","大江大河":"Đại Giang Đại Hà","山海情":"Sơn Hải Tình","人世间":"Nhân Thế Gian","风吹半夏":"Gió Thổi Bán Hạ","风吹半夏之野蛮生长":"Gió Thổi Bán Hạ: Sinh Trưởng Hoang Dã","卿卿日常":"Khinh Khinh Nhật Thường","梦华录":"Mộng Hoa Lục","星汉灿烂":"Tinh Hán Xán Lạn","墨雨云间":"Mặc Vũ Vân Gian","惜花芷":"Tích Hoa Chỉ","颜心记":"Nhan Tâm Ký","度华年":"Độ Hoa Niên","柳舟记":"Liễu Chu Ký","四海重明":"Tứ Hải Trọng Minh","小夫妻":"Tiểu Phu Thê","半熟男女":"Bán Thục Nam Nữ","春花焰":"Xuân Hoa Diễm","永夜星河":"Vĩnh Dạ Tinh Hà","宿敌":"Túc Địch","珠帘玉幕":"Châu Liêm Ngọc Mạc","九重紫":"Cửu Trùng Tử","大奉打更人":"Đại Phụng Đả Canh Nhân","白色橄榄树":"Cây Ô Liu Trắng","国色芳华":"Quốc Sắc Phương Hoa","难哄":"Khó Dỗ","五福临门":"Ngũ Phúc Lâm Môn","千朵桃花一世开":"Thiên Đóa Đào Hoa Nhất Thế Khai","定风波":"Định Phong Ba","生万物":"Sinh Vạn Vật","醒来":"Tỉnh Dậy","目之所及":"Trong Tầm Mắt","重案六组":"Trọng Án Tổ Sáu","师兄太稳健":"Sư Huynh Quá Thận Trọng","最后一个道士":"Đạo Sĩ Cuối Cùng","我不是大师":"Tôi Không Phải Đại Sư","冷宫弃妃":"Khí Phi Lãnh Cung","利剑·玫瑰":"Lợi Kiếm Và Hoa Hồng","灾年，我家肉满仓":"Năm Mất Mùa, Nhà Tôi Đầy Kho Thịt","九爷的小玫瑰又野又撩":"Đóa Hồng Nhỏ Của Cửu Gia","只为占有你":"Chỉ Muốn Có Em","破邪镇龙":"Phá Tà Trấn Long","航海王":"Vua Hải Tặc","路飞":"Luffy"};
 /* iqiyi-vi */
 (function () {
-  var ENGINE_VERSION = 106;
+  var ENGINE_VERSION = 107;
   var IS_PLAYER = /(^|\/)player(?:_mac)?\.html$/i.test(location.pathname);
   if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
     if (window.__iqiyiViReload) window.__iqiyiViReload(window.__iqiyiViDict);
@@ -16,6 +16,8 @@ window.__iqiyiViTitles = {"大梦归离":"Đại Mộng","逍遥":"Tiêu Dao","�
   // không bị ghép nghĩa/dịch từng chữ.
   var TITLES = window.__iqiyiViTitles || {};
   var TITLE_KEYS = Object.keys(TITLES).sort(function (a, b) { return b.length - a.length; });
+  var INTERNATIONAL_TITLE_CACHE = {};
+  var INTERNATIONAL_TITLE_PENDING = {};
   function keysOf() {
     return Object.keys(D)
       .filter(function (k) { return k.length >= 1; })
@@ -152,6 +154,103 @@ window.__iqiyiViTitles = {"大梦归离":"Đại Mộng","逍遥":"Tiêu Dao","�
     return "";
   }
 
+  function internationalTitleId(value) {
+    var id = String(value || "").trim();
+    return /^\d{14,20}$/.test(id) || /^[A-Za-z0-9]{8,20}$/.test(id) ? id : "";
+  }
+
+  function titleIdFromUrl(value) {
+    try {
+      var url = new URL(value, location.href);
+      var params = url.searchParams;
+      var queryKeys = ["albumId", "qipuId", "tvid"];
+      for (var i = 0; i < queryKeys.length; i++) {
+        var found = internationalTitleId(params.get(queryKeys[i]));
+        if (found) return found;
+      }
+      var path = url.pathname.match(/(?:^|\/)(?:play|album)\/([A-Za-z0-9]{8,20})(?=\/|\.html|$)|\/(?:m|a|v)_([A-Za-z0-9]{8,20})(?=\.html|\/|$)/i);
+      return path ? internationalTitleId(path[1] || path[2]) : "";
+    } catch (e) { return ""; }
+  }
+
+  function findInternationalTitleId(node) {
+    var el = node && node.nodeType === 3 ? node.parentElement : node;
+    var attrs = ["data-albumid", "data-album-id", "data-qipuid", "data-qipu-id", "data-tvid", "data-tv-id"];
+    var pageTitle = false;
+    for (var depth = 0; el && depth < 9; depth++) {
+      if (el.nodeType === 1) {
+        if (el.tagName === "TITLE" || el.tagName === "H1" || /(?:player|album|detail)[-_]?(?:name|title)|(?:name|title)[-_]?(?:player|album|detail)/i.test(String(el.className || "") + " " + (el.id || ""))) pageTitle = true;
+        for (var i = 0; i < attrs.length; i++) {
+          var found = internationalTitleId(el.getAttribute(attrs[i]));
+          if (found) return found;
+        }
+        if (el.tagName === "A") {
+          var fromLink = titleIdFromUrl(el.getAttribute("href") || "");
+          if (fromLink) return fromLink;
+        }
+      }
+      if (el.parentElement) el = el.parentElement;
+      else {
+        var tree = el.getRootNode && el.getRootNode();
+        el = tree && tree.host ? tree.host : null;
+      }
+    }
+    return pageTitle ? titleIdFromUrl(location.href) : "";
+  }
+
+  function requestInternationalTitle(node, value, setter) {
+    var raw = String(value || "");
+    if (!looksLikeTitle(raw)) return false;
+    var id = findInternationalTitleId(node);
+    if (!id) return false;
+
+    function apply(title) {
+      if (findInternationalTitleId(node) !== id) return;
+      var result = title;
+      if (result) {
+        var lead = raw.match(/^\s*/)[0];
+        var tail = raw.match(/\s*$/)[0];
+        result = lead + result + tail;
+      } else {
+        result = tr(raw);
+        if (result === raw || cjkCount(result)) return;
+      }
+      if (setter) setter(result);
+      else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(INTERNATIONAL_TITLE_CACHE, id)) {
+      apply(INTERNATIONAL_TITLE_CACHE[id]);
+      return true;
+    }
+    var token = window.__iqiyiViToken || "";
+    if (!token || !window.fetch) return true;
+    var callback = apply;
+    if (INTERNATIONAL_TITLE_PENDING[id]) {
+      INTERNATIONAL_TITLE_PENDING[id].push(callback);
+      return true;
+    }
+    INTERNATIONAL_TITLE_PENDING[id] = [callback];
+    fetch("http://127.0.0.1:18766/api/international-title?id=" + encodeURIComponent(id), {
+      headers: { "X-Iqiyi-Token": token }, cache: "no-store"
+    })
+      .then(function (response) { return response.ok ? response.json() : Promise.reject(new Error("HTTP " + response.status)); })
+      .then(function (payload) {
+        var title = payload && typeof payload.title === "string" && !cjkCount(payload.title) ? payload.title.trim() : "";
+        INTERNATIONAL_TITLE_CACHE[id] = title;
+        var waiting = INTERNATIONAL_TITLE_PENDING[id] || [];
+        delete INTERNATIONAL_TITLE_PENDING[id];
+        for (var i = 0; i < waiting.length; i++) waiting[i](title);
+      })
+      .catch(function () {
+        INTERNATIONAL_TITLE_CACHE[id] = "";
+        var waiting = INTERNATIONAL_TITLE_PENDING[id] || [];
+        delete INTERNATIONAL_TITLE_PENDING[id];
+        for (var i = 0; i < waiting.length; i++) waiting[i]("");
+      });
+    return true;
+  }
+
   // Các chuỗi gồm ≥2 chữ Hán liền nhau trong một chuỗi UI (tab, nhãn, tiêu đề card...).
   function cjkRuns(s) {
     return String(s || "").match(/[\u3400-\u4dbf\u4e00-\u9fff]{2,}/g) || [];
@@ -177,6 +276,10 @@ window.__iqiyiViTitles = {"大梦归离":"Đại Mộng","逍遥":"Tiêu Dao","�
 
   function autoTranslateMixed(node, value, setter) {
     var text = String(value || "");
+    if (looksLikeTitle(text)) {
+      requestInternationalTitle(node, text, setter);
+      return;
+    }
     var patterned = trPatterns(text);
     if (patterned !== text && !cjkCount(patterned)) {
       if (setter) setter(patterned);
@@ -477,6 +580,9 @@ window.__iqiyiViTitles = {"大梦归离":"Đại Mộng","逍遥":"Tiêu Dao","�
     var title = document.querySelector("title");
     if (!title) return;
     var raw = title.textContent || "";
+    if (title.firstChild && requestInternationalTitle(title.firstChild, raw, function (translated) {
+      if ((title.textContent || "") === raw && title.firstChild && title.firstChild.nodeType === 3) title.firstChild.nodeValue = translated;
+    })) return;
     var next = tr(raw);
     if (next !== raw && title.firstChild && title.firstChild.nodeType === 3) title.firstChild.nodeValue = next;
     if (cjkCount(next) && title.firstChild) {
@@ -518,6 +624,9 @@ window.__iqiyiViTitles = {"大梦归离":"Đại Mộng","逍遥":"Tiêu Dao","�
     if (!node) return;
     if (node.nodeType === 3) {
       var raw = node.nodeValue;
+      if (requestInternationalTitle(node, raw, function (translated) {
+        if (node.isConnected && node.nodeValue === raw) node.nodeValue = translated;
+      })) return;
       var next = tr(raw);
       if (next !== raw) node.nodeValue = next;
       if (cjkCount(next)) autoTranslateMixed(node, canTranslateWhole(raw) ? raw : next);
@@ -538,6 +647,12 @@ window.__iqiyiViTitles = {"大梦归离":"Đại Mộng","逍遥":"Tiêu Dao","�
       var v = node.getAttribute && node.getAttribute(a);
       if (!v && a === "value" && node.value) v = node.value;
       if (!v) return;
+      if (requestInternationalTitle(node, v, function (translated) {
+        if (node.getAttribute(a) === v) {
+          if (a === "value" && "value" in node) node.value = translated;
+          else node.setAttribute(a, translated);
+        }
+      })) return;
       var n = tr(v);
       if (n !== v) {
         if (a === "value" && "value" in node) node.value = n;
@@ -565,6 +680,11 @@ window.__iqiyiViTitles = {"大梦归离":"Đại Mộng","逍遥":"Tiêu Dao","�
     }
     if (!hasEl && kids.length === 1 && kids[0].nodeType === 3) {
       var all = node.textContent;
+      if (requestInternationalTitle(node, all, function (translated) {
+        if (node.isConnected && node.childNodes.length === 1 && node.firstChild.nodeType === 3 && node.textContent === all) {
+          node.firstChild.nodeValue = translated;
+        }
+      })) return;
       var t = tr(all);
       if (t !== all) kids[0].nodeValue = t;
       if (cjkCount(t) && node.firstChild && node.firstChild.nodeType === 3) {

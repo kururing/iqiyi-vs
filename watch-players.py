@@ -18,8 +18,8 @@ from urllib.parse import urlsplit
 import cdp
 from iqiyi_common import (
     api_token, atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
-    lwa_backup_dir, patch_subtitle_tag, subtitle_hook, subtitle_manager_alive,
-    update_lwa_ini_flags,
+    lwa_backup_dir, patch_subtitle_tag, python_executable, subtitle_hook,
+    subtitle_manager_alive, update_lwa_ini_flags,
 )
 from windows_runtime import create_named_mutex
 
@@ -37,15 +37,22 @@ BACKUP_LWA = ROOT / "backup-lwa"
 APPDATA_LWA = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "localwebapp"
 PPSTREAM_INI = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "LStyle" / "PPStream.ini"
 WATCH_LOCK_FILE = None
-IQIYI_MANAGER_PROCESS = None
-IQIYI_LAST_MANAGER_CHECK = 0.0
+MANAGER_PROCESS = None
+LAST_MANAGER_CHECK = 0.0
+
 
 def python_exe() -> str:
-    for name in ("pythonw.exe", "python.exe"):
-        path = ROOT / ".venv" / "Scripts" / name
-        if path.exists():
-            return str(path)
-    return sys.executable
+    return str(python_executable(ROOT, background=True))
+
+
+def revision_of(*scripts: str) -> str:
+    return hashlib.sha256("\n".join(scripts).encode("utf-8")).hexdigest()
+
+
+def runtime_current(target: dict, probe: str, revision: str) -> bool:
+    """True when the page already runs the hooks for this exact script revision."""
+    result = CDP.evaluate(target, probe + " === " + json.dumps(revision))
+    return bool(result.get("result", {}).get("value"))
 
 
 def find_lwa_dirs() -> list[Path]:
@@ -141,22 +148,19 @@ def persist_ini() -> None:
         pass
 
 
-def iqiyi_manager_alive() -> bool:
-    return subtitle_manager_alive(APP_PORT)
-
-
-def start_iqiyi_manager() -> None:
-    global IQIYI_MANAGER_PROCESS, IQIYI_LAST_MANAGER_CHECK
-    if IQIYI_MANAGER_PROCESS is not None and IQIYI_MANAGER_PROCESS.poll() is None:
+def start_manager() -> None:
+    """Start subtitle_app.py when nothing serves the manager port (shared by iQIYI and Youku)."""
+    global MANAGER_PROCESS, LAST_MANAGER_CHECK
+    if MANAGER_PROCESS is not None and MANAGER_PROCESS.poll() is None:
         return
     now = time.monotonic()
-    if now - IQIYI_LAST_MANAGER_CHECK < 10:
+    if now - LAST_MANAGER_CHECK < 10:
         return
-    IQIYI_LAST_MANAGER_CHECK = now
-    if iqiyi_manager_alive():
+    LAST_MANAGER_CHECK = now
+    if subtitle_manager_alive(APP_PORT):
         return
     with (ROOT / "subtitle-manager.stderr.log").open("a", encoding="utf-8") as errors:
-        IQIYI_MANAGER_PROCESS = subprocess.Popen(
+        MANAGER_PROCESS = subprocess.Popen(
             [python_exe(), str(ROOT / "subtitle_app.py")],
             cwd=str(ROOT), creationflags=CREATE_NO_WINDOW, close_fds=True,
             stdout=subprocess.DEVNULL, stderr=errors,
@@ -184,9 +188,8 @@ def inject_runtime() -> None:
         if websocket.scheme != "ws" or websocket.hostname != "127.0.0.1" or websocket.port != 9223:
             continue
         script = LWA_JS.read_text(encoding="utf-8") + "\n" + subtitle_hook(ROOT).decode("utf-8")
-        revision = hashlib.sha256(script.encode("utf-8")).hexdigest()
-        state = CDP.evaluate(target, "!!window.__iqiyiVi && window.__iqiyiRuntimeVi === " + json.dumps(revision))
-        if state.get("result", {}).get("value"):
+        revision = revision_of(script)
+        if runtime_current(target, "!!window.__iqiyiVi && window.__iqiyiRuntimeVi", revision):
             continue
         script += "\nwindow.__iqiyiRuntimeVi = " + json.dumps(revision) + ";"
         script = "if (/(^|\\.)iqiyi\\.com$/i.test(location.hostname)) {\n" + script + "\n}"
@@ -202,7 +205,7 @@ def run_iqiyi() -> int:
     while True:
         try:
             if not (ROOT / "watch-iqiyi-vi.disabled").exists():
-                start_iqiyi_manager()
+                start_manager()
                 with installation_lock(ROOT):
                     patch_lwa()
                     sync_wrapper_hook()
@@ -237,26 +240,8 @@ def read_scripts() -> list[str]:
     manager_config = "window.__youkuViApi = 'http://127.0.0.1:18766'; window.__youkuViToken = " + json.dumps(api_token(ROOT)) + ";\n"
     return [
         "window.__youkuViDict = " + json.dumps(dictionary, ensure_ascii=False, separators=(",", ":")) + ";\n" + engine,
-        manager_config + (ROOT / "youku-subtitle.js").read_text(encoding="utf-8"),
+        manager_config + SUB_HOOK_JS.read_text(encoding="utf-8"),
     ]
-
-
-YOUKU_LAST_MANAGER_CHECK = 0.0
-
-
-def start_youku_manager() -> None:
-    global YOUKU_LAST_MANAGER_CHECK
-    now = time.monotonic()
-    if now - YOUKU_LAST_MANAGER_CHECK < 10:
-        return
-    YOUKU_LAST_MANAGER_CHECK = now
-    if subtitle_manager_alive(APP_PORT):
-        return
-    try:
-        subprocess.Popen([sys.executable, str(ROOT / "subtitle_app.py")], cwd=str(ROOT),
-                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), close_fds=True)
-    except OSError as exc:
-        log("subtitle manager start failed: " + str(exc))
 
 
 def youku_targets() -> list[dict]:
@@ -280,10 +265,7 @@ def is_youku_page(url: str) -> bool:
         return False
 
 
-def has_hooks(target: dict, revision: str) -> bool:
-    result = cdp.evaluate(
-        target, "!!window.__youkuVi && !!window.__youkuViSubtitle && window.__youkuViRevision === " + json.dumps(revision))
-    return bool(result.get("result", {}).get("value"))
+YOUKU_PROBE = "!!window.__youkuVi && !!window.__youkuViSubtitle && window.__youkuViRevision"
 
 
 def acquire_youku_lock() -> bool:
@@ -299,7 +281,7 @@ def run_youku() -> int:
     log("watcher started")
     while True:
         try:
-            start_youku_manager()
+            start_manager()
             current = youku_targets()
             if current:
                 NO_TARGETS_SINCE = time.monotonic()
@@ -309,10 +291,10 @@ def run_youku() -> int:
             active = {item["id"] for item in current}
             INSTALLED.intersection_update(active)
             scripts = read_scripts()
-            revision = hashlib.sha256("\n".join(scripts).encode("utf-8")).hexdigest()
+            revision = revision_of(*scripts)
             scripts.append("window.__youkuViRevision = " + json.dumps(revision) + ";")
             for target in current:
-                if target["id"] in INSTALLED and has_hooks(target, revision):
+                if target["id"] in INSTALLED and runtime_current(target, YOUKU_PROBE, revision):
                     continue
                 cdp.inject(target, scripts)
                 INSTALLED.add(target["id"])

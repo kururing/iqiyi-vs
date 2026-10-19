@@ -16,7 +16,7 @@ if os.name == "nt":
 
 from iqiyi_common import (
     atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
-    lwa_backup_dir, patch_subtitle_tag, subtitle_hook, update_lwa_ini_flags,
+    lwa_backup_dir, patch_subtitle_tag, python_executable, subtitle_hook, update_lwa_ini_flags,
 )
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -262,11 +262,7 @@ def startup_vbs() -> Path:
 
 
 def python_exe() -> str:
-    for name in ("pythonw.exe", "python.exe"):
-        path = ROOT / ".venv" / "Scripts" / name
-        if path.exists():
-            return str(path)
-    return sys.executable
+    return str(python_executable(ROOT, background=True))
 
 
 def install_autostart() -> None:

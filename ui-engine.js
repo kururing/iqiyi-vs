@@ -1,6 +1,6 @@
 /* iqiyi-vi */
 (function () {
-  var ENGINE_VERSION = 106;
+  var ENGINE_VERSION = 107;
   var IS_PLAYER = /(^|\/)player(?:_mac)?\.html$/i.test(location.pathname);
   if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
     if (window.__iqiyiViReload) window.__iqiyiViReload(window.__iqiyiViDict);
@@ -14,6 +14,8 @@
   // không bị ghép nghĩa/dịch từng chữ.
   var TITLES = window.__iqiyiViTitles || {};
   var TITLE_KEYS = Object.keys(TITLES).sort(function (a, b) { return b.length - a.length; });
+  var INTERNATIONAL_TITLE_CACHE = {};
+  var INTERNATIONAL_TITLE_PENDING = {};
   function keysOf() {
     return Object.keys(D)
       .filter(function (k) { return k.length >= 1; })
@@ -150,6 +152,103 @@
     return "";
   }
 
+  function internationalTitleId(value) {
+    var id = String(value || "").trim();
+    return /^\d{14,20}$/.test(id) || /^[A-Za-z0-9]{8,20}$/.test(id) ? id : "";
+  }
+
+  function titleIdFromUrl(value) {
+    try {
+      var url = new URL(value, location.href);
+      var params = url.searchParams;
+      var queryKeys = ["albumId", "qipuId", "tvid"];
+      for (var i = 0; i < queryKeys.length; i++) {
+        var found = internationalTitleId(params.get(queryKeys[i]));
+        if (found) return found;
+      }
+      var path = url.pathname.match(/(?:^|\/)(?:play|album)\/([A-Za-z0-9]{8,20})(?=\/|\.html|$)|\/(?:m|a|v)_([A-Za-z0-9]{8,20})(?=\.html|\/|$)/i);
+      return path ? internationalTitleId(path[1] || path[2]) : "";
+    } catch (e) { return ""; }
+  }
+
+  function findInternationalTitleId(node) {
+    var el = node && node.nodeType === 3 ? node.parentElement : node;
+    var attrs = ["data-albumid", "data-album-id", "data-qipuid", "data-qipu-id", "data-tvid", "data-tv-id"];
+    var pageTitle = false;
+    for (var depth = 0; el && depth < 9; depth++) {
+      if (el.nodeType === 1) {
+        if (el.tagName === "TITLE" || el.tagName === "H1" || /(?:player|album|detail)[-_]?(?:name|title)|(?:name|title)[-_]?(?:player|album|detail)/i.test(String(el.className || "") + " " + (el.id || ""))) pageTitle = true;
+        for (var i = 0; i < attrs.length; i++) {
+          var found = internationalTitleId(el.getAttribute(attrs[i]));
+          if (found) return found;
+        }
+        if (el.tagName === "A") {
+          var fromLink = titleIdFromUrl(el.getAttribute("href") || "");
+          if (fromLink) return fromLink;
+        }
+      }
+      if (el.parentElement) el = el.parentElement;
+      else {
+        var tree = el.getRootNode && el.getRootNode();
+        el = tree && tree.host ? tree.host : null;
+      }
+    }
+    return pageTitle ? titleIdFromUrl(location.href) : "";
+  }
+
+  function requestInternationalTitle(node, value, setter) {
+    var raw = String(value || "");
+    if (!looksLikeTitle(raw)) return false;
+    var id = findInternationalTitleId(node);
+    if (!id) return false;
+
+    function apply(title) {
+      if (findInternationalTitleId(node) !== id) return;
+      var result = title;
+      if (result) {
+        var lead = raw.match(/^\s*/)[0];
+        var tail = raw.match(/\s*$/)[0];
+        result = lead + result + tail;
+      } else {
+        result = tr(raw);
+        if (result === raw || cjkCount(result)) return;
+      }
+      if (setter) setter(result);
+      else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(INTERNATIONAL_TITLE_CACHE, id)) {
+      apply(INTERNATIONAL_TITLE_CACHE[id]);
+      return true;
+    }
+    var token = window.__iqiyiViToken || "";
+    if (!token || !window.fetch) return true;
+    var callback = apply;
+    if (INTERNATIONAL_TITLE_PENDING[id]) {
+      INTERNATIONAL_TITLE_PENDING[id].push(callback);
+      return true;
+    }
+    INTERNATIONAL_TITLE_PENDING[id] = [callback];
+    fetch("http://127.0.0.1:18766/api/international-title?id=" + encodeURIComponent(id), {
+      headers: { "X-Iqiyi-Token": token }, cache: "no-store"
+    })
+      .then(function (response) { return response.ok ? response.json() : Promise.reject(new Error("HTTP " + response.status)); })
+      .then(function (payload) {
+        var title = payload && typeof payload.title === "string" && !cjkCount(payload.title) ? payload.title.trim() : "";
+        INTERNATIONAL_TITLE_CACHE[id] = title;
+        var waiting = INTERNATIONAL_TITLE_PENDING[id] || [];
+        delete INTERNATIONAL_TITLE_PENDING[id];
+        for (var i = 0; i < waiting.length; i++) waiting[i](title);
+      })
+      .catch(function () {
+        INTERNATIONAL_TITLE_CACHE[id] = "";
+        var waiting = INTERNATIONAL_TITLE_PENDING[id] || [];
+        delete INTERNATIONAL_TITLE_PENDING[id];
+        for (var i = 0; i < waiting.length; i++) waiting[i]("");
+      });
+    return true;
+  }
+
   // Các chuỗi gồm ≥2 chữ Hán liền nhau trong một chuỗi UI (tab, nhãn, tiêu đề card...).
   function cjkRuns(s) {
     return String(s || "").match(/[\u3400-\u4dbf\u4e00-\u9fff]{2,}/g) || [];
@@ -175,6 +274,10 @@
 
   function autoTranslateMixed(node, value, setter) {
     var text = String(value || "");
+    if (looksLikeTitle(text)) {
+      requestInternationalTitle(node, text, setter);
+      return;
+    }
     var patterned = trPatterns(text);
     if (patterned !== text && !cjkCount(patterned)) {
       if (setter) setter(patterned);
@@ -475,6 +578,9 @@
     var title = document.querySelector("title");
     if (!title) return;
     var raw = title.textContent || "";
+    if (title.firstChild && requestInternationalTitle(title.firstChild, raw, function (translated) {
+      if ((title.textContent || "") === raw && title.firstChild && title.firstChild.nodeType === 3) title.firstChild.nodeValue = translated;
+    })) return;
     var next = tr(raw);
     if (next !== raw && title.firstChild && title.firstChild.nodeType === 3) title.firstChild.nodeValue = next;
     if (cjkCount(next) && title.firstChild) {
@@ -516,6 +622,9 @@
     if (!node) return;
     if (node.nodeType === 3) {
       var raw = node.nodeValue;
+      if (requestInternationalTitle(node, raw, function (translated) {
+        if (node.isConnected && node.nodeValue === raw) node.nodeValue = translated;
+      })) return;
       var next = tr(raw);
       if (next !== raw) node.nodeValue = next;
       if (cjkCount(next)) autoTranslateMixed(node, canTranslateWhole(raw) ? raw : next);
@@ -536,6 +645,12 @@
       var v = node.getAttribute && node.getAttribute(a);
       if (!v && a === "value" && node.value) v = node.value;
       if (!v) return;
+      if (requestInternationalTitle(node, v, function (translated) {
+        if (node.getAttribute(a) === v) {
+          if (a === "value" && "value" in node) node.value = translated;
+          else node.setAttribute(a, translated);
+        }
+      })) return;
       var n = tr(v);
       if (n !== v) {
         if (a === "value" && "value" in node) node.value = n;
@@ -563,6 +678,11 @@
     }
     if (!hasEl && kids.length === 1 && kids[0].nodeType === 3) {
       var all = node.textContent;
+      if (requestInternationalTitle(node, all, function (translated) {
+        if (node.isConnected && node.childNodes.length === 1 && node.firstChild.nodeType === 3 && node.textContent === all) {
+          node.firstChild.nodeValue = translated;
+        }
+      })) return;
       var t = tr(all);
       if (t !== all) kids[0].nodeValue = t;
       if (cjkCount(t) && node.firstChild && node.firstChild.nodeType === 3) {

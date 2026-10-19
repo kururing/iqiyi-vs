@@ -14,6 +14,7 @@ import urllib.error
 import urllib.request
 import webbrowser
 
+from iqiyi_common import python_executable as _python_executable
 from windows_runtime import list_processes, run_elevated, terminate_process
 
 for _stream in (sys.stdout, sys.stderr):
@@ -30,23 +31,7 @@ CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 
 def python_executable(background: bool = False) -> Path:
-    names = ("pythonw.exe", "python.exe") if background else ("python.exe", "pythonw.exe")
-    for name in names:
-        candidate = ROOT / ".venv" / "Scripts" / name
-        if candidate.is_file():
-            return candidate
-    current = Path(sys.executable)
-    if current.name.lower() == "pythonw.exe":
-        console = current.with_name("python.exe")
-        if console.is_file():
-            current = console
-    if current.is_file():
-        return current
-    for name in ("pythonw", "python") if background else ("python", "pythonw"):
-        found = shutil.which(name)
-        if found:
-            return Path(found)
-    raise RuntimeError("Không tìm thấy Python. Hãy cài Python 3 hoặc tạo môi trường .venv.")
+    return _python_executable(ROOT, background)
 
 
 def script_processes(names: set[str], argument: str | None = None):
@@ -88,6 +73,19 @@ def stop_processes(processes) -> None:
         terminate_process(process.pid)
 
 
+def stop_previous_run(player: str, legacy_scripts: set[str]) -> bool:
+    """Stop the old watcher/manager of one player; False when a translation is still running."""
+    related = list(script_processes({"watch-players.py"}, player))
+    related.extend(script_processes(legacy_scripts | {"subtitle_app.py"}))
+    managers = [process for process in related if "subtitle_app.py" in process.command_line.lower()]
+    if managers and manager_busy():
+        print(f"App phụ đề đang dịch hoặc chưa xác nhận được trạng thái. "
+              f"Chờ dịch xong rồi chạy lại launcher {player}.")
+        return False
+    stop_processes(related)
+    return True
+
+
 def run_apply(restore: bool = False) -> int:
     python = python_executable()
     script = ROOT / "apply-vi.py"
@@ -117,13 +115,8 @@ def webview_runtime() -> str:
 
 
 def launch_iqiyi() -> int:
-    related = list(script_processes({"watch-players.py"}, "iqiyi"))
-    related.extend(script_processes({"watch-iqiyi-vi.py", "inject-cdp.py", "subtitle_app.py"}))
-    managers = [process for process in related if "subtitle_app.py" in process.command_line.lower()]
-    if managers and manager_busy():
-        print("App phụ đề đang dịch hoặc chưa xác nhận được trạng thái. Chờ dịch xong rồi chạy lại launcher.")
+    if not stop_previous_run("iqiyi", {"watch-iqiyi-vi.py", "inject-cdp.py"}):
         return 1
-    stop_processes(related)
 
     print("Đang cài phụ đề Việt...")
     if run_apply() != 0:
@@ -193,12 +186,8 @@ def launch_youku() -> int:
     if not client:
         print("Không tìm thấy YOUKU.exe trong Program Files.")
         return 1
-    managers = list(script_processes({"subtitle_app.py"}))
-    if managers and manager_busy():
-        print("App phụ đề đang dịch hoặc chưa xác nhận được trạng thái. Chờ dịch xong rồi chạy lại launcher Youku.")
+    if not stop_previous_run("youku", {"watch-youku-vi.py"}):
         return 1
-    stop_processes(managers)
-    stop_processes(script_processes({"watch-youku-vi.py"}))
     try:
         subprocess.Popen([str(client), "--remote-debugging-port=9224"], cwd=client.parent)
         watcher = ROOT / "watch-players.py"

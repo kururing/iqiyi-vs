@@ -15,7 +15,7 @@ Windows, gồm hai phần độc lập:
 ## Yêu cầu
 
 - Windows 10/11 (dùng WebView2 và registry của client iQIYI).
-- Python 3.10+ (đã kiểm thử với 3.12) và Node.js 18+ cho các test JS.
+- Python 3.10+ (đã kiểm thử với 3.12).
 - Đã cài ứng dụng iQIYI desktop (và/hoặc Youku) nếu muốn Việt hóa giao diện.
 - Một API key cho endpoint tương thích OpenAI.
 
@@ -31,31 +31,6 @@ Khoá API được đọc theo host của endpoint đã cấu hình
 (`GEMINI_API_KEY`, `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `OPENROUTER_API_KEY`),
 hoặc `AI_API_KEY` cho endpoint bất kỳ.
 
-## Chạy
-
-```cmd
-.\.venv\Scripts\python.exe launcher.py iqiyi    # mở iQIYI kèm app phụ đề
-.\.venv\Scripts\python.exe launcher.py youku    # mở Youku kèm Việt hóa
-.\.venv\Scripts\python.exe launcher.py manager  # chỉ mở app quản lý phụ đề
-.\.venv\Scripts\python.exe launcher.py restore  # khôi phục giao diện gốc
-```
-
-App quản lý chạy nền và phục vụ giao diện tại `http://127.0.0.1:18766/`.
-Hai nút **Việt hóa iQIYI** / **Khôi phục tiếng Trung** gọi `apply-vi.py`;
-launcher xin quyền Administrator qua hộp thoại UAC khi cần ghi vào thư mục cài
-đặt. Mọi lệnh chạy trực tiếp bằng Python, không cần PowerShell hay batch.
-
-## Kiểm thử
-
-```cmd
-.\.venv\Scripts\python.exe -m unittest test_install_subtitles test_iqiyi_runtime test_subtitle_watchers test_quality_metrics test_tian_geng_ji_benchmark -v
-node test-iqiyi-runtime.js
-node test-youku-subtitle.js
-```
-
-Ba lệnh trên là toàn bộ bộ kiểm thử; chúng chạy offline và không cần dữ liệu
-phim thật.
-
 ## Cấu trúc
 
 | Đường dẫn | Vai trò |
@@ -68,8 +43,7 @@ phim thật.
 | `iqiyi_common.py` | Tiện ích dùng chung (token API, tiêm script) |
 | `watch-players.py` | Watcher chung cho iQIYI và Youku; tự chọn nhánh theo tham số khởi chạy |
 | `cdp.py` | Giao tiếp WebSocket với Chrome DevTools Protocol |
-| `ui-engine.js`, `youku-subtitle.js`, `sub-hook.js` | Engine giao diện chung và hook phụ đề; CSS riêng của Youku nằm trong `youku-subtitle.js` |
-| `quality_metrics.py`, `audit_*.py`, `verify-vietnamese.py` | Đo chất lượng bản dịch |
+| `ui-engine.js`, `sub-hook.js` | Engine giao diện chung và hook phụ đề; `sub-hook.js` chứa cả nhánh iQIYI lẫn Youku (kèm CSS riêng của Youku), tự chọn theo trang |
 | `ext/` | Tiện ích Chrome (manifest v3) dịch giao diện web |
 
 ## Dữ liệu và cấu hình cục bộ

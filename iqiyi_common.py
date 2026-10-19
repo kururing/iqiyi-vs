@@ -6,6 +6,8 @@ import os
 import re
 from pathlib import Path
 import secrets
+import shutil
+import sys
 import tempfile
 import time
 import urllib.request
@@ -115,6 +117,30 @@ def api_token(root: Path) -> str:
         token = secrets.token_urlsafe(32)
         atomic_write(path, token)
         return token
+
+
+def python_executable(root: Path, background: bool = False) -> Path:
+    """Interpreter for helper processes: the checkout's .venv first, then the running Python.
+
+    background=True prefers pythonw.exe so autostart/watchers never open a console window.
+    """
+    names = ("pythonw.exe", "python.exe") if background else ("python.exe", "pythonw.exe")
+    for name in names:
+        candidate = root / ".venv" / "Scripts" / name
+        if candidate.is_file():
+            return candidate
+    current = Path(sys.executable)
+    if not background and current.name.lower() == "pythonw.exe":
+        console = current.with_name("python.exe")
+        if console.is_file():
+            current = console
+    if current.is_file():
+        return current
+    for name in ("pythonw", "python") if background else ("python", "pythonw"):
+        found = shutil.which(name)
+        if found:
+            return Path(found)
+    raise RuntimeError("Không tìm thấy Python. Hãy cài Python 3 hoặc tạo môi trường .venv.")
 
 
 def subtitle_manager_alive(port: int = 18766) -> bool:
