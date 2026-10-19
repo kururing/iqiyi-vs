@@ -11,7 +11,13 @@ import sys
 import time
 from pathlib import Path
 
-from iqiyi_common import atomic_write, installation_lock, iqiyi_install_roots, lwa_backup_dir, subtitle_hook, patch_subtitle_tag
+if os.name == "nt":
+    import winreg
+
+from iqiyi_common import (
+    atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
+    lwa_backup_dir, patch_subtitle_tag, subtitle_hook, update_lwa_ini_flags,
+)
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
@@ -61,15 +67,9 @@ def find_skin() -> Path | None:
         if key in seen:
             continue
         seen.add(key)
-        if not base.exists():
-            continue
-        versions = sorted(
-            [p for p in base.iterdir() if p.is_dir() and (p / "skin").exists()],
-            key=lambda p: tuple(int(n) for n in re.findall(r"\d+", p.name)),
-            reverse=True,
-        )
-        if versions:
-            return versions[0] / "skin"
+        skin = iqiyi_skin_dir(base)
+        if skin:
+            return skin
     return None
 
 
@@ -224,15 +224,6 @@ def read_text(path: Path) -> tuple[str, str]:
     return data.decode("utf-8", errors="ignore"), "utf-8"
 
 
-LWA_INI_FLAGS = {
-    "lwa_disable_checksign_pcafx": "1",
-    "lwa_disable_update": "1",
-    "lwa_disable_repalce_update": "1",
-    "lwa_disable_load_copy": "1",
-}
-
-
-
 def disable_lwa_sign() -> None:
     if not PPSTREAM_INI.exists():
         return
@@ -240,12 +231,7 @@ def disable_lwa_sign() -> None:
     for _ in range(8):
         try:
             raw = PPSTREAM_INI.read_text(encoding="utf-8", errors="ignore")
-            new = raw
-            for key, val in LWA_INI_FLAGS.items():
-                if re.search(rf"(?m)^{re.escape(key)}=.*$", new):
-                    new = re.sub(rf"(?m)^{re.escape(key)}=.*$", f"{key}={val}", new)
-                else:
-                    new += f"\n{key}={val}\n"
+            new = update_lwa_ini_flags(raw)
             if new != raw:
                 bak = ROOT / "backup-ppstream.ini"
                 if not bak.exists():
@@ -266,7 +252,12 @@ def restore_lwa_sign() -> None:
         PPSTREAM_INI.write_text(bak.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+STARTUP_REGISTRY_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+STARTUP_REGISTRY_VALUE = "IQIYI-VI-Watch"
+
+
 def startup_vbs() -> Path:
+    """Path of the legacy startup script, removed during migration to Run key."""
     return Path(os.environ.get("APPDATA", "")) / "Microsoft/Windows/Start Menu/Programs/Startup/iqiyi-vi-watch.vbs"
 
 
@@ -280,19 +271,17 @@ def python_exe() -> str:
 
 def install_autostart() -> None:
     py = python_exe()
-    watch = ROOT / "watch-iqiyi-vi.py"
-    vbs = startup_vbs()
+    watch = ROOT / "watch-players.py"
     try:
-        vbs.parent.mkdir(parents=True, exist_ok=True)
-        vbs.write_text(
-            f'Set s=CreateObject("WScript.Shell")\ns.Run """{py}"" ""{watch}""", 0, False\n',
-            encoding="ascii",
-            errors="replace",
-        )
+        startup_vbs().unlink(missing_ok=True)
+        with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, STARTUP_REGISTRY_KEY, 0,
+                                winreg.KEY_SET_VALUE) as key:
+            winreg.SetValueEx(key, STARTUP_REGISTRY_VALUE, 0, winreg.REG_SZ,
+                              subprocess.list2cmdline([py, str(watch), "iqiyi"]))
     except OSError as exc:
         print(f"Khong cai duoc tu dong khoi dong: {exc}")
     subprocess.Popen(
-        [py, str(watch)],
+        [py, str(watch), "iqiyi"],
         cwd=str(ROOT),
         close_fds=True,
         creationflags=0x08000000,
@@ -460,9 +449,14 @@ def _main() -> int:
                         extra.unlink()
                         n += 1
             restore_lwa_sign()
-            vbs = startup_vbs()
-            if vbs.exists():
-                vbs.unlink()
+            startup_vbs().unlink(missing_ok=True)
+            if os.name == "nt":
+                try:
+                    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, STARTUP_REGISTRY_KEY, 0,
+                                        winreg.KEY_SET_VALUE) as key:
+                        winreg.DeleteValue(key, STARTUP_REGISTRY_VALUE)
+                except FileNotFoundError:
+                    pass
         except PermissionError as exc:
             print(f"Can quyen Administrator de khoi phuc giao dien native: {exc}")
             return 2

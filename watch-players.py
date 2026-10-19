@@ -1,25 +1,33 @@
 # -*- coding: utf-8 -*-
-"""Keep the iQIYI hook installed and run the local subtitle manager."""
+"""Watch iQIYI and Youku players and install their Vietnamese hooks."""
 from __future__ import annotations
 
-import ctypes
-import ctypes.wintypes
+import argparse
 import hashlib
-import importlib
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from iqiyi_common import atomic_write, installation_lock, iqiyi_install_roots, lwa_backup_dir, subtitle_hook, patch_subtitle_tag
+import cdp
+from iqiyi_common import (
+    api_token, atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
+    lwa_backup_dir, patch_subtitle_tag, subtitle_hook, subtitle_manager_alive,
+    update_lwa_ini_flags,
+)
+from windows_runtime import create_named_mutex
 
+CDP = cdp
 ROOT = Path(__file__).resolve().parent
+APP_PORT = 18766
+CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
 SCRIPT_TAG = '<script src="./lwa-vi.js"></script>'
 LWA_JS = ROOT / "lwa-vi.js"
 SUB_HOOK_JS = ROOT / "sub-hook.js"
@@ -28,19 +36,9 @@ WRAPPER_SUB_HOOK = WRAPPER_APP / "iqiyi-vi-subtitle.js"
 BACKUP_LWA = ROOT / "backup-lwa"
 APPDATA_LWA = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "localwebapp"
 PPSTREAM_INI = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "LStyle" / "PPStream.ini"
-APP_PORT = 18766
-CREATE_NO_WINDOW = 0x08000000
 WATCH_LOCK_FILE = None
-MANAGER_PROCESS = None
-LAST_MANAGER_CHECK = 0.0
-CDP = None
-LWA_INI_FLAGS = {
-    "lwa_disable_checksign_pcafx": "1",
-    "lwa_disable_update": "1",
-    "lwa_disable_repalce_update": "1",
-    "lwa_disable_load_copy": "1",
-}
-
+IQIYI_MANAGER_PROCESS = None
+IQIYI_LAST_MANAGER_CHECK = 0.0
 
 def python_exe() -> str:
     for name in ("pythonw.exe", "python.exe"):
@@ -55,12 +53,9 @@ def find_lwa_dirs() -> list[Path]:
     if APPDATA_LWA.exists():
         found.extend(index.parent for index in APPDATA_LWA.rglob("index.html"))
     for base in iqiyi_install_roots(ROOT):
-        if not base.exists():
-            continue
-        versions = sorted((p for p in base.iterdir() if p.is_dir() and (p / "skin").exists()),
-                          key=lambda p: tuple(int(n) for n in re.findall(r"\d+", p.name)), reverse=True)
-        if versions:
-            pf = versions[0] / "skin" / "LwaRes" / "iqiyi_webapp"
+        skin = iqiyi_skin_dir(base)
+        if skin:
+            pf = skin / "LwaRes" / "iqiyi_webapp"
             if (pf / "index.html").exists():
                 found.append(pf)
     return found
@@ -137,12 +132,7 @@ def persist_ini() -> None:
         raw = PPSTREAM_INI.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return
-    new = raw
-    for key, val in LWA_INI_FLAGS.items():
-        if re.search(rf"(?m)^{re.escape(key)}=.*$", new):
-            new = re.sub(rf"(?m)^{re.escape(key)}=.*$", f"{key}={val}", new)
-        else:
-            new += f"\n{key}={val}\n"
+    new = update_lwa_ini_flags(raw)
     if new == raw:
         return
     try:
@@ -151,26 +141,22 @@ def persist_ini() -> None:
         pass
 
 
-def manager_alive() -> bool:
-    try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{APP_PORT}/health", timeout=0.6) as response:
-            return response.status == 200
-    except (TimeoutError, OSError):
-        return False
+def iqiyi_manager_alive() -> bool:
+    return subtitle_manager_alive(APP_PORT)
 
 
-def start_manager() -> None:
-    global MANAGER_PROCESS, LAST_MANAGER_CHECK
-    if MANAGER_PROCESS is not None and MANAGER_PROCESS.poll() is None:
+def start_iqiyi_manager() -> None:
+    global IQIYI_MANAGER_PROCESS, IQIYI_LAST_MANAGER_CHECK
+    if IQIYI_MANAGER_PROCESS is not None and IQIYI_MANAGER_PROCESS.poll() is None:
         return
     now = time.monotonic()
-    if now - LAST_MANAGER_CHECK < 10:
+    if now - IQIYI_LAST_MANAGER_CHECK < 10:
         return
-    LAST_MANAGER_CHECK = now
-    if manager_alive():
+    IQIYI_LAST_MANAGER_CHECK = now
+    if iqiyi_manager_alive():
         return
     with (ROOT / "subtitle-manager.stderr.log").open("a", encoding="utf-8") as errors:
-        MANAGER_PROCESS = subprocess.Popen(
+        IQIYI_MANAGER_PROCESS = subprocess.Popen(
             [python_exe(), str(ROOT / "subtitle_app.py")],
             cwd=str(ROOT), creationflags=CREATE_NO_WINDOW, close_fds=True,
             stdout=subprocess.DEVNULL, stderr=errors,
@@ -179,7 +165,6 @@ def start_manager() -> None:
 
 def inject_runtime() -> None:
     """Load Vietnamese in WebView2 memory, preserving signed application files."""
-    global CDP
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     try:
         with opener.open("http://127.0.0.1:9223/json/list", timeout=1) as response:
@@ -198,18 +183,9 @@ def inject_runtime() -> None:
         websocket = urlsplit(target.get("webSocketDebuggerUrl", ""))
         if websocket.scheme != "ws" or websocket.hostname != "127.0.0.1" or websocket.port != 9223:
             continue
-        if CDP is None:
-            CDP = importlib.import_module("watch-youku-vi")  # Reuse the existing stdlib CDP transport.
         script = LWA_JS.read_text(encoding="utf-8") + "\n" + subtitle_hook(ROOT).decode("utf-8")
         revision = hashlib.sha256(script.encode("utf-8")).hexdigest()
-        sock = CDP.ws_connect(target["webSocketDebuggerUrl"])
-        try:
-            state = CDP.call(sock, "Runtime.evaluate", {
-                "expression": "!!window.__iqiyiVi && window.__iqiyiRuntimeVi === " + json.dumps(revision),
-                "returnByValue": True,
-            }, 1)
-        finally:
-            sock.close()
+        state = CDP.evaluate(target, "!!window.__iqiyiVi && window.__iqiyiRuntimeVi === " + json.dumps(revision))
         if state.get("result", {}).get("value"):
             continue
         script += "\nwindow.__iqiyiRuntimeVi = " + json.dumps(revision) + ";"
@@ -217,22 +193,16 @@ def inject_runtime() -> None:
         CDP.inject(target, [script])
 
 
-def main() -> int:
+def run_iqiyi() -> int:
     global WATCH_LOCK_FILE
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.wintypes.BOOL, ctypes.wintypes.LPCWSTR]
-    kernel32.CreateMutexW.restype = ctypes.wintypes.HANDLE
-    kernel32.CloseHandle.argtypes = [ctypes.wintypes.HANDLE]
-    handle = kernel32.CreateMutexW(None, False, "Local\\iqiyi-vi-watch")
-    if not handle or ctypes.get_last_error() == 183:
-        if handle:
-            kernel32.CloseHandle(handle)
+    handle = create_named_mutex("Local\\iqiyi-vi-watch")
+    if not handle:
         return 0
     WATCH_LOCK_FILE = handle
     while True:
         try:
             if not (ROOT / "watch-iqiyi-vi.disabled").exists():
-                start_manager()
+                start_iqiyi_manager()
                 with installation_lock(ROOT):
                     patch_lwa()
                     sync_wrapper_hook()
@@ -242,6 +212,127 @@ def main() -> int:
             with (ROOT / "watch-iqiyi.runtime.log").open("a", encoding="utf-8") as errors:
                 errors.write(time.strftime("%H:%M:%S ") + str(exc) + "\n")
         time.sleep(2)
+
+PORT = int(os.environ.get("YOUKU_CDP_PORT", "9224"))
+LOG = ROOT / "youku-vi.log"
+LOCK_HANDLE = None
+SCRIPTS = ("youku-ui.js", "youku-subtitle.js")
+INSTALLED: set[str] = set()
+LAST_ERROR = ""
+NO_TARGETS_SINCE = time.monotonic()
+
+
+def log(message: str) -> None:
+    try:
+        with LOG.open("a", encoding="utf-8") as handle:
+            handle.write(time.strftime("%H:%M:%S") + " " + message + "\n")
+    except OSError:
+        pass
+
+
+def read_scripts() -> list[str]:
+    dictionary = json.loads((ROOT / "youku-vi.json").read_text(encoding="utf-8"))
+    engine = (ROOT / "ui-engine.js").read_text(encoding="utf-8")
+    engine = (engine.replace("iqiyiVi", "youkuVi").replace("iqiyi-vi", "youku-vi")
+              .replace("subtitleContainer|caption-main", "subtitleContainer|caption-main|kui-subtitle|youku-vi-subtitle"))
+    manager_config = "window.__youkuViApi = 'http://127.0.0.1:18766'; window.__youkuViToken = " + json.dumps(api_token(ROOT)) + ";\n"
+    return [
+        "window.__youkuViDict = " + json.dumps(dictionary, ensure_ascii=False, separators=(",", ":")) + ";\n" + engine,
+        (ROOT / "youku-ui.js").read_text(encoding="utf-8"),
+        manager_config + (ROOT / "youku-subtitle.js").read_text(encoding="utf-8"),
+    ]
+
+
+YOUKU_LAST_MANAGER_CHECK = 0.0
+
+
+def start_youku_manager() -> None:
+    global YOUKU_LAST_MANAGER_CHECK
+    now = time.monotonic()
+    if now - YOUKU_LAST_MANAGER_CHECK < 10:
+        return
+    YOUKU_LAST_MANAGER_CHECK = now
+    if subtitle_manager_alive(APP_PORT):
+        return
+    try:
+        subprocess.Popen([sys.executable, str(ROOT / "subtitle_app.py")], cwd=str(ROOT),
+                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), close_fds=True)
+    except OSError as exc:
+        log("subtitle manager start failed: " + str(exc))
+
+
+def youku_targets() -> list[dict]:
+    request = urllib.request.Request(f"http://127.0.0.1:{PORT}/json", headers={"Host": f"127.0.0.1:{PORT}"})
+    with urllib.request.urlopen(request, timeout=1.5) as response:
+        value = json.loads(response.read().decode("utf-8"))
+    return [item for item in value if item.get("type") == "page" and item.get("webSocketDebuggerUrl")
+            and is_youku_page(item.get("url", ""))]
+
+
+def is_youku_page(url: str) -> bool:
+    try:
+        parsed = urlsplit(url)
+        host = (parsed.hostname or "").lower()
+        if parsed.username or parsed.password:
+            return False
+        return ((parsed.scheme == "https" and parsed.port in (None, 443) and
+                 (host == "youku.com" or host.endswith(".youku.com"))) or
+                (parsed.scheme == "client" and host == "iku.youku.com" and parsed.port is None))
+    except ValueError:
+        return False
+
+
+def has_hooks(target: dict, revision: str) -> bool:
+    result = cdp.evaluate(
+        target, "!!window.__youkuVi && !!window.__youkuViSubtitle && window.__youkuViRevision === " + json.dumps(revision))
+    return bool(result.get("result", {}).get("value"))
+
+
+def acquire_youku_lock() -> bool:
+    global LOCK_HANDLE
+    LOCK_HANDLE = create_named_mutex("Local\\youku-vi-watch")
+    return bool(LOCK_HANDLE)
+
+
+def run_youku() -> int:
+    global LAST_ERROR, NO_TARGETS_SINCE
+    if os.name != "nt" or not acquire_youku_lock():
+        return 0
+    log("watcher started")
+    while True:
+        try:
+            start_youku_manager()
+            current = youku_targets()
+            if current:
+                NO_TARGETS_SINCE = time.monotonic()
+            elif time.monotonic() - NO_TARGETS_SINCE > 60:
+                log("no Youku page targets; watcher stopped")
+                return 0
+            active = {item["id"] for item in current}
+            INSTALLED.intersection_update(active)
+            scripts = read_scripts()
+            revision = hashlib.sha256("\n".join(scripts).encode("utf-8")).hexdigest()
+            scripts.append("window.__youkuViRevision = " + json.dumps(revision) + ";")
+            for target in current:
+                if target["id"] in INSTALLED and has_hooks(target, revision):
+                    continue
+                cdp.inject(target, scripts)
+                INSTALLED.add(target["id"])
+                log("injected " + target.get("url", target["id"]))
+        except (OSError, ValueError, RuntimeError, KeyError) as exc:
+            message = type(exc).__name__ + ": " + str(exc)
+            if message != LAST_ERROR:
+                log(message)
+                LAST_ERROR = message
+        else:
+            LAST_ERROR = ""
+        time.sleep(1)
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Watch supported video players")
+    parser.add_argument("player", choices=("iqiyi", "youku"))
+    player = parser.parse_args().player
+    return run_iqiyi() if player == "iqiyi" else run_youku()
 
 
 if __name__ == "__main__":

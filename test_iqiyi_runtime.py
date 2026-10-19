@@ -95,12 +95,9 @@ class RuntimeTest(unittest.TestCase):
         with patch.object(app.subprocess, 'run', return_value=completed) as run:
             app._localization_command('apply')
         self.assertEqual(run.call_args.kwargs['creationflags'], getattr(app.subprocess, 'CREATE_NO_WINDOW', 0))
-        with patch.object(app.subprocess, 'run', return_value=completed) as run, \
-                patch.object(app.shutil, 'which', return_value='powershell.exe'):
+        with patch.object(app, 'run_elevated', return_value=completed) as run:
             app._localization_command('restore', elevated=True)
-        self.assertEqual(run.call_args.kwargs['creationflags'], getattr(app.subprocess, 'CREATE_NO_WINDOW', 0))
-        self.assertIn('-WindowStyle Hidden', run.call_args.args[0][-1])
-        self.assertIn('--restore', run.call_args.args[0][-1])
+        self.assertIn('--restore', run.call_args.args[1])
 
     def test_localization_status_names_the_running_action(self):
         with patch.object(app.threading, 'Thread') as worker:

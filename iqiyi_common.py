@@ -6,13 +6,20 @@ import os
 import re
 from pathlib import Path
 import secrets
-import subprocess
 import tempfile
 import time
+import urllib.request
+from windows_runtime import list_processes
 
 
 _IQIYI_ROOTS: tuple[Path | None, list[Path]] = (None, [])
 _IQIYI_ROOTS_REFRESH = 0.0
+LWA_INI_FLAGS = {
+    "lwa_disable_checksign_pcafx": "1",
+    "lwa_disable_update": "1",
+    "lwa_disable_repalce_update": "1",
+    "lwa_disable_load_copy": "1",
+}
 
 
 def iqiyi_install_roots(state_dir: Path | None = None) -> list[Path]:
@@ -22,22 +29,10 @@ def iqiyi_install_roots(state_dir: Path | None = None) -> list[Path]:
     if now >= _IQIYI_ROOTS_REFRESH:
         running = None
         if os.name == "nt":
-            try:
-                result = subprocess.run(
-                    ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
-                     "Get-CimInstance Win32_Process -Filter \"Name='QyClient.exe'\" "
-                     "-ErrorAction SilentlyContinue | ForEach-Object { $_.ExecutablePath }"],
-                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
-                    encoding="utf-8", errors="replace", timeout=5,
-                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-                )
-                for line in result.stdout.splitlines():
-                    client = Path(line.strip().strip('"'))
-                    if client.name.casefold() == "qyclient.exe":
-                        running = client.parent
-                        break
-            except (OSError, subprocess.SubprocessError):
-                pass
+            for process in list_processes(include_command_line=False):
+                if Path(process.name).name.casefold() == "qyclient.exe" and process.path:
+                    running = Path(process.path).parent
+                    break
         defaults = [
             Path(os.environ[name]) / "IQIYI Video" / "LStyle"
             for name in ("ProgramFiles", "ProgramFiles(x86)")
@@ -60,6 +55,18 @@ def iqiyi_install_roots(state_dir: Path | None = None) -> list[Path]:
             pass
     roots.extend(path for path in defaults if path not in roots)
     return roots
+
+
+def iqiyi_skin_dir(base: Path) -> Path | None:
+    """Return the newest iQIYI version's skin folder under an install root."""
+    if not base.exists():
+        return None
+    versions = sorted(
+        (path for path in base.iterdir() if path.is_dir() and (path / "skin").exists()),
+        key=lambda path: tuple(int(number) for number in re.findall(r"\d+", path.name)),
+        reverse=True,
+    )
+    return versions[0] / "skin" if versions else None
 
 
 def atomic_write(path: Path, data: str | bytes) -> None:
@@ -108,6 +115,24 @@ def api_token(root: Path) -> str:
         token = secrets.token_urlsafe(32)
         atomic_write(path, token)
         return token
+
+
+def subtitle_manager_alive(port: int = 18766) -> bool:
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=0.6) as response:
+            return response.status == 200
+    except (TimeoutError, OSError):
+        return False
+
+
+def update_lwa_ini_flags(raw: str) -> str:
+    updated = raw
+    for key, value in LWA_INI_FLAGS.items():
+        if re.search(rf"(?m)^{re.escape(key)}=.*$", updated):
+            updated = re.sub(rf"(?m)^{re.escape(key)}=.*$", f"{key}={value}", updated)
+        else:
+            updated += f"\n{key}={value}\n"
+    return updated
 
 
 def subtitle_hook(root: Path) -> bytes:

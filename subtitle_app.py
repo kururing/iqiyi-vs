@@ -23,6 +23,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urljoin, urlsplit
 
 from iqiyi_common import api_token, atomic_write
+from windows_runtime import run_elevated
 import subtitle_agent as agent
 
 ROOT = Path(__file__).resolve().parent
@@ -58,10 +59,6 @@ def app_localization_status() -> dict:
         return dict(APP_LOCALIZATION_STATE)
 
 
-def _powershell_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
 def _localization_command(action: str, elevated: bool = False) -> subprocess.CompletedProcess:
     script = ROOT / "apply-vi.py"
     args = [str(script)] + (["--restore"] if action == "restore" else [])
@@ -77,22 +74,7 @@ def _localization_command(action: str, elevated: bool = False) -> subprocess.Com
                               text=True, encoding="utf-8", errors="replace", timeout=1800,
                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
-    powershell = shutil.which("powershell.exe") or shutil.which("powershell")
-    if not powershell:
-        raise RuntimeError("Không tìm thấy PowerShell để xin quyền Administrator.")
-    argument_line = subprocess.list2cmdline(args)
-    command = (
-        "$ErrorActionPreference='Stop'; try { "
-        f"$p=Start-Process -FilePath {_powershell_literal(str(python))} "
-        f"-ArgumentList {_powershell_literal(argument_line)} "
-        f"-WorkingDirectory {_powershell_literal(str(ROOT))} "
-        "-Verb RunAs -WindowStyle Hidden -Wait -PassThru; exit $p.ExitCode "
-        "} catch { [Console]::Error.WriteLine($_.Exception.Message); exit 1223 }"
-    )
-    return subprocess.run([powershell, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
-                           "-Command", command], cwd=ROOT, capture_output=True,
-                          text=True, encoding="utf-8", errors="replace", timeout=1800,
-                          creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    return run_elevated(str(python), args, str(ROOT))
 
 
 def _run_app_localization(action: str) -> None:

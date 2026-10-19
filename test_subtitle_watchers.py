@@ -7,8 +7,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-youku = importlib.import_module('watch-youku-vi')
-iqiyi = importlib.import_module('watch-iqiyi-vi')
+import cdp
+youku = importlib.import_module('watch-players')
+iqiyi = youku
 
 
 class SubtitleWatchersTest(unittest.TestCase):
@@ -34,15 +35,15 @@ class SubtitleWatchersTest(unittest.TestCase):
                 return {'identifier': str(len(operations))}
             return {}
         target = {'id': 'test', 'webSocketDebuggerUrl': 'ws://127.0.0.1/test'}
-        with patch.object(youku, 'ws_connect', return_value=Socket()), patch.object(youku, 'call', side_effect=call):
-            youku.inject(target, ['first'])
-            youku.inject(target, ['second'])
+        with patch.object(cdp, 'ws_connect', return_value=Socket()), patch.object(cdp, 'call', side_effect=call):
+            cdp.inject(target, ['first'])
+            cdp.inject(target, ['second'])
             methods = [method for method, params in operations]
             self.assertEqual(methods.count('Runtime.evaluate'), 2)
             self.assertNotIn('Page.removeScriptToEvaluateOnNewDocument', methods)
-            with patch.object(youku, 'call', return_value={'exceptionDetails': {'text': 'broken'}}):
+            with patch.object(cdp, 'call', return_value={'exceptionDetails': {'text': 'broken'}}):
                 with self.assertRaisesRegex(RuntimeError, 'broken'):
-                    youku.inject({'id': 'broken', 'webSocketDebuggerUrl': target['webSocketDebuggerUrl']}, [])
+                    cdp.inject({'id': 'broken', 'webSocketDebuggerUrl': target['webSocketDebuggerUrl']}, [])
 
     def test_iqiyi_updates_changed_source_and_skips_unchanged_source(self):
         class Transport:
@@ -53,6 +54,8 @@ class SubtitleWatchersTest(unittest.TestCase):
             def call(self, sock, method, params, command_id):
                 expected = json.loads(params['expression'].rsplit(' === ', 1)[1])
                 return {'result': {'value': self.revision == expected}}
+            def evaluate(self, target, expression):
+                return self.call(self, 'Runtime.evaluate', {'expression': expression}, 1)
             def inject(self, target, scripts):
                 self.revision = scripts[0].split('window.__iqiyiRuntimeVi = ')[-1].split(';')[0].strip('"')
                 self.injections += 1

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 import runpy
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from iqiyi_common import api_token, subtitle_hook, patch_subtitle_tag
 
@@ -12,8 +12,8 @@ inject_lwa_dir = runpy.run_path(str(ROOT / 'apply-vi.py'))['inject_lwa_dir']
 installer = runpy.run_path(str(ROOT / 'apply-vi.py'))
 patch_wrapper_app = installer['patch_wrapper_app']
 restore_wrapper_app = installer['restore_wrapper_app']
-patch_lwa = runpy.run_path(str(ROOT / 'watch-iqiyi-vi.py'))['patch_lwa']
-sync_wrapper_hook = runpy.run_path(str(ROOT / 'watch-iqiyi-vi.py'))['sync_wrapper_hook']
+patch_lwa = runpy.run_path(str(ROOT / 'watch-players.py'))['patch_lwa']
+sync_wrapper_hook = runpy.run_path(str(ROOT / 'watch-players.py'))['sync_wrapper_hook']
 
 
 class InstallTest(unittest.TestCase):
@@ -108,9 +108,12 @@ class InstallTest(unittest.TestCase):
         inject_lwa_dir(webapp, 'window.__audit = 1;')
         startup = self.root / 'startup.vbs'
         startup.write_text('watcher', encoding='ascii')
+        registry = Mock()
+        registry.OpenKey.return_value.__enter__.return_value = object()
         with patch.dict(installer['main'].__globals__, {'find_skin': lambda: None,
                 'find_lwa_dirs': lambda: [webapp], 'restore_wrapper_app': lambda: False,
-                'restore_lwa_sign': lambda: None, 'startup_vbs': lambda: startup}):
+                'restore_lwa_sign': lambda: None, 'startup_vbs': lambda: startup,
+                'winreg': registry}):
             with patch('sys.argv', ['apply-vi.py', '--restore']):
                 self.assertEqual(installer['main'](), 0)
         self.assertTrue((self.root / 'watch-iqiyi-vi.disabled').exists())
