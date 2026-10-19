@@ -68,7 +68,7 @@ phim thật.
 | `iqiyi_common.py` | Tiện ích dùng chung (token API, tiêm script) |
 | `watch-players.py` | Watcher chung cho iQIYI và Youku; tự chọn nhánh theo tham số khởi chạy |
 | `cdp.py` | Giao tiếp WebSocket với Chrome DevTools Protocol |
-| `ui-engine.js`, `youku-ui.js`, `youku-subtitle.js`, `sub-hook.js` | Hook giao diện và phụ đề trong trang |
+| `ui-engine.js`, `youku-subtitle.js`, `sub-hook.js` | Engine giao diện chung và hook phụ đề; CSS riêng của Youku nằm trong `youku-subtitle.js` |
 | `quality_metrics.py`, `audit_*.py`, `verify-vietnamese.py` | Đo chất lượng bản dịch |
 | `ext/` | Tiện ích Chrome (manifest v3) dịch giao diện web |
 

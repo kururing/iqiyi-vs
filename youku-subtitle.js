@@ -2,6 +2,26 @@
 (function (root) {
   "use strict";
   if (!root) return;
+  var LAYOUT_STYLE_ID = "youku-vi-layout";
+  var LAYOUT_CSS =
+    '#ykPlayer [com="watermark"]{display:none!important;}' +
+    ".leftnav_nav_mark{display:flex!important;align-items:center!important;height:48px!important;max-height:48px!important;overflow:hidden!important}" +
+    ".leftnav_nav_mark>span{display:block!important;max-width:100%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}" +
+    "[class*=pack_mark_],[class*=pack_mark_]>span{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}" +
+    ".kui-subtitle-subtitle-container,.kui-subtitle-subtitle-container *{" +
+    "font-family:Arial,Helvetica,sans-serif!important;font-weight:700!important;color:#fff!important;" +
+    "-webkit-text-stroke:1.2px #111!important;paint-order:stroke fill;" +
+    "text-shadow:0 1px 1px #111,1px 0 1px #111,-1px 0 1px #111,0 -1px 1px #111,0 2px 4px #000!important;}";
+  function installLayout() {
+    var doc = root.document;
+    var parent = doc && (doc.head || doc.documentElement || doc.body);
+    if (!parent || !doc.createElement) return;
+    var style = (doc.getElementById && doc.getElementById(LAYOUT_STYLE_ID)) || doc.createElement("style");
+    style.id = LAYOUT_STYLE_ID;
+    if (style.textContent !== LAYOUT_CSS) style.textContent = LAYOUT_CSS;
+    if (!style.isConnected) parent.appendChild(style);
+  }
+  installLayout();
   var VERSION = 3;
   if (root.__youkuViSubtitleVersion === VERSION) {
     if (root.__youkuViSubtitleRefresh) root.__youkuViSubtitleRefresh();
@@ -278,6 +298,7 @@
     }).then(function () { ACTIVE = false; setTimeout(pump, 250); });
   }
   function tick() {
+    installLayout();
     var context = pageContext();
     if (!context) {
       if (currentContext) {

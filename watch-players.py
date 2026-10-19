@@ -216,7 +216,6 @@ def run_iqiyi() -> int:
 PORT = int(os.environ.get("YOUKU_CDP_PORT", "9224"))
 LOG = ROOT / "youku-vi.log"
 LOCK_HANDLE = None
-SCRIPTS = ("youku-ui.js", "youku-subtitle.js")
 INSTALLED: set[str] = set()
 LAST_ERROR = ""
 NO_TARGETS_SINCE = time.monotonic()
@@ -238,7 +237,6 @@ def read_scripts() -> list[str]:
     manager_config = "window.__youkuViApi = 'http://127.0.0.1:18766'; window.__youkuViToken = " + json.dumps(api_token(ROOT)) + ";\n"
     return [
         "window.__youkuViDict = " + json.dumps(dictionary, ensure_ascii=False, separators=(",", ":")) + ";\n" + engine,
-        (ROOT / "youku-ui.js").read_text(encoding="utf-8"),
         manager_config + (ROOT / "youku-subtitle.js").read_text(encoding="utf-8"),
     ]
 
