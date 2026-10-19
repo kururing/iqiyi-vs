@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
@@ -448,7 +449,7 @@ class RuntimeTest(unittest.TestCase):
         self.assertEqual(payload['temperature'], 0.2)
         self.assertGreaterEqual(payload['max_tokens'], 1024)
         self.assertEqual(payload['messages'][0], {'role': 'system', 'content': app.TRANSLATION_SYSTEM +
-            '\n\nFor this response, return an object with a "results" field containing the requested JSON array.'})
+            '\n\nTrả về đúng MỘT đối tượng JSON có trường "results" chứa mảng JSON được yêu cầu.'})
         prompt = payload['messages'][1]['content']
         self.assertNotIn(app.TRANSLATION_SYSTEM, prompt)
         self.assertNotIn('TSV', prompt)
@@ -675,15 +676,74 @@ class RuntimeTest(unittest.TestCase):
             ids = json.loads(args[3].rsplit(': ', 1)[1])
             calls.append(ids)
             state = app.load_translation_state(app.episode_dir('101'), source)
-            self.assertEqual(len(state['translations']), ids[0] - 1)
+            # Every batch sees only what earlier groups saved; with the default group size of 3 the
+            # two batches of this episode start together, so neither sees the other's reply.
+            seen = len(state['translations'])
+            if len(ids) == 161 or ids[0] != 1:
+                self.assertEqual(seen, 0)
             return [{'id': i, 'translation': f'Dịch đúng câu {i}'} for i in ids]
         with patch.object(app, 'request_translation', side_effect=response), \
                 patch.object(app, 'TRANSLATION_BATCH_SIZE', 160):
             self.assertEqual(app.translate_episode('101')['status'], 'translated')
-        self.assertEqual(calls, [list(range(1, 161)), [161]])
+        self.assertEqual(sorted(calls), [list(range(1, 161)), [161]])
         cues = app.translated_cues('101')
         self.assertEqual(len(cues), 161)
         self.assertEqual(cues[80][2], 'Dịch đúng câu 81')
+
+    def test_parallel_groups_keep_every_batch_translation_without_overwriting(self):
+        # 355 cues with batch 160 => 3 batches; group size 3 runs them all at once.
+        source = self.configure_translation(355)
+        started = []
+
+        def response(*args, **kwargs):
+            ids = json.loads(args[3].rsplit(': ', 1)[1])
+            started.append(ids[0])
+            # Stagger replies so the group finishes out of order; a save-per-worker bug would lose cues.
+            time.sleep(0.01 * (3 - len(started)))
+            return [{'id': i, 'translation': f'Câu {i}'} for i in ids]
+
+        with patch.object(app, 'request_translation', side_effect=response), \
+                patch.object(app, 'TRANSLATION_BATCH_SIZE', 160), \
+                patch.object(app, 'TRANSLATION_PARALLEL', 3):
+            self.assertEqual(app.translate_episode('101')['status'], 'translated')
+        state = app.load_translation_state(app.episode_dir('101'), source)
+        self.assertEqual(len(state['translations']), 355)
+        self.assertEqual(state['translations']['1'], 'Câu 1')
+        self.assertEqual(state['translations']['355'], 'Câu 355')
+
+    def test_parallel_one_keeps_serial_draft_visibility(self):
+        source = self.configure_translation(355)
+        seen = []
+
+        def response(*args, **kwargs):
+            ids = json.loads(args[3].rsplit(': ', 1)[1])
+            seen.append(len(app.load_translation_state(app.episode_dir('101'), source)['translations']))
+            return [{'id': i, 'translation': f'Câu {i}'} for i in ids]
+
+        with patch.object(app, 'request_translation', side_effect=response), \
+                patch.object(app, 'TRANSLATION_BATCH_SIZE', 160), \
+                patch.object(app, 'TRANSLATION_PARALLEL', 1):
+            self.assertEqual(app.translate_episode('101')['status'], 'translated')
+        self.assertEqual(seen, [0, 160, 320])
+
+    def test_parallel_group_member_failure_keeps_siblings_saved(self):
+        source = self.configure_translation(355)
+
+        def response(*args, **kwargs):
+            ids = json.loads(args[3].rsplit(': ', 1)[1])
+            if ids[0] == 161:
+                raise RuntimeError('HTTP 500 down')
+            return [{'id': i, 'translation': f'Câu {i}'} for i in ids]
+
+        with patch.object(app, 'request_translation', side_effect=response), \
+                patch.object(app, 'TRANSLATION_BATCH_SIZE', 160), \
+                patch.object(app, 'TRANSLATION_PARALLEL', 3):
+            result = app.translate_episode('101')
+        self.assertEqual(result['status'], 'partial')
+        state = app.load_translation_state(app.episode_dir('101'), source)
+        # The two healthy batches were saved; only the failing batch is missing.
+        self.assertEqual(sorted(int(k) for k in state['translations']),
+                         [i for i in range(1, 356) if not 161 <= i <= 320])
 
     def test_agent_memory_is_scoped_by_provider_and_does_not_run_on_refresh(self):
         self.agent_profile.stop()

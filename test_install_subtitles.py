@@ -49,12 +49,16 @@ class InstallTest(unittest.TestCase):
             inject_lwa_dir(webapp, 'window.__iqiyiViVersion = 100;')
             with patch.dict(patch_lwa.__globals__, {"find_lwa_dirs": lambda: [webapp]}):
                 patch_lwa()
+            # The host bridge is owned by the client and must never be rewritten.
             self.assertEqual(host.read_bytes(), original)
-            player = (webapp / "player.html").read_text(encoding="utf-8")
-            self.assertEqual(player, '<html><head></head><body></body></html>')
+            # Every LWA page needs the dictionary before React renders Chinese strings,
+            # so the tag goes into <head> of each page (including the player shell).
+            for name in ("index.html", "player.html", "settings.html"):
+                page = (webapp / name).read_text(encoding="utf-8")
+                self.assertIn('lwa-vi.js', page)
+                self.assertLess(page.index('lwa-vi.js'), page.index('</head>'))
             settings = (webapp / "settings.html").read_text(encoding="utf-8")
             self.assertIn('sub-hook.js', settings)
-            self.assertIn('lwa-vi.js', settings)
             self.assertLess(settings.index('sub-hook.js'), settings.index('lwa-vi.js'))
 
     def test_wrapper_hook_is_early_synced_idempotent_and_restorable(self):

@@ -6,7 +6,7 @@ $py = @(
     (Join-Path $root ".venv\Scripts\pythonw.exe")
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $py) {
-    $cmd = Get-Command pythonw, python, py -ErrorAction SilentlyContinue | Select-Object -First 1
+    $cmd = Get-Command python, py, pythonw -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($cmd) { $py = $cmd.Source }
 }
 if (-not $py) { throw "Khong tim thay Python de gan tieng Viet." }
@@ -86,7 +86,17 @@ $webViewRuntime = @(
         Sort-Object { try { [version]$_.Name } catch { [version]"0.0" } } -Descending
 ) | Select-Object -First 1
 $webViewFolder = if ($webViewRuntime) { $webViewRuntime.FullName } else { "" }
-$client = "C:\Program Files\IQIYI Video\LStyle\QyClient.exe"
+$clientOutput = & $py $applyScript --client-path
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Khong tim thay QyClient.exe. Hay mo iQIYI mot lan hoac kiem tra duong dan cai dat."
+    exit 1
+}
+$client = [string]($clientOutput | Select-Object -Last 1)
+$client = $client.Trim()
+if (-not (Test-Path -LiteralPath $client)) {
+    Write-Error "Khong tim thay QyClient.exe tai: $client"
+    exit 1
+}
 $installRoot = Split-Path $client
 $qy = Get-Process QyClient,QyPlayer,QyKernel,QyFragment -ErrorAction SilentlyContinue |
     Where-Object { $_.Path -like "$installRoot\*" }

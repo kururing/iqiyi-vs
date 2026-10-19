@@ -11,7 +11,7 @@ import sys
 import time
 from pathlib import Path
 
-from iqiyi_common import atomic_write, installation_lock, lwa_backup_dir, subtitle_hook, patch_subtitle_tag
+from iqiyi_common import atomic_write, installation_lock, iqiyi_install_roots, lwa_backup_dir, subtitle_hook, patch_subtitle_tag
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
@@ -28,9 +28,14 @@ ATTR_RE = re.compile(
     r'(?P<attr>' + "|".join(ATTRS) + r')\s*=\s*(?P<q>["\'])(?P<val>.*?)(?P=q)',
     re.DOTALL,
 )
+# Text node giua hai the (trang HTML tinh nhu net/VodOtherErr_White.html khong nap
+# duoc ui-engine.js nen phai sua thang noi dung file).
+TEXT_NODE_RE = re.compile(r">([^<>]+)<")
+CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 
 SKIN_CANDIDATES = [
-    Path(r"C:\Program Files\IQIYI Video\LStyle"),
+    Path(os.environ[name]) / "IQIYI Video" / "LStyle"
+    for name in ("ProgramFiles", "ProgramFiles(x86)") if os.environ.get(name)
 ]
 APPDATA_LWA = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "localwebapp"
 PPSTREAM_INI = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "LStyle" / "PPStream.ini"
@@ -49,7 +54,13 @@ SIGNED_LWA_HTML = frozenset({
 
 
 def find_skin() -> Path | None:
-    for base in SKIN_CANDIDATES:
+    bases = iqiyi_install_roots(ROOT) + SKIN_CANDIDATES
+    seen: set[str] = set()
+    for base in bases:
+        key = os.path.normcase(str(base))
+        if key in seen:
+            continue
+        seen.add(key)
         if not base.exists():
             continue
         versions = sorted(
@@ -59,6 +70,14 @@ def find_skin() -> Path | None:
         )
         if versions:
             return versions[0] / "skin"
+    return None
+
+
+def find_iqiyi_client() -> Path | None:
+    for root in iqiyi_install_roots(ROOT):
+        client = root / "QyClient.exe"
+        if client.is_file():
+            return client
     return None
 
 
@@ -80,16 +99,42 @@ def load_dict() -> dict[str, str]:
     data: dict[str, str] = {}
     for path in (DICT_PATH, WEB_DICT, OVERRIDE_DICT):
         if not path.exists():
+            # Từ điển phát triển nằm ở .local/ (không commit); bản phát hành ở ROOT.
+            path = ROOT / ".local" / path.name
+        if not path.exists():
             continue
-        part = json.loads(path.read_text(encoding="utf-8"))
-        data.update({k: v for k, v in part.items() if k and v and k != v})
+        try:
+            part = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(part, dict):
+            data.update({k: v for k, v in part.items() if k and v and k != v})
+    return data
+
+
+def load_titles() -> dict[str, str]:
+    """Tên Việt chính thức của phim (titles-vi.json); rỗng nếu chưa có."""
+    data: dict[str, str] = {}
+    for path in (ROOT / "titles-vi.json", ROOT / ".local" / "titles-vi.json"):
+        if not path.exists():
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        rows = payload.get("titles") if isinstance(payload, dict) else None
+        if isinstance(rows, dict):
+            data.update({str(k).strip(): str(v).strip() for k, v in rows.items()
+                         if isinstance(v, str) and str(k).strip() and str(v).strip()})
     return data
 
 
 def build_lwa_js(mapping: dict[str, str]) -> str:
     engine = LWA_ENGINE.read_text(encoding="utf-8")
     dumped = json.dumps(mapping, ensure_ascii=False, separators=(",", ":"))
-    return "window.__iqiyiViDict = " + dumped + ";\n" + engine
+    titles = json.dumps(load_titles(), ensure_ascii=False, separators=(",", ":"))
+    return ("window.__iqiyiViDict = " + dumped + ";\n"
+            + "window.__iqiyiViTitles = " + titles + ";\n" + engine)
 
 
 def backup_file(base: Path, dest_root: Path, rel: Path) -> None:
@@ -133,6 +178,36 @@ def patch_text(raw: str, mapping: dict[str, str]) -> tuple[str, int]:
         return f'{m.group("attr")}={m.group("q")}{vi}{m.group("q")}'
 
     return ATTR_RE.sub(repl, raw), hits
+
+
+def patch_text_nodes(raw: str, mapping: dict[str, str]) -> tuple[str, int]:
+    """Dịch text node còn chữ Hán trong file HTML tĩnh (không chạy được script).
+
+    Chỉ đổi khi khớp TRỌN chuỗi trong từ điển để tránh câu lai; giữ nguyên
+    khoảng trắng thụt lề hai đầu của text node.
+    """
+    hits = 0
+
+    def repl(m: re.Match) -> str:
+        nonlocal hits
+        inner = m.group(1)
+        stripped = inner.strip()
+        if not stripped or not CJK_RE.search(stripped):
+            return m.group(0)
+        vi = mapping.get(stripped)
+        if vi is None:
+            normalized = " ".join(stripped.split())
+            vi = mapping.get(normalized)
+            if vi is not None:
+                stripped, normalized = normalized, vi
+        if vi is None:
+            return m.group(0)
+        hits += 1
+        lead = inner[: len(inner) - len(inner.lstrip())]
+        trail = inner[len(inner.rstrip()):]
+        return f">{lead}{vi}{trail}<"
+
+    return TEXT_NODE_RE.sub(repl, raw), hits
 
 
 def read_text(path: Path) -> tuple[str, str]:
@@ -234,22 +309,19 @@ def inject_lwa_dir(webapp: Path, payload: str) -> int:
     n += 1
 
     for path in webapp.glob("*.html"):
-        # These native bootstrap pages are signature-checked by QyClient.
-        if path.name in {
-            "compactPlayer.html", "compactPlayer_mac.html", "download.html", "index.html", "login.html",
-            "mac.html", "mini.html", "placeholder.html", "player.html", "player_mac.html",
-        }:
-            continue
         raw, _ = read_text(path)
         backup_file(webapp, lwa_backup_dir(BACKUP_LWA, webapp), Path(path.name))
         raw = patch_subtitle_tag(raw, hook)
         if "lwa-vi.js" in raw:
             atomic_write(path, raw)
             continue
-        if "</body>" in raw:
+        # Chèn vào </head> để từ điển có mặt trước khi React render chuỗi tiếng Trung.
+        if "</head>" in raw:
+            raw = raw.replace("</head>", SCRIPT_TAG + "</head>", 1)
+        elif "</body>" in raw:
             raw = raw.replace("</body>", SCRIPT_TAG + "</body>", 1)
         elif "<body>" in raw:
-            raw = raw.replace("<body>", "<body>" + SCRIPT_TAG, 1)
+            raw = raw.replace("<body>", SCRIPT_TAG + "<body>", 1)
         else:
             raw += SCRIPT_TAG
         atomic_write(path, raw)
@@ -321,6 +393,11 @@ def apply_skin(skin: Path, mapping: dict[str, str]) -> tuple[int, int, int]:
             skipped += 1
             continue
         new, n = patch_text(raw, mapping)
+        # Trang HTML tĩnh không nạp được ui-engine.js thì phải sửa thẳng text node.
+        if path.suffix.casefold() == ".html":
+            patched_nodes, n_nodes = patch_text_nodes(new, mapping)
+            if n_nodes:
+                new, n = patched_nodes, n + n_nodes
         if n == 0:
             continue
         backup_file(skin, skin_backup_dir(skin), rel)
@@ -331,6 +408,13 @@ def apply_skin(skin: Path, mapping: dict[str, str]) -> tuple[int, int, int]:
 
 
 def main() -> int:
+    if "--client-path" in sys.argv:
+        client = find_iqiyi_client()
+        if client:
+            print(client)
+            return 0
+        print("Khong tim thay QyClient.exe.")
+        return 1
     with installation_lock(ROOT):
         disabled = ROOT / "watch-iqiyi-vi.disabled"
         restoring = "--restore" in sys.argv
@@ -356,6 +440,8 @@ def _main() -> int:
     if restore:
         try:
             skin = find_skin()
+            if skin:
+                print(f"Skin: {skin}")
             n = restore_tree(skin_backup_dir(skin), skin) if skin else 0
             if skin and BACKUP.exists() and not skin_backup_dir(skin).exists():
                 print("Bo qua backup skin cu khong ro phien ban de tranh ghi de sai resource.")
@@ -413,6 +499,10 @@ def _main() -> int:
         print("Tat iQIYI roi mo lai de thay tieng Viet o trang chu.")
         return 0
 
+    try:
+        atomic_write(ROOT / ".iqiyi-install-location", str(skin.parent) + "\n")
+    except OSError:
+        pass
     print(f"Skin: {skin}")
     print(f"Tu dien: {len(mapping)} chuoi")
     try:

@@ -153,10 +153,14 @@
 
   const SKIP = new Set(["SCRIPT", "STYLE", "TEXTAREA", "NOSCRIPT", "CODE", "SVG"]);
 
+  // Từ điển này chỉ có từng từ. Thay một từ bên trong cụm dài sẽ ra câu lai
+  // ("古偶榜No.2" -> "Cổ ngẫu BXH số 2"), nên chỉ dịch khi khớp TRỌN chuỗi.
   function translate(s) {
     if (!s) return s;
     const t = s.trim();
-    return D[t] ? s.replace(t, D[t]) : s;
+    if (!t || t.length > 40) return s;
+    const hit = D[t];
+    return hit ? s.replace(t, hit) : s;
   }
 
   function walk(node) {

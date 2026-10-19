@@ -6,7 +6,60 @@ import os
 import re
 from pathlib import Path
 import secrets
+import subprocess
 import tempfile
+import time
+
+
+_IQIYI_ROOTS: tuple[Path | None, list[Path]] = (None, [])
+_IQIYI_ROOTS_REFRESH = 0.0
+
+
+def iqiyi_install_roots(state_dir: Path | None = None) -> list[Path]:
+    """Find the native install from its running client, saved location, or Windows defaults."""
+    global _IQIYI_ROOTS, _IQIYI_ROOTS_REFRESH
+    now = time.monotonic()
+    if now >= _IQIYI_ROOTS_REFRESH:
+        running = None
+        if os.name == "nt":
+            try:
+                result = subprocess.run(
+                    ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+                     "Get-CimInstance Win32_Process -Filter \"Name='QyClient.exe'\" "
+                     "-ErrorAction SilentlyContinue | ForEach-Object { $_.ExecutablePath }"],
+                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+                    encoding="utf-8", errors="replace", timeout=5,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                )
+                for line in result.stdout.splitlines():
+                    client = Path(line.strip().strip('"'))
+                    if client.name.casefold() == "qyclient.exe":
+                        running = client.parent
+                        break
+            except (OSError, subprocess.SubprocessError):
+                pass
+        defaults = [
+            Path(os.environ[name]) / "IQIYI Video" / "LStyle"
+            for name in ("ProgramFiles", "ProgramFiles(x86)")
+            if os.environ.get(name)
+        ]
+        _IQIYI_ROOTS = (running, defaults)
+        _IQIYI_ROOTS_REFRESH = now + 10
+
+    running, defaults = _IQIYI_ROOTS
+    roots = [running] if running else []
+    if state_dir is not None:
+        saved = state_dir / ".iqiyi-install-location"
+        try:
+            value = saved.read_text(encoding="utf-8").strip()
+            if value:
+                location = Path(value)
+                if location.is_absolute() and location not in roots:
+                    roots.append(location)
+        except (OSError, ValueError):
+            pass
+    roots.extend(path for path in defaults if path not in roots)
+    return roots
 
 
 def atomic_write(path: Path, data: str | bytes) -> None:

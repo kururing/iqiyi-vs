@@ -17,7 +17,7 @@ import urllib.request
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from iqiyi_common import atomic_write, installation_lock, lwa_backup_dir, subtitle_hook, patch_subtitle_tag
+from iqiyi_common import atomic_write, installation_lock, iqiyi_install_roots, lwa_backup_dir, subtitle_hook, patch_subtitle_tag
 
 ROOT = Path(__file__).resolve().parent
 SCRIPT_TAG = '<script src="./lwa-vi.js"></script>'
@@ -54,8 +54,9 @@ def find_lwa_dirs() -> list[Path]:
     found: list[Path] = []
     if APPDATA_LWA.exists():
         found.extend(index.parent for index in APPDATA_LWA.rglob("index.html"))
-    base = Path(r"C:\Program Files\IQIYI Video\LStyle")
-    if base.exists():
+    for base in iqiyi_install_roots(ROOT):
+        if not base.exists():
+            continue
         versions = sorted((p for p in base.iterdir() if p.is_dir() and (p / "skin").exists()),
                           key=lambda p: tuple(int(n) for n in re.findall(r"\d+", p.name)), reverse=True)
         if versions:

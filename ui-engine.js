@@ -1,6 +1,6 @@
 /* iqiyi-vi */
 (function () {
-  var ENGINE_VERSION = 105;
+  var ENGINE_VERSION = 106;
   var IS_PLAYER = /(^|\/)player(?:_mac)?\.html$/i.test(location.pathname);
   if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
     if (window.__iqiyiViReload) window.__iqiyiViReload(window.__iqiyiViDict);
@@ -10,6 +10,10 @@
   var oldStyle = document.getElementById("iqiyi-vi-css");
   if (oldStyle) oldStyle.remove();
   var D = window.__iqiyiViDict || {};
+  // Tên Việt chính thức của phim (khóa là tên gốc chữ Hán). Tra trước từ điển UI để tên phim
+  // không bị ghép nghĩa/dịch từng chữ.
+  var TITLES = window.__iqiyiViTitles || {};
+  var TITLE_KEYS = Object.keys(TITLES).sort(function (a, b) { return b.length - a.length; });
   function keysOf() {
     return Object.keys(D)
       .filter(function (k) { return k.length >= 1; })
@@ -126,6 +130,47 @@
   function canTranslateWhole(s) {
     var text = String(s || "").replace(/\s/g, "");
     return cjkCount(text) >= 2 && (mostlyCjk(text) || text.length <= 80);
+  }
+
+  // Chuỗi giống tiêu đề phim/series: còn chữ Hán sau khi bỏ mùa, số tập và nhãn phụ.
+  // Tên phim phải được dịch trọn tên, không ghép từng chữ (古偶榜 -> "Cổ ngẫu" là lỗi).
+  var TITLE_NOISE = /最新|热播|独播|自制|完结|连载|更新至|全\d+集|共\d+集|第\d+[集季部]|预告|花絮|看点|预告片|抢先|限免|会员|VIP|豆瓣|榜|No\.?\d+|\d+\s*(?:万|亿|次|人|分钟|分|年|月|日|集|季)/gi;
+  function looksLikeTitle(s) {
+    var text = String(s || "");
+    if (!cjkCount(text)) return false;
+    var core = text.replace(TITLE_NOISE, "").replace(/[《》「」『』【】\[\]（）()·:：,，.。!！?？\s"“”]/g, "");
+    return cjkCount(core) >= 2;
+  }
+
+  function titleMatch(text) {
+    for (var i = 0; i < TITLE_KEYS.length; i++) {
+      var key = TITLE_KEYS[i];
+      if (key.length >= 2 && text.indexOf(key) !== -1) return TITLES[key];
+    }
+    return "";
+  }
+
+  // Các chuỗi gồm ≥2 chữ Hán liền nhau trong một chuỗi UI (tab, nhãn, tiêu đề card...).
+  function cjkRuns(s) {
+    return String(s || "").match(/[\u3400-\u4dbf\u4e00-\u9fff]{2,}/g) || [];
+  }
+
+  // Bản dịch theo từng từ là nguồn của các chuỗi lai vô nghĩa ("Cổ ngẫu BXH số 2",
+  // "Học đườnghoạt hình"). Bản dịch đúng phải là một cụm tiếng Việt đọc được: có dấu,
+  // hoặc là một từ/một chuỗi chữ Latin có khoảng trắng.
+  function gibberish(s) {
+    var t = String(s || "");
+    if (/[\u00C0-\u024F\u1EA0-\u1EF9]/.test(t)) return false;
+    if (/\s/.test(t)) return false;
+    var run = t.match(/[A-Za-z]+/g);
+    if (!run) return false;
+    return run.some(function (word) { return word.length >= 6; });
+  }
+
+  function trCompactFix(s) {
+    var t = s;
+    for (var i = 0; i < COMPACT_FIX.length; i++) t = t.split(COMPACT_FIX[i][0]).join(COMPACT_FIX[i][1]);
+    return t;
   }
 
   function autoTranslateMixed(node, value, setter) {
@@ -324,17 +369,40 @@
     var tail = orig.match(/\s*$/)[0];
     var t = orig.slice(lead.length, orig.length - tail.length);
     if (!t) return orig;
-    if (D[t]) return lead + trCompactFix(D[t]) + tail;
+    // 1. Từ điển khớp đúng nguyên chuỗi là bản dịch đáng tin nhất.
+    if (D[t] && !gibberish(D[t])) return lead + trCompactFix(D[t]) + tail;
+    // 2. Tên phim/series: dùng tên Việt chính thức, ghép với phần còn lại đã dịch theo cụm.
+    if (TITLE_KEYS.length) {
+      var title = titleMatch(t);
+      if (title) {
+        var rest = t;
+        for (var k = 0; k < TITLE_KEYS.length; k++) {
+          if (rest.indexOf(TITLE_KEYS[k]) !== -1) { rest = rest.split(TITLE_KEYS[k]).join("\u0000"); break; }
+        }
+        var restVi = rest.replace(/\u0000/g, "").trim() ? translateByUnit(rest.replace(/\u0000/g, "")) : "";
+        return lead + trCompactFix((title + " " + restVi).trim()) + tail;
+      }
+    }
     var p = trPatterns(t);
     if (p !== t && !/[\u4e00-\u9fff]/.test(p)) return lead + trCompactFix(p) + tail;
     if (p !== t) t = p;
+    // 3. Chuỗi giống tiêu đề phim (còn chữ Hán sau khi bỏ nhãn như 榜/更新至/第N集) thì không được
+    // ghép từng từ: giữ chữ Hán để engine dịch cả chuỗi thành một cụm đọc được.
+    if (looksLikeTitle(t)) return lead + trCompactFix(t) + tail;
+    return lead + translateByUnit(t) + tail;
+  }
+
+  // Dịch theo cụm dài nhất có trong từ điển; bản dịch vô nghĩa thì bỏ qua, giữ chữ Hán.
+  function translateByUnit(t) {
     if (t.length <= 180 && /[\u4e00-\u9fff]/.test(t)) {
       for (var i = 0; i < LONG.length; i++) {
-        if (t.indexOf(LONG[i]) !== -1) t = replaceWithSpacing(t, LONG[i], D[LONG[i]]);
+        if (t.indexOf(LONG[i]) === -1) continue;
+        var value = D[LONG[i]];
+        if (gibberish(value)) continue;
+        t = replaceWithSpacing(t, LONG[i], value);
       }
     }
-    t = trCompactFix(t);
-    return lead + t + tail;
+    return trCompactFix(t);
   }
 
   function injectCSS() {
@@ -383,9 +451,23 @@
     if (!/[\u3400-\u9fff]/.test(all)) return false;
     var next = tr(all);
     if (next === all) return false;
+    // Ghép từng từ chỉ để lại chuỗi lai ("Cổ ngẫu BXH số 2"): để engine dịch cả cụm.
+    if (gibberish(next)) {
+      autoTranslate(el.firstChild, all);
+      return false;
+    }
     setDirectText(el, next);
     fitCompact(el);
     return true;
+  }
+
+  // Sau khi từ điển để lại chữ Hán trong một chuỗi ngắn, giao lại cho engine dịch cả chuỗi
+  // thay vì để giao diện hiện câu nửa Việt nửa Trung.
+  function rescueMixed(node, source) {
+    if (!node || node.nodeType !== 3) return;
+    var text = String(source || node.nodeValue || "").trim();
+    if (!text || text.length > 180 || !cjkCount(text)) return;
+    autoTranslate(node, text);
   }
 
 
@@ -439,8 +521,7 @@
       if (cjkCount(next)) autoTranslateMixed(node, canTranslateWhole(raw) ? raw : next);
       else fitCompact(node);
       return;
-    }
-    if (node.nodeType !== 1 || SKIP[node.tagName] || node.id === "pcaSubtitleContainer" || /subtitleContainer|caption-main/i.test(String(node.className || "") + " " + node.id)) return;
+    }    if (node.nodeType !== 1 || SKIP[node.tagName] || node.id === "pcaSubtitleContainer" || /subtitleContainer|caption-main/i.test(String(node.className || "") + " " + node.id)) return;
     if (node.shadowRoot) walk(node.shadowRoot);
     if (node.tagName === "HTML" && node.getAttribute("lang") === "zh") node.setAttribute("lang", "vi");
     var cls = String(node.className || "");
@@ -485,7 +566,9 @@
       var t = tr(all);
       if (t !== all) kids[0].nodeValue = t;
       if (cjkCount(t) && node.firstChild && node.firstChild.nodeType === 3) {
-        autoTranslateMixed(node.firstChild, canTranslateWhole(all) ? all : t);
+        // Ghép từng từ không ra cụm đọc được thì dịch trọn chuỗi.
+        if (gibberish(t)) rescueMixed(node.firstChild, all);
+        else autoTranslateMixed(node.firstChild, canTranslateWhole(all) ? all : t);
       } else {
         fitCompact(node);
       }
@@ -512,14 +595,19 @@
 
   window.__iqiyiVi = true;
   window.__iqiyiViVersion = ENGINE_VERSION;
-  window.__iqiyiViReload = function (next) {
+  window.__iqiyiViReload = function (next, titles) {
     if (next) {
       D = next;
       window.__iqiyiViDict = next;
       KEYS = keysOf();
       LONG = KEYS;
-      TEXT_CACHE.clear();
     }
+    if (titles) {
+      TITLES = titles;
+      window.__iqiyiViTitles = titles;
+      TITLE_KEYS = Object.keys(TITLES).sort(function (a, b) { return b.length - a.length; });
+    }
+    TEXT_CACHE.clear();
     run();
   };
 

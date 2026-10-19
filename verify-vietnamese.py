@@ -63,9 +63,12 @@ def main() -> int:
         path = ROOT / name
         if path.exists():
             errors.extend(check_dictionary(path))
+    # source.srt là phụ đề gốc tiếng Trung do player cung cấp; chỉ bản dịch mới phải sạch chữ Hán.
+    skip_names = {"source.srt", "source.vtt", "source.ass"}
     subtitle_files = [
         path for path in ROOT.rglob("*")
         if path.is_file() and path.suffix.lower() in {".srt", ".vtt", ".ass"}
+        and path.name.lower() not in skip_names
         and ".venv" not in path.parts and ".git" not in path.parts
     ]
     for path in subtitle_files:

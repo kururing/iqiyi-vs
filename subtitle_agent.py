@@ -67,6 +67,15 @@ VIỆT HÓA TÊN NHÂN VẬT (áp dụng cho mọi phim)
 - Trước khi xuất, đối chiếu từng âm tiết tên Việt với đúng các chữ nguồn, kiểm tra không đảo thứ tự, bỏ chữ, thêm chữ hay lẫn tên với chức danh. Ghi tên và biệt danh đã xác nhận nhất quán trong characters và glossary.
 """
 
+WORK_NAME_RULES = """
+TÊN TÁC PHẨM (tên phim, tên series)
+- Tên phim tiếng Việt phải là tên được dùng chính thức trong bản Vietsub/chính thức, không phải bản dịch nghĩa từng chữ và không phải phiên âm ghép từng chữ Hán.
+- Trình tự: (1) tên phim đã được xác nhận trong hồ sơ phim hoặc trong danh sách tên phim được cấp trong prompt → dùng đúng như vậy; (2) chưa có → chỉ dùng âm Hán-Việt của đúng từng chữ, coi là cách đọc tạm, và ghi vào uncertainties rằng tên phim chưa đối chiếu với tên chính thức.
+- Không dịch nghĩa các thành tố của tên phim. 大梦归离 không phải “Giấc Mộng Lớn Trở Về”; 逍遥 không phải “Tiêu Dao Tự Tại” (đó là cách giải thích nghĩa, không phải tên phim). Tước hiệu chứa tên phim cũng phải giữ đúng tên đã chốt.
+- Tên phim chỉ được xuất hiện trong lời thoại khi source thật sự nhắc tới; không tự chèn tên phim vào bản dịch phụ đề.
+- metadata.series_title và metadata.episode_title trong prompt đã là tiếng Việt và chỉ để tham khảo: không dịch lại, không chèn vào cue, không coi là lời thoại.
+"""
+
 MEMORY_SCHEMA = object_schema({
     "setting": {"type": "string", "enum": ["historical", "modern", "mixed", "unknown"]},
     "summary": TEXT,
@@ -103,7 +112,7 @@ Chữ Hán CHỈ được phép xuất hiện trong characters.name và glossary
 
 VÍ DỤ CẤU TRÚC (chỉ minh họa định dạng, nội dung không phải dữ liệu thật)
 {"setting":"historical","summary":"Phim cổ trang cung đình; cảnh nghị sự trang trọng xen với cảnh riêng của hai chị em.","characters":[{"name":"蔓儿","translation":"Mạn Nhi","role":"nữ, em họ của Thanh Lan","address":"Mạn Nhi → Thanh Lan: gọi là tỷ, tự xưng muội; Thanh Lan → Mạn Nhi: gọi tên, tự xưng ta","evidence":"#12, #15: bị gọi là tỷ; #40: Thanh Lan gọi tên"}],"glossary":[{"source":"夏侯","translation":"Hạ Hầu"}],"uncertainties":["Chưa rõ tước vị của chủ phủ."]}
-""" + ADDRESS_RULES + CHARACTER_NAME_RULES
+""" + ADDRESS_RULES + CHARACTER_NAME_RULES + WORK_NAME_RULES
 
 
 
@@ -139,7 +148,7 @@ def international_reference(item, source, ids=None):
         return {}
 
 # Re-analyze unchanged subtitles when the interpretation rules change.
-PROFILE_VERSION = hashlib.sha256((PROFILE_SYSTEM + "\n" + ADDRESS_RULES + "\n" + CHARACTER_NAME_RULES + "\ncontinuity-editor-v11-character-names").encode()).hexdigest()
+PROFILE_VERSION = hashlib.sha256((PROFILE_SYSTEM + "\n" + ADDRESS_RULES + "\n" + CHARACTER_NAME_RULES + "\n" + WORK_NAME_RULES + "\ncontinuity-editor-v12-work-names").encode()).hexdigest()
 
 # Profiles written by these earlier prompt versions were built from the Chinese source only, so
 # their film memory stays valid as `previous_memory`; the episodes are simply analysed again.
@@ -281,12 +290,48 @@ def _fit_episode(rows: list, limit: int) -> list:
     return [row for index in picks for row in chunks[index]]
 
 
-def profile_prompt(item, source, profile, validation_error="", max_chars: int = PROFILE_CONTEXT_CHARS):
+# Once a film profile has covered this many episodes without unresolved uncertainties, it is
+# considered "mature": updates only need the essentials (names, roles, address pairs, glossary) and
+# can drop long per-cue evidence strings, shrinking the previous_memory payload sent per episode.
+MATURE_PROFILE_MIN_EPISODES = 3
+MATURE_EVIDENCE_LIMIT = 400
+
+
+def _is_mature(profile: dict) -> bool:
+    episodes = profile.get("episodes") or {}
+    count = len(episodes) if isinstance(episodes, dict) else 0
+    return count >= MATURE_PROFILE_MIN_EPISODES and not profile.get("memory", {}).get("uncertainties")
+
+
+def compact_memory(memory: dict, evidence_limit: int = MATURE_EVIDENCE_LIMIT) -> dict:
+    """Trim a film profile to the essentials for incremental updates.
+
+    Names, roles, translation and address pairs are kept intact (they are the core data the
+    continuity editor preserves across episodes); only the verbose per-cue `evidence` strings are
+    shortened. Returns a shallow copy so the on-disk profile is never mutated.
+    """
+    trimmed = dict(memory)
+    if isinstance(trimmed.get("characters"), list):
+        trimmed["characters"] = [{**row, "evidence": str(row.get("evidence", ""))[:evidence_limit]}
+                                 for row in trimmed["characters"] if isinstance(row, dict)]
+    return trimmed
+
+
+def profile_prompt(item, source, profile, validation_error="", max_chars: int = PROFILE_CONTEXT_CHARS,
+                   official_title: str = ""):
     episode = _fit_episode([{"id": i, "source": cue[2]} for i, cue in enumerate(source, 1)], max_chars)
-    payload = {"film": item.get("albumTitle") or item.get("title", ""),
+    # A mature profile no longer needs full per-cue evidence replayed each episode: send the compacted
+    # essentials so the model keeps names/roles/addresses consistent while the payload stays small.
+    previous_memory = compact_memory(profile["memory"]) if _is_mature(profile) else profile["memory"]
+    payload = {"film": official_title or item.get("albumTitle") or item.get("title", ""),
+        "film_title_rule": ("film là tên Việt chính thức của phim; dùng đúng tên này khi nhắc tới phim, "
+                            "không dịch lại và không ghi vào characters hay glossary."
+                            if official_title else
+                            "Chưa có tên Việt chính thức cho phim này: không dịch nghĩa tên phim; "
+                            "nếu lời thoại nhắc tới thì dùng âm Hán-Việt theo đúng từng chữ."),
         "output_language": "vi-VN",
         "output_language_instruction": "Viết hoàn toàn bằng tiếng Việt tự nhiên; chữ Hán chỉ được giữ trong characters.name và glossary.source. Mọi characters.address ghi rõ chiều người nói → người nghe bằng từ xưng hô tiếng Việt. Áp dụng quy trình Việt hóa tên trong system prompt; giữ nguyên cách viết tên người dùng đã xác nhận trong hồ sơ phim và dùng nhất quán qua các tập.",
-        "previous_memory": profile["memory"],
+        "previous_memory": previous_memory,
         "episode_note": ("Chỉ có một phần lời thoại được gửi (các đoạn cách đều nhau); id là số thứ tự thật trong tập."
                          if len(episode) < len(source) else "Đây là toàn bộ lời thoại của tập, theo thứ tự."),
         "episode": episode}
