@@ -109,6 +109,17 @@ def load_dict() -> dict[str, str]:
             continue
         if isinstance(part, dict):
             data.update({k: v for k, v in part.items() if k and v and k != v})
+    if not data:
+        try:
+            bundle = LWA_JS.read_text(encoding="utf-8-sig")
+            assignment = re.match(r"\s*window\.__iqiyiViDict\s*=\s*", bundle)
+            if assignment:
+                part, _ = json.JSONDecoder().raw_decode(bundle, assignment.end())
+                if isinstance(part, dict):
+                    data.update({k: v for k, v in part.items()
+                                 if k and isinstance(v, str) and v and k != v})
+        except (OSError, ValueError):
+            pass
     return data
 
 
@@ -135,6 +146,27 @@ def build_lwa_js(mapping: dict[str, str]) -> str:
     titles = json.dumps(load_titles(), ensure_ascii=False, separators=(",", ":"))
     return ("window.__iqiyiViDict = " + dumped + ";\n"
             + "window.__iqiyiViTitles = " + titles + ";\n" + engine)
+
+
+def sync_extension_sources(mapping: dict[str, str]) -> None:
+    """Bundle the same Vietnamese dictionary and DOM engine for the browser extension."""
+    extension = ROOT / "ext"
+    titles = json.dumps(load_titles(), ensure_ascii=False, separators=(",", ":"))
+    dictionary = (
+        "window.__iqiyiViDict = " + json.dumps(mapping, ensure_ascii=False, separators=(",", ":")) + ";\n"
+        + "window.__iqiyiViTitles = " + titles + ";\n"
+        + '(function(){if(window!==window.top||!(location.hostname==="iqiyi.com"||location.hostname==="www.iqiyi.com"))return;'
+        + 'window.__iqiyiViTokenPending=true;var timer=setTimeout(function(){window.__iqiyiViTokenPending=false;'
+        + 'if(window.__iqiyiViReload)window.__iqiyiViReload()},4000);'
+        + 'fetch("http://127.0.0.1:18766/api/extension-token",{cache:"no-store",credentials:"omit"})'
+        + '.then(function(r){return r.ok?r.json():null}).then(function(x){clearTimeout(timer);'
+        + 'window.__iqiyiViTokenPending=false;if(x&&x.token)window.__iqiyiViToken=x.token;'
+        + 'if(window.__iqiyiViReload)window.__iqiyiViReload()}).catch(function(){clearTimeout(timer);'
+        + 'window.__iqiyiViTokenPending=false;if(window.__iqiyiViReload)window.__iqiyiViReload()});})();\n'
+    )
+    atomic_write(extension / "vi-dict.js", dictionary)
+    atomic_write(extension / "content.js", LWA_ENGINE.read_text(encoding="utf-8"))
+    atomic_write(extension / "sub-hook.js", (ROOT / "sub-hook.js").read_text(encoding="utf-8"))
 
 
 def backup_file(base: Path, dest_root: Path, rel: Path) -> None:
@@ -210,10 +242,21 @@ def patch_text_nodes(raw: str, mapping: dict[str, str]) -> tuple[str, int]:
     return TEXT_NODE_RE.sub(repl, raw), hits
 
 
+def patch_native_subtitle_menu(raw: str) -> str:
+    """Give translated subtitle track labels enough room in the desktop player menu."""
+    if 'name="menu_subtitle"' not in raw:
+        return raw
+    raw = re.sub(r'minwidth=&quot;\d+&quot;', 'minwidth=&quot;190&quot;', raw, count=1)
+    raw = re.sub(r'itemheight=&quot;\d+&quot;', 'itemheight=&quot;32&quot;', raw, count=1)
+    return re.sub(r'(<Font\b[^>]*\bsize=)"\d+"', r'\g<1>"13"', raw, count=1)
+
+
 def read_text(path: Path) -> tuple[str, str]:
     data = path.read_bytes()
-    if data.startswith(b"\xff\xfe") or data.startswith(b"\xfe\xff"):
-        return data.decode("utf-16"), "utf-16"
+    if data.startswith(b"\xff\xfe"):
+        return data.decode("utf-16-le"), "utf-16-le"
+    if data.startswith(b"\xfe\xff"):
+        return data.decode("utf-16-be"), "utf-16-be"
     head = data[:200].decode("ascii", errors="ignore").lower()
     declared = "gb18030" if ("gb18030" in head or "gbk" in head or "gb2312" in head) else "utf-8"
     for enc in (declared, "utf-8-sig", "utf-8", "gb18030"):
@@ -294,11 +337,17 @@ def inject_lwa_dir(webapp: Path, payload: str) -> int:
     n += 1
 
     for path in webapp.glob("*.html"):
-        raw, _ = read_text(path)
+        if path.name.casefold() in SIGNED_LWA_HTML:
+            # Preserve the exact bytes covered by QyClient's package signature.
+            original = lwa_backup_dir(BACKUP_LWA, webapp) / path.name
+            if original.is_file() and path.read_bytes() != original.read_bytes():
+                shutil.copy2(original, path)
+            continue
+        raw, enc = read_text(path)
         backup_file(webapp, lwa_backup_dir(BACKUP_LWA, webapp), Path(path.name))
         raw = patch_subtitle_tag(raw, hook)
         if "lwa-vi.js" in raw:
-            atomic_write(path, raw)
+            atomic_write(path, raw.encode(enc))
             continue
         # Chèn vào </head> để từ điển có mặt trước khi React render chuỗi tiếng Trung.
         if "</head>" in raw:
@@ -309,7 +358,7 @@ def inject_lwa_dir(webapp: Path, payload: str) -> int:
             raw = raw.replace("<body>", SCRIPT_TAG + "<body>", 1)
         else:
             raw += SCRIPT_TAG
-        atomic_write(path, raw)
+        atomic_write(path, raw.encode(enc))
         n += 1
 
     return n
@@ -383,10 +432,15 @@ def apply_skin(skin: Path, mapping: dict[str, str]) -> tuple[int, int, int]:
             patched_nodes, n_nodes = patch_text_nodes(new, mapping)
             if n_nodes:
                 new, n = patched_nodes, n + n_nodes
-        if n == 0:
+        menu_layout_changed = False
+        if rel.as_posix().casefold() == "geeplayer/skin/menu/subtitlelist.xml":
+            menu = patch_native_subtitle_menu(new)
+            menu_layout_changed = menu != new
+            new = menu
+        if n == 0 and not menu_layout_changed:
             continue
         backup_file(skin, skin_backup_dir(skin), rel)
-        atomic_write(path, new)
+        atomic_write(path, new.encode(enc))
         files += 1
         hits += n
     return files, hits, skipped
@@ -415,10 +469,14 @@ def _main() -> int:
     restore = "--restore" in sys.argv
     lwa_only = "--lwa" in sys.argv
     mapping = load_dict() if not restore else {}
+    if not restore and not mapping:
+        print("Khong co tu dien Viet hoa. Can lwa-vi.js co tu dien hoac cac file tu dien JSON.")
+        return 1
     payload = ""
     if mapping:
         payload = build_lwa_js(mapping)
         atomic_write(LWA_JS, payload)
+        sync_extension_sources(mapping)
     elif LWA_JS.exists():
         payload = LWA_JS.read_text(encoding="utf-8")
 
@@ -435,10 +493,10 @@ def _main() -> int:
             for webapp in find_lwa_dirs():
                 n += restore_tree(lwa_backup_dir(BACKUP_LWA, webapp), webapp)
                 for page in webapp.glob("*.html"):
-                    raw, _ = read_text(page)
+                    raw, enc = read_text(page)
                     cleaned = patch_subtitle_tag(raw.replace(SCRIPT_TAG, ""), None)
                     if cleaned != raw:
-                        atomic_write(page, cleaned)
+                        atomic_write(page, cleaned.encode(enc))
                 for name in ("lwa-vi.js", "sub-hook.js"):
                     extra = webapp / name
                     if extra.exists():
@@ -490,7 +548,7 @@ def _main() -> int:
         return 0
 
     try:
-        atomic_write(ROOT / ".iqiyi-install-location", str(skin.parent) + "\n")
+        atomic_write(ROOT / ".iqiyi-install-location", str(skin.parent.parent) + "\n")
     except OSError:
         pass
     print(f"Skin: {skin}")

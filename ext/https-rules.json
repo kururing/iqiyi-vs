@@ -1,0 +1,21 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        {
+          "header": "Content-Security-Policy",
+          "operation": "append",
+          "value": "upgrade-insecure-requests"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "|https://",
+      "requestDomains": ["iqiyi.com", "iq.com"],
+      "resourceTypes": ["main_frame", "sub_frame"]
+    }
+  }
+]

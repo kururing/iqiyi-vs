@@ -13,7 +13,9 @@ import time
 import urllib.error
 import urllib.request
 import webbrowser
+from urllib.parse import quote, urlsplit
 
+from iqiyi_common import browser_proxy_token, subtitle_manager_alive
 from iqiyi_common import python_executable as _python_executable
 from windows_runtime import list_processes, run_elevated, terminate_process
 
@@ -73,7 +75,7 @@ def stop_processes(processes) -> None:
         terminate_process(process.pid)
 
 
-def stop_previous_run(player: str, legacy_scripts: set[str]) -> bool:
+def stop_previous_run(player: str, legacy_scripts: set[str], keep_manager: bool = False) -> bool:
     """Stop the old watcher/manager of one player; False when a translation is still running."""
     related = list(script_processes({"watch-players.py"}, player))
     related.extend(script_processes(legacy_scripts | {"subtitle_app.py"}))
@@ -82,7 +84,7 @@ def stop_previous_run(player: str, legacy_scripts: set[str]) -> bool:
         print(f"App phụ đề đang dịch hoặc chưa xác nhận được trạng thái. "
               f"Chờ dịch xong rồi chạy lại launcher {player}.")
         return False
-    stop_processes(related)
+    stop_processes([process for process in related if not keep_manager or process not in managers])
     return True
 
 
@@ -114,8 +116,32 @@ def webview_runtime() -> str:
     return str(max(versions, default=((), None), key=lambda item: item[0])[1]) if versions else ""
 
 
+def iqiyi_player_proxy() -> str:
+    """Use the manager's current setting, including an explicit direct connection."""
+    try:
+        token = (ROOT / ".iqiyi-vi-token").read_text(encoding="ascii").strip()
+        request = urllib.request.Request(MANAGER_URL + "api/browser-proxy", headers={
+            "X-Iqiyi-Token": browser_proxy_token(token)})
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(request, timeout=2) as response:
+            proxy = json.load(response)["proxy"]
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"Không đọc được proxy từ app phụ đề (HTTP {exc.code}).") from None
+    except (OSError, urllib.error.URLError):
+        return os.environ.get("IQIYI_PLAYER_PROXY", "").strip()
+    if not proxy:
+        return ""
+    host = proxy["host"]
+    if ":" in host:
+        host = "[" + host + "]"
+    credentials = (quote(proxy["username"], safe="") + ":" + quote(proxy["password"], safe="") + "@"
+                   if proxy.get("username") else "")
+    return f"http://{credentials}{host}:{proxy['port']}"
+
+
 def launch_iqiyi() -> int:
-    if not stop_previous_run("iqiyi", {"watch-iqiyi-vi.py", "inject-cdp.py"}):
+    proxy = iqiyi_player_proxy()
+    if not stop_previous_run("iqiyi", {"watch-iqiyi-vi.py", "inject-cdp.py"}, keep_manager=True):
         return 1
 
     print("Đang cài phụ đề Việt...")
@@ -146,16 +172,20 @@ def launch_iqiyi() -> int:
         stop_processes(qy_processes)
         time.sleep(1)
 
-    proxy = os.environ.get("IQIYI_PLAYER_PROXY", "").strip()
     webview = webview_runtime()
     env = os.environ.copy()
     browser_args = "--remote-debugging-port=9223 --remote-debugging-address=127.0.0.1"
     if proxy:
         env.update(HTTP_PROXY=proxy, HTTPS_PROXY=proxy, ALL_PROXY=proxy,
                    NO_PROXY="localhost,127.0.0.1,::1")
-        browser_args += f" --proxy-server={proxy} --proxy-bypass-list=localhost;127.0.0.1;[::1]"
-        print("Đang mở iQIYI qua proxy đã cấu hình (IQIYI_PLAYER_PROXY)...")
+        proxy_parts = urlsplit(proxy if "://" in proxy else "http://" + proxy)
+        proxy_server = proxy_parts.scheme + "://" + proxy_parts.netloc.rsplit("@", 1)[-1]
+        browser_args += f" --proxy-server={proxy_server} --proxy-bypass-list=localhost;127.0.0.1;[::1]"
+        print("Đang mở iQIYI qua proxy đã cấu hình trong app phụ đề...")
     else:
+        for key in tuple(env):
+            if key.lower() in ("http_proxy", "https_proxy", "all_proxy"):
+                env.pop(key)
         print("Đang mở iQIYI với kết nối trực tiếp (không proxy)...")
     env["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = browser_args
     if webview:
@@ -201,9 +231,10 @@ def launch_youku() -> int:
 
 
 def open_manager_when_ready(player: str) -> int:
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     for _ in range(20):
         try:
-            with urllib.request.urlopen(MANAGER_URL, timeout=1):
+            with opener.open(MANAGER_URL, timeout=1):
                 webbrowser.open(MANAGER_URL)
                 print(f"Xong. {player} đã mở; app quản lý phụ đề đang chạy trong trình duyệt.")
                 return 0
@@ -213,9 +244,18 @@ def open_manager_when_ready(player: str) -> int:
     return 1
 
 
+def open_manager() -> int:
+    if not subtitle_manager_alive():
+        with (ROOT / "subtitle-manager.stderr.log").open("a", encoding="utf-8") as errors:
+            subprocess.Popen([str(python_executable(background=True)), str(ROOT / "subtitle_app.py")],
+                             cwd=ROOT, creationflags=CREATE_NO_WINDOW, close_fds=True,
+                             stdout=subprocess.DEVNULL, stderr=errors)
+    return open_manager_when_ready("Thư viện phụ đề")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Khởi chạy công cụ Việt hóa iQIYI / Youku")
-    parser.add_argument("action", choices=("iqiyi", "youku", "manager", "restore"))
+    parser.add_argument("action", choices=("iqiyi", "youku", "manager", "open-manager", "restore"))
     action = parser.parse_args().action
     try:
         if action == "iqiyi":
@@ -224,6 +264,8 @@ def main() -> int:
             return launch_youku()
         if action == "restore":
             return run_apply(restore=True)
+        if action == "open-manager":
+            return open_manager()
         return subprocess.call([str(python_executable()), str(ROOT / "subtitle_app.py")], cwd=ROOT)
     except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
         print(f"Không chạy được launcher: {type(exc).__name__}: {exc}")

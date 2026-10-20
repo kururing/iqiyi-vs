@@ -1,10 +1,9 @@
 """Local film memory and prompts for the manager's bounded translation workflow.
 
 Prompts are written to work with any instruction-following chat model: short numbered rules,
-an explicit decision procedure, concrete examples and a literal output example. Validation of the
-model's JSON is lenient about structure (missing keys, over-long strings) so weaker models can
-still produce a usable profile, and strict only about what matters (no Han characters in the
-Vietnamese-only fields).
+an explicit decision procedure, concrete examples and a literal output example. Model replies
+must satisfy the profile contract; legacy storage may omit fields, but Vietnamese content is
+never repaired by deleting source characters.
 """
 import csv
 import hashlib
@@ -59,21 +58,34 @@ VIỆT HÓA TÊN NHÂN VẬT (áp dụng cho mọi phim)
 - Trước hết xác định mỗi tên chỉ một nhân vật nào: đối chiếu cách tự giới thiệu, cách người khác gọi, nhãn người nói và các cue liên quan. Chỉ gộp tên đầy đủ, tên thân mật, biệt danh hoặc chức danh khi ngữ cảnh cho thấy cùng một người.
 - Tách họ, tên, họ kép, biệt danh và chức tước. Giữ trật tự họ rồi tên; không đưa chức danh hay quan hệ thân tộc vào tên riêng.
 - Tên gốc chữ Hán chưa có cách Việt hóa đã được xác nhận: chuyển từng chữ theo âm Hán-Việt của đúng chữ đó, không dùng pinyin, âm nghe gần giống hoặc dịch nghĩa. Giữ họ kép như một cụm (司马 → Tư Mã, 欧阳 → Âu Dương, 夏侯 → Hạ Hầu).
-- Nếu một chữ có nhiều âm hoặc tên có cách đọc không chắc, xét cách dùng trong tên người và các nguồn ngữ cảnh sẵn có; không chọn theo pinyin hay suy đoán. Ghi vào uncertainties khi chưa thể chốt.
+- Nếu một chữ có nhiều âm hoặc tên có cách đọc không chắc, xét cách dùng trong tên người và các nguồn ngữ cảnh sẵn có; không chọn theo pinyin hay suy đoán. Áp dụng cách xử lý tên chưa chốt của giai đoạn hiện tại.
 - 阿, 小, 儿 và các yếu tố tương tự có thể là thành phần tên gọi, cách gọi thân mật hoặc hư tố; chỉ chuyển thành âm tiết trong tên Việt khi cấu trúc tên và cách gọi nhất quán xác nhận điều đó. Không tự thêm hoặc bỏ âm tiết.
-- Thứ tự ưu tiên cách Việt hóa: tên người dùng đã xác nhận cho phim hiện tại → tên đã được kiểm chứng và lưu trong hồ sơ phim → âm Hán-Việt chung. Lưu tên đã xác nhận vào characters.translation và glossary.translation; không tự đổi nó chỉ vì có cách phiên âm khác.
-- previous_memory là dữ liệu liên tục, không phải bằng chứng độc lập: kiểm tra tên cũ có khớp đúng chữ nguồn và quy tắc trên không; giữ khi hợp lệ, sửa khi sai rõ ràng, ghi uncertainties khi chưa thể chốt.
+- Thứ tự ưu tiên cách Việt hóa: confirmed_names do người dùng xác nhận cho phim hiện tại → tên trong hồ sơ phim → âm Hán-Việt chung. Chỉ confirmed_names đánh dấu tên đã được người dùng khóa; tên do model tạo không tự trở thành tên người dùng xác nhận.
+- previous_memory là dữ liệu liên tục, không phải bằng chứng độc lập. Việc sửa tên cũ chỉ thực hiện ở bước lập hồ sơ theo bằng chứng; bước dịch dùng cách viết đã chốt trong hồ sơ và confirmed_names, không tự sửa tên giữa các lô.
 - Sau khi đã đối chiếu và chốt cách Việt hóa của một nhân vật trong phim, dùng nhất quán cách viết đó ở các tập sau; không suy rộng tên hay cách đọc sang phim khác.
-- Trước khi xuất, đối chiếu từng âm tiết tên Việt với đúng các chữ nguồn, kiểm tra không đảo thứ tự, bỏ chữ, thêm chữ hay lẫn tên với chức danh. Ghi tên và biệt danh đã xác nhận nhất quán trong characters và glossary.
+- Với tên mới, đối chiếu từng âm tiết tên Việt với đúng các chữ nguồn, kiểm tra không đảo thứ tự, bỏ chữ, thêm chữ hay lẫn tên với chức danh. Với tên đã có, giữ cách viết theo thứ tự ưu tiên trên.
 """
 
 WORK_NAME_RULES = """
 TÊN TÁC PHẨM (tên phim, tên series)
-- Tên phim tiếng Việt phải là tên được dùng chính thức trong bản Vietsub/chính thức, không phải bản dịch nghĩa từng chữ và không phải phiên âm ghép từng chữ Hán.
-- Trình tự: (1) tên phim đã được xác nhận trong hồ sơ phim hoặc trong danh sách tên phim được cấp trong prompt → dùng đúng như vậy; (2) chưa có → chỉ dùng âm Hán-Việt của đúng từng chữ, coi là cách đọc tạm, và ghi vào uncertainties rằng tên phim chưa đối chiếu với tên chính thức.
+- Tên Việt chính thức của phim là tên đã được xác nhận trong dữ liệu cấp cho phim, không tự đặt bằng cách dịch nghĩa hay phiên âm ghép từng chữ Hán.
+- Trình tự: (1) tên phim có trạng thái confirmed trong metadata hoặc được xác nhận trong hồ sơ → dùng đúng như vậy; (2) chưa có → khi source thực sự nhắc tới, chỉ dùng âm Hán-Việt của đúng từng chữ làm cách đọc tạm, không coi đó là tên chính thức.
 - Không dịch nghĩa các thành tố của tên phim. 大梦归离 không phải “Giấc Mộng Lớn Trở Về”; 逍遥 không phải “Tiêu Dao Tự Tại” (đó là cách giải thích nghĩa, không phải tên phim). Tước hiệu chứa tên phim cũng phải giữ đúng tên đã chốt.
 - Tên phim chỉ được xuất hiện trong lời thoại khi source thật sự nhắc tới; không tự chèn tên phim vào bản dịch phụ đề.
-- metadata.series_title và metadata.episode_title trong prompt đã là tiếng Việt và chỉ để tham khảo: không dịch lại, không chèn vào cue, không coi là lời thoại.
+- metadata.series_title và metadata.episode_title là nhãn Việt nếu có; các trường có hậu tố _original có thể chứa tiếng Trung. Metadata chỉ để tham khảo: không dịch lại, không chèn vào cue, không coi là lời thoại; chỉ series_title_status=confirmed xác nhận tên phim chính thức.
+"""
+
+PROFILE_NAME_RULES = """
+QUY TẮC RIÊNG CỦA BƯỚC HỒ SƠ
+- Ghi tên và biệt danh nhất quán vào characters.translation và glossary.translation. Khi chưa chốt cách đọc hoặc chưa có tên phim chính thức, ghi điều chưa rõ vào uncertainties bằng tiếng Việt.
+- Tên trong confirmed_names do người dùng khóa: giữ nguyên. Tên khác trong previous_memory là tên tạm: giữ khi hợp lệ; chỉ sửa nếu có bằng chứng cụ thể về sai âm Hán-Việt hoặc nhầm danh tính. Khi sửa, evidence phải nêu tập/cue và lý do, uncertainties ghi cách cũ → cách mới cùng lý do bằng tiếng Việt.
+- Không xóa mục cũ vì tập này không nhắc đến. Backend giữ lại các nhân vật/thuật ngữ bị bỏ sót; muốn sửa một mục, trả mục đó với cùng name/source và dữ liệu mới có căn cứ. Không trả trường thiếu hoặc tên Việt rỗng.
+"""
+
+TRANSLATION_NAME_RULES = """
+QUY TẮC RIÊNG CỦA BƯỚC DỊCH
+- Chỉ xuất id và translation. Bước này không cập nhật hồ sơ hoặc xuất ghi chú ngoài schema.
+- Tên đã có: dùng đúng confirmed_names, rồi characters.translation/glossary.translation trong hồ sơ; không tự sửa cách viết. Tên mới: dùng âm Hán-Việt của đúng chữ; nếu chưa thể chốt âm đọc, dùng danh xưng có căn cứ hoặc lược tên khi vẫn đủ nghĩa. Không đoán danh tính, không chép chữ Hán hay thêm giải thích vào cue.
 """
 
 MEMORY_SCHEMA = object_schema({
@@ -95,7 +107,7 @@ PROFILE_RESULT_SCHEMA = object_schema({
     "episode_context": EPISODE_CONTEXT_SCHEMA,
 })
 
-PROFILE_SYSTEM = """Bạn là biên tập viên liên tục (continuity editor) cho phim Trung–Việt. Nhiệm vụ: đọc toàn bộ lời thoại của một tập cùng hồ sơ các tập trước, rồi xuất hồ sơ ngữ cảnh để dịch phụ đề nhất quán. Chỉ xuất MỘT đối tượng JSON đúng cấu trúc bên dưới; không Markdown, không lời giải thích, không in quá trình suy nghĩ.
+PROFILE_SYSTEM = """Bạn là biên tập viên liên tục (continuity editor) cho phim Trung–Việt. Nhiệm vụ: đọc phần lời thoại được cung cấp của một tập cùng hồ sơ các tập trước, rồi xuất hồ sơ ngữ cảnh để dịch phụ đề nhất quán. episode_note và episode_coverage cho biết độ phủ; không coi đoạn bị lược là đã được kiểm chứng. Chỉ xuất MỘT đối tượng JSON đúng cấu trúc bên dưới; không Markdown, không lời giải thích, không in quá trình suy nghĩ.
 
 NGUYÊN TẮC
 1. Chỉ ghi kết luận có bằng chứng trong lời thoại. Điều chưa chắc ghi “chưa rõ” hoặc đưa vào uncertainties; không biến suy đoán thành sự thật.
@@ -114,10 +126,10 @@ CÁC TRƯỜNG CỦA memory
 - summary: 1–3 câu tiếng Việt về bối cảnh và cách phân biệt các cảnh; không kể lại cốt truyện.
 - characters (tối đa 60), mỗi mục gồm:
   • name: tên gốc chữ Hán.
-  • translation: tên Việt nhất quán. Nhân vật đã có trong previous_memory giữ nguyên tên Việt đã chọn, trừ khi source chứng minh nhầm danh tính hoặc có chỉ dẫn sửa tên cụ thể. Tên mới dùng âm Hán-Việt của đúng từng chữ, giữ họ kép nguyên cụm (夏侯 → Hạ Hầu), không phiên âm theo bính âm.
+  • translation: tên Việt không rỗng. Tên trong confirmed_names giữ nguyên; tên tạm trong previous_memory chỉ được sửa ở bước hồ sơ khi có bằng chứng cụ thể về sai âm hoặc nhầm danh tính, ghi lý do trong evidence và uncertainties. Tên mới dùng âm Hán-Việt của đúng từng chữ, giữ họ kép nguyên cụm (夏侯 → Hạ Hầu), không phiên âm theo bính âm.
   • role: vai trò hoặc quan hệ, ví dụ “em gái của Mạn Nhi”, “hoàng đế”. Chưa rõ thì ghi “chưa rõ”.
   • address: xưng hô THEO CẶP, ghi rõ chiều người nói → người nghe và cách gọi hai chiều khi có căn cứ, ví dụ “A → B: ta gọi người nghe là huynh; B → A: chưa rõ”. Dịch các cách gọi như 朕, 娘娘, 公公, 姐姐 thành từ xưng hô tiếng Việt phù hợp (ví dụ “chị/tỷ”); không để nguyên từ Trung. Không nâng 府 thành vương phủ nếu nguồn chưa xác nhận tước vị.
-  • evidence: id cue và diễn giải ngắn bằng tiếng Việt, ví dụ “#12, #15: bị gọi là tỷ”. Không chép nguyên câu Trung. Tên đứng riêng không chứng minh nam/nữ. Việc A gọi B là 姐姐 chỉ chứng minh B là tỷ, KHÔNG chứng minh giới tính của A; nếu chưa rõ giới tính của A thì ghi “chưa rõ giới tính”, không đặt cặp tỷ–muội hay huynh–đệ.
+  • evidence: định danh tập (episode_id), id cue và diễn giải ngắn bằng tiếng Việt, ghi rõ ai gọi ai, ví dụ “tập 1, #12: Mạn Nhi gọi Thanh Lan là tỷ”. Không chép nguyên câu Trung. Tên đứng riêng không chứng minh nam/nữ. Việc A gọi B là 姐姐 chỉ chứng minh B là tỷ, KHÔNG chứng minh giới tính của A; nếu chưa rõ giới tính của A thì ghi “chưa rõ giới tính”, không đặt cặp tỷ–muội hay huynh–đệ.
 - glossary (tối đa 100): source là chữ Hán, translation là tiếng Việt; gồm tên, chức danh, địa danh, thuật ngữ quan trọng với cách dịch phù hợp bối cảnh.
 - uncertainties (tối đa 20): điều chưa xác định.
 - episode_context: đối tượng riêng gồm summary, characters, glossary, uncertainties. summary tóm tắt ngắn diễn biến và bối cảnh của RIÊNG tập này. Các mục còn lại chỉ ghi thông tin có ích cho việc dịch tập hiện tại; vẫn dùng tên Việt và thuật ngữ đã chốt trong memory.
@@ -127,8 +139,8 @@ NGÔN NGỮ (bắt buộc)
 Chữ Hán CHỈ được phép xuất hiện trong characters.name và glossary.source của cả memory lẫn episode_context. Mọi trường còn lại (summary, translation, role, address, evidence, uncertainties) phải hoàn toàn bằng tiếng Việt: không chữ Hán, không pinyin, không trích câu thoại nguồn, không tên phim hay tên tập tiếng Trung. Cần nhắc nhân vật thì dùng tên Việt đã chọn.
 
 VÍ DỤ CẤU TRÚC (chỉ minh họa định dạng, nội dung không phải dữ liệu thật)
-{"memory":{"setting":"historical","summary":"Phim cổ trang cung đình; cảnh nghị sự trang trọng xen với cảnh riêng.","characters":[{"name":"蔓儿","translation":"Mạn Nhi","role":"em họ của Thanh Lan","address":"Mạn Nhi → Thanh Lan: gọi là tỷ, tự xưng muội","evidence":"#12, #15: bị gọi là tỷ"}],"glossary":[{"source":"夏侯","translation":"Hạ Hầu"}],"uncertainties":[]},"episode_context":{"summary":"Mạn Nhi gặp Thanh Lan sau buổi nghị sự; hai người bàn về chuyến đi.","characters":[],"glossary":[],"uncertainties":[]}}
-""" + ADDRESS_RULES + CHARACTER_NAME_RULES + WORK_NAME_RULES
+{"memory":{"setting":"historical","summary":"Phim cổ trang cung đình; cảnh nghị sự trang trọng xen với cảnh riêng.","characters":[{"name":"蔓儿","translation":"Mạn Nhi","role":"chưa rõ quan hệ thân tộc với Thanh Lan","address":"Mạn Nhi → Thanh Lan: gọi là tỷ, tự xưng muội; Thanh Lan → Mạn Nhi: chưa rõ","evidence":"tập 1, #12: Mạn Nhi gọi Thanh Lan là tỷ; #15: Mạn Nhi tự xưng muội"}],"glossary":[{"source":"夏侯","translation":"Hạ Hầu"}],"uncertainties":[]},"episode_context":{"summary":"Mạn Nhi gặp Thanh Lan sau buổi nghị sự; hai người bàn về chuyến đi.","characters":[],"glossary":[],"uncertainties":[]}}
+""" + ADDRESS_RULES + CHARACTER_NAME_RULES + WORK_NAME_RULES + PROFILE_NAME_RULES
 
 
 
@@ -164,11 +176,12 @@ def international_reference(item, source, ids=None):
         return {}
 
 # Re-analyze unchanged subtitles when the interpretation rules change.
-PROFILE_VERSION = hashlib.sha256((PROFILE_SYSTEM + "\n" + ADDRESS_RULES + "\n" + CHARACTER_NAME_RULES + "\n" + WORK_NAME_RULES + "\ncontinuity-editor-v13-episode-context").encode()).hexdigest()
+PROFILE_VERSION = hashlib.sha256((PROFILE_SYSTEM + "\ncontinuity-editor-v14-preserve-memory").encode()).hexdigest()
 
 # Profiles written by these earlier prompt versions were built from the Chinese source only, so
 # their film memory stays valid as `previous_memory`; the episodes are simply analysed again.
 LEGACY_TRUSTED_PROFILE_VERSIONS = frozenset({
+    "500c3f66691ee40ef0ce28291d5765e81726efcd23985d1e6b0194ade9ff2b14",  # v13, source-only; re-analyse without discarding memory
     "119d2a2f09f0f9c0160c7aeac4ca5e196bb26c878fcbdef80f43bb4e6e728d40",  # continuity-editor-v12; retain verified film memory
     "7bdfcaeecfb1473589933cbd771bff09f6652c16d69e1b9919cbf15c9ed6a8a1",  # continuity-editor-v10; keep verified film memory
     "932145b919c311ec77b9029cea5956999f587f818d4ee4a859ef3e7ca4d427d6",  # continuity-editor-v9
@@ -188,10 +201,25 @@ def profile_path(library: Path, item: dict) -> Path:
     return library / ".agent" / (hashlib.sha256(key.encode()).hexdigest() + ".json")
 
 
-def _strip_han(value: str) -> str:
-    value = CJK_RE.sub("", value)
-    value = re.sub(r"[（(]\s*[)）]|“\s*”|\"\s*\"|「\s*」|《\s*》", "", value)
-    return re.sub(r"\s{2,}", " ", value).strip(" ,;:/·-")
+def _validate_shape(value, schema, field="profile"):
+    """Check the small object/array/string contract locally, including prompt-only APIs."""
+    kind = schema["type"]
+    if kind == "object":
+        if not isinstance(value, dict):
+            raise ValueError(f"{field} phải là đối tượng JSON.")
+        missing = set(schema["required"]) - value.keys()
+        extra = value.keys() - schema["properties"].keys()
+        if missing or extra:
+            raise ValueError(f"{field}: thiếu trường {sorted(missing)}; trường không hợp lệ {sorted(extra)}.")
+        for key, spec in schema["properties"].items():
+            _validate_shape(value[key], spec, f"{field}.{key}")
+    elif kind == "array":
+        if not isinstance(value, list):
+            raise ValueError(f"{field} phải là mảng JSON.")
+        for index, row in enumerate(value):
+            _validate_shape(row, schema["items"], f"{field}[{index}]")
+    elif not isinstance(value, str) or ("enum" in schema and value not in schema["enum"]):
+        raise ValueError(f"{field} không đúng kiểu hoặc giá trị cho phép.")
 
 
 def _clean_text(value, limit: int, field: str, repair: bool, vietnamese: bool = True) -> str:
@@ -205,9 +233,7 @@ def _clean_text(value, limit: int, field: str, repair: bool, vietnamese: bool = 
         raise ValueError(f"Trường {field} của hồ sơ phải là chuỗi.")
     value = value.strip()
     if vietnamese and CJK_RE.search(value):
-        if not repair:
-            raise ValueError(f"Trường {field} của hồ sơ chứa ký tự Hán; hãy viết lại hoàn toàn bằng tiếng Việt.")
-        value = _strip_han(value)
+        raise ValueError(f"Trường {field} của hồ sơ chứa ký tự Hán; hãy viết lại hoàn toàn bằng tiếng Việt.")
     return value[:limit].strip()
 
 
@@ -222,13 +248,9 @@ def _rows(value, field: str) -> list:
 
 
 def normalize_memory(value, repair: bool = True):
-    """Validate and normalise a film profile.
-
-    Structure is repaired leniently (missing keys, unknown keys, over-long strings, wrong casing)
-    because weaker models often miss the exact schema. Han characters in Vietnamese-only fields
-    raise ValueError when repair=False (so the caller can ask the model to rewrite) and are
-    stripped when repair=True.
-    """
+    """Read legacy structure leniently; never delete untranslated content to repair it."""
+    if not repair:
+        _validate_shape(value, MEMORY_SCHEMA, "memory")
     if not isinstance(value, dict) or not value:
         raise ValueError("Hồ sơ ngữ cảnh không đúng cấu trúc.")
     if "setting" not in value and len(value) == 1 and isinstance(next(iter(value.values())), dict):
@@ -240,17 +262,20 @@ def normalize_memory(value, repair: bool = True):
         setting = "unknown"
     normalized = {"setting": setting,
                   "summary": _clean_text(value.get("summary"), 3000, "summary", repair)}
-    specs = (("characters", {"name": False, "translation": True, "role": True, "address": True, "evidence": True}, 60),
-             ("glossary", {"source": False, "translation": True}, 100))
-    for field, keys, limit in specs:
+    specs = (("characters", {"name": False, "translation": True, "role": True, "address": True, "evidence": True}),
+             ("glossary", {"source": False, "translation": True}))
+    for field, keys in specs:
         rows = []
-        for index, row in enumerate(_rows(value.get(field), field)[:limit]):
+        for index, row in enumerate(_rows(value.get(field), field)):
             if not isinstance(row, dict):
                 continue
             cleaned = {key: _clean_text(row.get(key), 1500, f"{field}[{index}].{key}", repair, vietnamese)
                        for key, vietnamese in keys.items()}
-            if not any(cleaned.values()):
-                continue
+            identity = "name" if field == "characters" else "source"
+            if not cleaned[identity] or not cleaned["translation"]:
+                raise ValueError(f"{field}[{index}]: tên/thuật ngữ nguồn và bản dịch không được rỗng.")
+            if any(existing[identity] == cleaned[identity] for existing in rows):
+                raise ValueError(f"{field}: mục nguồn bị trùng; hãy gộp bằng chứng vào một mục.")
             rows.append(cleaned)
         normalized[field] = rows
     notes = value.get("uncertainties")
@@ -263,6 +288,8 @@ def normalize_memory(value, repair: bool = True):
 
 
 def normalize_episode_context(value, repair: bool = True):
+    if not repair:
+        _validate_shape(value, EPISODE_CONTEXT_SCHEMA, "episode_context")
     if not isinstance(value, dict):
         if not repair:
             raise ValueError("Ngữ cảnh tập không đúng cấu trúc.")
@@ -272,12 +299,50 @@ def normalize_episode_context(value, repair: bool = True):
 
 
 def normalize_profile_result(value, repair: bool = True):
-    if not isinstance(value, dict):
-        raise ValueError("Kết quả ngữ cảnh không đúng cấu trúc.")
-    if "episode_context" not in value and not repair:
-        raise ValueError("Thiếu ngữ cảnh riêng của tập.")
+    # Model replies must be complete on every attempt, even when an API ignores its schema.
+    _validate_shape(value, PROFILE_RESULT_SCHEMA)
     return {"memory": normalize_memory(value.get("memory"), repair),
             "episodeContext": normalize_episode_context(value.get("episode_context"), repair)}
+
+
+def confirmed_names(profile):
+    """User-owned data outside model output; the model cannot promote its guesses to locks."""
+    names = profile.get("confirmedNames", {})
+    if not isinstance(names, dict) or any(
+            not isinstance(k, str) or not k.strip() or not isinstance(v, str)
+            or not v.strip() or CJK_RE.search(v) for k, v in names.items()):
+        raise ValueError("confirmedNames phải ánh xạ tên nguồn sang tên Việt không rỗng.")
+    return {k.strip(): v.strip() for k, v in names.items()}
+
+
+def merge_memory(previous, incoming, names=None):
+    """Preserve omitted facts; apply explicit updates and user name locks before saving."""
+    merged = {**previous, **incoming}
+    for field, key in (("characters", "name"), ("glossary", "source")):
+        rows = {row[key]: dict(row) for row in previous.get(field, [])}
+        for row in incoming.get(field, []):
+            old = rows.get(row[key], {})
+            if (field == "characters" and old and old["translation"] != row["translation"]
+                    and row[key] not in (names or {})
+                    and (not row["evidence"] or row["evidence"] == old.get("evidence")
+                         or not any(old["translation"] in note and row["translation"] in note
+                                    for note in incoming.get("uncertainties", [])))):
+                raise ValueError("Đổi tên tạm cần evidence mới và uncertainty ghi tên cũ → mới cùng lý do.")
+            rows[row[key]] = {**old, **{k: v for k, v in row.items() if v and v != "chưa rõ"}}
+        merged[field] = list(rows.values())
+    for key in ("summary", "setting"):
+        if not incoming.get(key) or incoming[key] == "unknown":
+            merged[key] = previous.get(key, incoming.get(key, ""))
+    for row in merged["characters"]:
+        if row["name"] in (names or {}):
+            row["translation"] = names[row["name"]]
+    canonical = {row["name"]: row["translation"] for row in merged["characters"]}
+    canonical.update(names or {})
+    glossary = {row["source"]: row for row in merged["glossary"]}
+    for name, translation in canonical.items():
+        glossary[name] = {"source": name, "translation": translation}
+    merged["glossary"] = list(glossary.values())
+    return normalize_memory(merged)
 
 
 def load_profile(library, item):
@@ -287,14 +352,24 @@ def load_profile(library, item):
         episodes = saved.get("episodes", {})
         if not isinstance(episodes, dict):
             raise ValueError("Invalid episode memory")
+        names = confirmed_names(saved)
+        if names:
+            memory = merge_memory(memory, memory, names)
         return {"memory": memory, "episodes": {str(k): v for k, v in episodes.items() if isinstance(v, str)},
-                "updatedAt": saved.get("updatedAt", 0), "profileVersion": saved.get("profileVersion", "")}
-    except (OSError, ValueError, KeyError, TypeError):
+                "updatedAt": saved.get("updatedAt", 0), "profileVersion": saved.get("profileVersion", ""),
+                "confirmedNames": names}
+    except FileNotFoundError:
         return {"memory": {}, "episodes": {}, "updatedAt": 0}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+        # A malformed existing file is not an empty/new film. Stop before any model result
+        # can overwrite the remaining valid facts or user-owned name locks in that file.
+        raise ValueError("Hồ sơ phim đã lưu không hợp lệ; file được giữ nguyên. "
+                         "Hãy sửa hồ sơ trước khi dịch tiếp.") from error
 
 
 def save_profile(library, item, profile):
     normalize_memory(profile["memory"])
+    confirmed_names(profile)
     atomic_write(profile_path(library, item), json.dumps(profile, ensure_ascii=False, indent=2))
 
 
@@ -314,16 +389,30 @@ def load_episode_profile(folder, fingerprint):
 def _fit_episode(rows: list, limit: int) -> list:
     """Keep evenly spaced blocks of cues when the whole episode would not fit the context budget."""
     sizes = [len(json.dumps(row, ensure_ascii=False, separators=(",", ":"))) + 1 for row in rows]
-    total = sum(sizes)
+    total = 1 + sum(sizes) if rows else 2
     if total <= limit or not rows:
         return rows
-    block = 40
-    chunks = [rows[i:i + block] for i in range(0, len(rows), block)]
+    block = min(40, max(1, int((limit - 2) / (total / len(rows)))))
+    chunks = [list(range(i, min(i + block, len(rows)))) for i in range(0, len(rows), block)]
     keep = max(1, int(limit / (total / len(chunks))))
-    if keep >= len(chunks):
-        return rows
     picks = [0] if keep == 1 else sorted({round(i * (len(chunks) - 1) / (keep - 1)) for i in range(keep)})
-    return [row for index in picks for row in chunks[index]]
+    selected, used = [], 1
+    # Round-robin selected blocks so an unusually long block cannot consume all coverage.
+    for offset in range(block):
+        for chunk in picks:
+            if offset < len(chunks[chunk]):
+                index = chunks[chunk][offset]
+                if used + sizes[index] <= limit:
+                    selected.append(index)
+                    used += sizes[index]
+    if not selected:
+        for index, size in enumerate(sizes):
+            if used + size <= limit:
+                selected.append(index)
+                used += size
+    if not selected:
+        raise ValueError("Không cue nào vừa budget hồ sơ; tăng AI_PROFILE_CONTEXT_CHARS.")
+    return [rows[index] for index in sorted(selected)]
 
 
 # Once a film profile has covered this many episodes without unresolved uncertainties, it is
@@ -359,7 +448,10 @@ def profile_prompt(item, source, profile, validation_error="", max_chars: int = 
     # A mature profile no longer needs full per-cue evidence replayed each episode: send the compacted
     # essentials so the model keeps names/roles/addresses consistent while the payload stays small.
     previous_memory = compact_memory(profile["memory"]) if _is_mature(profile) else profile["memory"]
-    payload = {"film": official_title or item.get("albumTitle") or item.get("title", ""),
+    payload = {"film": official_title,
+        "film_title_original": item.get("albumTitle") or item.get("title", ""),
+        "episode_id": str(item.get("tvid", "")),
+        "confirmed_names": confirmed_names(profile),
         "film_title_rule": ("film là tên Việt chính thức của phim; dùng đúng tên này khi nhắc tới phim, "
                             "không dịch lại và không ghi vào characters hay glossary."
                             if official_title else
@@ -368,6 +460,7 @@ def profile_prompt(item, source, profile, validation_error="", max_chars: int = 
         "output_language": "vi-VN",
         "output_language_instruction": "Trả JSON gồm memory là hồ sơ xuyên suốt phim và episode_context là ngữ cảnh riêng của tập hiện tại. Tạo episode_context từ lời thoại tập này, rồi dùng previous_memory để giữ tên, quan hệ và thuật ngữ đã xác nhận; memory phải giữ thông tin cũ có căn cứ và bổ sung/sửa bằng chứng mới. Chữ Hán chỉ được giữ trong characters.name và glossary.source của hai phần. Mọi characters.address ghi rõ chiều người nói → người nghe bằng từ xưng hô tiếng Việt. Giữ nguyên cách viết tên người dùng đã xác nhận.",
         "previous_memory": previous_memory,
+        "episode_coverage": {"included": len(episode), "total": len(source)},
         "episode_note": ("Chỉ có một phần lời thoại được gửi (các đoạn cách đều nhau); id là số thứ tự thật trong tập."
                          if len(episode) < len(source) else "Đây là toàn bộ lời thoại của tập, theo thứ tự."),
         "episode": episode}
@@ -391,7 +484,9 @@ def memory_context(profile, item=None):
 
     film = compact(profile.get("memory"))
     episode = compact(profile.get("episodeContext"))
-    return ("Hồ sơ phim đã đối chiếu qua các tập (dữ liệu tham khảo): "
+    return ("Tên do người dùng xác nhận (confirmed_names, dữ liệu): "
+            + json.dumps(confirmed_names(profile), ensure_ascii=False, separators=(",", ":")) + "\n"
+            + "Hồ sơ phim đã đối chiếu qua các tập (dữ liệu tham khảo): "
             + json.dumps(film, ensure_ascii=False, separators=(",", ":")) + "\n"
             + "Ngữ cảnh riêng của tập đang dịch (dữ liệu tham khảo, ưu tiên source tập này khi có khác biệt): "
             + json.dumps(episode, ensure_ascii=False, separators=(",", ":")) + "\n")

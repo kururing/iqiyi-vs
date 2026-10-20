@@ -19,7 +19,7 @@ import cdp
 from iqiyi_common import (
     api_token, atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
     lwa_backup_dir, patch_subtitle_tag, python_executable, subtitle_hook,
-    subtitle_manager_alive, update_lwa_ini_flags,
+    subtitle_manager_alive, update_lwa_ini_flags, player_token,
 )
 from windows_runtime import create_named_mutex
 
@@ -187,7 +187,8 @@ def inject_runtime() -> None:
         websocket = urlsplit(target.get("webSocketDebuggerUrl", ""))
         if websocket.scheme != "ws" or websocket.hostname != "127.0.0.1" or websocket.port != 9223:
             continue
-        script = LWA_JS.read_text(encoding="utf-8") + "\n" + subtitle_hook(ROOT).decode("utf-8")
+        script = ("window.__iqiyiViTokenPending = true;\n" + LWA_JS.read_text(encoding="utf-8")
+                  + "\n" + subtitle_hook(ROOT).decode("utf-8"))
         revision = revision_of(script)
         if runtime_current(target, "!!window.__iqiyiVi && window.__iqiyiRuntimeVi", revision):
             continue
@@ -233,11 +234,14 @@ def log(message: str) -> None:
 
 
 def read_scripts() -> list[str]:
-    dictionary = json.loads((ROOT / "youku-vi.json").read_text(encoding="utf-8"))
+    dictionary_path = ROOT / "youku-vi.json"
+    if not dictionary_path.is_file():
+        dictionary_path = ROOT / ".local" / "youku-vi.json"
+    dictionary = json.loads(dictionary_path.read_text(encoding="utf-8")) if dictionary_path.is_file() else {}
     engine = (ROOT / "ui-engine.js").read_text(encoding="utf-8")
     engine = (engine.replace("iqiyiVi", "youkuVi").replace("iqiyi-vi", "youku-vi")
               .replace("subtitleContainer|caption-main", "subtitleContainer|caption-main|kui-subtitle|youku-vi-subtitle"))
-    manager_config = "window.__youkuViApi = 'http://127.0.0.1:18766'; window.__youkuViToken = " + json.dumps(api_token(ROOT)) + ";\n"
+    manager_config = "window.__youkuViApi = 'http://127.0.0.1:18766'; window.__youkuViToken = " + json.dumps(player_token(api_token(ROOT))) + ";\n"
     return [
         "window.__youkuViDict = " + json.dumps(dictionary, ensure_ascii=False, separators=(",", ":")) + ";\n" + engine,
         manager_config + SUB_HOOK_JS.read_text(encoding="utf-8"),

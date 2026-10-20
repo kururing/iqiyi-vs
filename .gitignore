@@ -14,6 +14,8 @@ subtitles/international/
 *.log
 
 # Transient caches and per-run snapshots
+.tmp/
+ext/_metadata/
 live-vietsub-cache.json
 vi-live.json
 subtitle-context-cache.json
@@ -27,6 +29,7 @@ watch-iqiyi-vi.disabled
 .env
 .ai-settings.json
 .iqiyi-vi-token
+ext/proxy-token.json
 
 # --- Local-only development assets ---
 # Translation bodies extracted from a licensed client, and override tables for

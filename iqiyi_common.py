@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 import json
 import hashlib
+import hmac
 import os
 import re
 from pathlib import Path
@@ -51,6 +52,8 @@ def iqiyi_install_roots(state_dir: Path | None = None) -> list[Path]:
             value = saved.read_text(encoding="utf-8").strip()
             if value:
                 location = Path(value)
+                if (location / "skin").is_dir():
+                    location = location.parent  # Older installers saved the version directory.
                 if location.is_absolute() and location not in roots:
                     roots.append(location)
         except (OSError, ValueError):
@@ -63,6 +66,8 @@ def iqiyi_skin_dir(base: Path) -> Path | None:
     """Return the newest iQIYI version's skin folder under an install root."""
     if not base.exists():
         return None
+    if (base / "skin").is_dir():
+        return base / "skin"
     versions = sorted(
         (path for path in base.iterdir() if path.is_dir() and (path / "skin").exists()),
         key=lambda path: tuple(int(number) for number in re.findall(r"\d+", path.name)),
@@ -119,6 +124,15 @@ def api_token(root: Path) -> str:
         return token
 
 
+def player_token(token: str) -> str:
+    """Derive a player-only credential without exposing the manager's admin token."""
+    return hmac.new(token.encode("utf-8"), b"subtitle-player-v1", hashlib.sha256).hexdigest()
+
+
+def browser_proxy_token(token: str) -> str:
+    return hmac.new(token.encode("utf-8"), b"browser-proxy-v1", hashlib.sha256).hexdigest()
+
+
 def python_executable(root: Path, background: bool = False) -> Path:
     """Interpreter for helper processes: the checkout's .venv first, then the running Python.
 
@@ -145,7 +159,8 @@ def python_executable(root: Path, background: bool = False) -> Path:
 
 def subtitle_manager_alive(port: int = 18766) -> bool:
     try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=0.6) as response:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(f"http://127.0.0.1:{port}/health", timeout=0.6) as response:
             return response.status == 200
     except (TimeoutError, OSError):
         return False
@@ -162,7 +177,9 @@ def update_lwa_ini_flags(raw: str) -> str:
 
 
 def subtitle_hook(root: Path) -> bytes:
-    prefix = "window.__iqiyiViToken = " + json.dumps(api_token(root)) + ";\n"
+    prefix = ("window.__iqiyiViToken = " + json.dumps(player_token(api_token(root))) + ";\n"
+              "window.__iqiyiViTokenPending = false;\n"
+              "if (window.__iqiyiViReload) window.__iqiyiViReload();\n")
     return prefix.encode("utf-8") + (root / "sub-hook.js").read_bytes()
 
 

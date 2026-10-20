@@ -6,8 +6,26 @@
 
   function iqiyiSubtitleHook() {
     var SIDE = "http://127.0.0.1:18766";
-    var TOKEN = root && root.__iqiyiViToken || "";
     var nativeFetch = root && root.fetch ? root.fetch.bind(root) : null;
+    var TOKEN = root && root.__iqiyiViToken || "";
+    var tokenPromise = null;
+    var tokenRetryAt = 0;
+    function ensureToken() {
+      if (TOKEN) return Promise.resolve(TOKEN);
+      if (!nativeFetch || Date.now() < tokenRetryAt) return Promise.resolve("");
+      if (tokenPromise) return tokenPromise;
+      tokenPromise = nativeFetch(SIDE + "/api/extension-token", {cache:"no-store", credentials:"omit"})
+        .then(function (response) { if (!response.ok) throw new Error("Subtitle manager unavailable"); return response.json(); })
+        .then(function (config) { TOKEN = String(config.token || ""); return TOKEN; })
+        .catch(function () { return ""; })
+        .then(function (token) {
+          tokenPromise = null;
+          if (!token) tokenRetryAt = Date.now() + 2000;
+          return token;
+        });
+      return tokenPromise;
+    }
+    ensureToken();
     var TRACK = /^(xml|srt|webvtt|vtt)$/;
     var VI_LID = 23;
     var VI_NAME = "Tiếng Việt (AI)";
@@ -27,26 +45,44 @@
     var disabledOptionState = new WeakMap();
     var menuObserver = null;
     var menuScanTimer = null;
-
     function syncPlayerSession() {
-      if (!root || !TOKEN || syncPlayerSession.pending) return;
+      if (!root || syncPlayerSession.pending) return;
       var account = root.QySdk && root.QySdk.Account;
-      if (!account || !account.getLoginInfo) return;
+      var nativeAccount = account && typeof account.getLoginInfo === "function";
+      var web = /(^|\.)(?:iqiyi\.com|iq\.com)$/i.test(root.location.hostname) &&
+        root.location.hostname !== "localwebapp.iqiyi.com";
+      if (!nativeAccount && (!web || !root.document || (root.top && root.top !== root))) return;
       syncPlayerSession.pending = true;
       var result;
-      try { result = account.getLoginInfo(); } catch (_) { syncPlayerSession.pending = false; return; }
+      try {
+        if (nativeAccount) result = account.getLoginInfo();
+        else {
+          var cookies = {};
+          String(root.document.cookie || "").split(";").forEach(function (part) {
+            var pair = part.trim().split("="), name = pair.shift();
+            try { cookies[name] = decodeURIComponent(pair.join("=")); } catch (_) {}
+          });
+          var user = {};
+          try { user = JSON.parse(cookies.P00002 || "{}"); } catch (_) {}
+          var uid = cookies.P00003 || user && user.uid || "";
+          var auth = cookies.P00001 || "";
+          // An incomplete cookie pair cannot supply an authenticated subtitle request.
+          result = {authcookie: /^\d{1,24}$/.test(String(uid)) ? auth : "", uid: uid,
+            deviceId: cookies.QC005 || "", dfp: (cookies.__dfp || "").split("@")[0]};
+        }
+      } catch (_) { syncPlayerSession.pending = false; return; }
       Promise.resolve(result && result.cache || result).then(function (info) {
         if (!info || typeof info !== "object" || !Object.keys(info).length) return;
-        var appService = root.QySdk.AppService;
+        var appService = root.QySdk && root.QySdk.AppService;
         var system = appService && appService.getSystemInfo ? appService.getSystemInfo() : null;
         system = system && system.cache || {};
         var auth = String(info.authcookie || ""), uid = String(info.uid || "");
         var types = info.vip_types || info.vipTypes || [];
         if (typeof types === "string") types = types.split(",");
-        var session = {authcookie: auth, uid: uid,
+        var session = {source: nativeAccount ? "app" : "web", authcookie: auth, uid: uid,
           vipTypes: Array.isArray(types) ? types.map(String) : [],
-          deviceId: String(system.deviceId || system.clientid || ""),
-          dfp: String(system.dfp || "")};
+          deviceId: String(system.deviceId || system.clientid || info.deviceId || ""),
+          dfp: String(system.dfp || info.dfp || "")};
         var signature = JSON.stringify(session), now = Date.now();
         if (signature === syncPlayerSession.signature && now - syncPlayerSession.sent < 30000) return;
         return post("/api/session", session).then(function () {
@@ -57,18 +93,23 @@
     }
 
     function post(route, data) {
-      if (!nativeFetch || !TOKEN) return Promise.reject(new Error("Subtitle manager token is unavailable"));
-      return nativeFetch(SIDE + route, {method:"POST",
-        headers:{"Content-Type":"application/json", "X-Iqiyi-Token":TOKEN}, body:JSON.stringify(data)})
-        .then(function (response) { if (!response.ok) throw new Error("Subtitle manager HTTP " + response.status); });
+      if (!nativeFetch) return Promise.reject(new Error("Subtitle manager is unavailable"));
+      return ensureToken().then(function (token) {
+        if (!token) throw new Error("Subtitle manager token is unavailable");
+        return nativeFetch(SIDE + route, {method:"POST",
+          headers:{"Content-Type":"application/json", "X-Iqiyi-Token":token}, body:JSON.stringify(data)});
+      }).then(function (response) { if (!response.ok) throw new Error("Subtitle manager HTTP " + response.status); });
     }
     function getTranslationState(tvid) {
-      if (!nativeFetch || !TOKEN || !tvid) return Promise.resolve({available:false, translating:true});
+      if (!nativeFetch || !tvid) return Promise.resolve({available:false, translating:true});
       var cached = translationStates.get(tvid);
       if (cached && cached.value && cached.expires > Date.now()) return Promise.resolve(cached.value);
       if (cached && cached.promise) return cached.promise;
-      var url = SIDE + "/api/translation-state?tvid=" + encodeURIComponent(tvid) + "&token=" + encodeURIComponent(TOKEN);
-      var job = nativeFetch(url).then(function (response) {
+      var url = SIDE + "/api/translation-state?tvid=" + encodeURIComponent(tvid);
+      var job = ensureToken().then(function (token) {
+        if (!token) throw new Error("Subtitle manager token is unavailable");
+        return nativeFetch(url + "&token=" + encodeURIComponent(token));
+      }).then(function (response) {
         if (!response.ok) throw new Error("Translation status unavailable");
         return response.json();
       }).then(function (state) {
@@ -101,7 +142,7 @@
     function optionForTarget(target) {
       var node = target && (target.nodeType === 1 ? target : target.parentElement);
       while (node && node !== root.document.body) {
-        var label = String(node.innerText || node.textContent || "").replace(/\s+/g, " ").trim();
+        var label = String(node.textContent || "").replace(/\s+/g, " ").trim();
         if (node.nodeType === 1 && isViLabel(label)) return subtitleOptionElement(node);
         node = node.parentElement;
       }
@@ -135,7 +176,8 @@
       if (!root || !root.document || !root.document.querySelectorAll) return;
       var candidates = root.document.querySelectorAll("button,[role],li,[class],span,div");
       candidates.forEach(function (node) {
-        var label = String(node.innerText || node.textContent || "").replace(/\s+/g, " ").trim();
+        // Reading innerText forces layout and can trigger unrelated HTTP background images.
+        var label = String(node.textContent || "").replace(/\s+/g, " ").trim();
         if (!isViLabel(label)) return;
         applyDisabledOption(subtitleOptionElement(node));
       });
@@ -198,6 +240,7 @@
         if (!doc.documentElement) return;
         var style = doc.getElementById("iqiyi-vi-subtitle-css") || doc.createElement("style");
         style.id = "iqiyi-vi-subtitle-css";
+        style.setAttribute("data-hook-version", "11");
         style.textContent =
           'img[src*="/watermark_rightTop"],img[src*="/watermark_rightBottom"]{display:none!important;}' +
           '#pcaSubtitleContainer,#pcaSubtitleContainer *,.caption-main,.caption-main *{' +
@@ -231,6 +274,10 @@
     function decode(value) {
       if (typeof value !== "string" || !/^[\s]*[\[{\"]/.test(value)) return value;
       try { return JSON.parse(value); } catch (_) { return value; }
+    }
+    function numberedSeriesTitle(value) {
+      var match = String(value || "").match(/^(.+?)\s*第\s*\d+\s*集|^(.+?)\s+(?:episode|ep)\s*\d+/i);
+      return match ? (match[1] || match[2]).trim() : "";
     }
     function identity(value, inherited) {
       var id = value.tvId || value.tvid || value.entityId || value.entity_id || "";
@@ -269,12 +316,18 @@
       }) || "";
     }
     function absolute(url, prefix) {
-      if (/^https?:\/\//i.test(url)) return url;
-      var proto = (prefix.match(/^https?:/i) || ["https:"])[0];
-      if (url.indexOf("//") === 0) return proto + url;
-      var origin = (prefix.match(/^https?:\/\/[^/]+/i) || ["https://meta.video.iqiyi.com"])[0];
-      if (url.charAt(0) === "/") return origin + url;
-      return prefix.replace(/\/?$/, "/") + url.replace(/^\//, "");
+      if (!/^https?:\/\//i.test(url)) {
+        var proto = (prefix.match(/^https?:/i) || ["https:"])[0];
+        if (url.indexOf("//") === 0) url = proto + url;
+        else {
+          var origin = (prefix.match(/^https?:\/\/[^/]+/i) || ["https://meta.video.iqiyi.com"])[0];
+          url = url.charAt(0) === "/" ? origin + url : prefix.replace(/\/?$/, "/") + url.replace(/^\//, "");
+        }
+      }
+      // iQIYI still returns HTTP subtitle URLs; HTTPS players cannot request them.
+      return url.replace(/^http:\/\/(?:[a-z0-9-]+\.)*iqiyi\.com(?=[:/?#]|$)/i, function (host) {
+        return host.replace(/^http:/i, "https:");
+      });
     }
     function isTrackArray(items) {
       return items.some(function (item) {
@@ -301,7 +354,9 @@
         pre: 0,
         name: VI_NAME,
         title: VI_NAME,
-        xml: SIDE + "/subtitle.xml?tvid=" + encodeURIComponent(context.tvid) + "&token=" + encodeURIComponent(TOKEN)
+        // This read-only route is origin-checked by the local manager; avoid a token race
+        // when iQIYI requests the injected track before the token fetch has completed.
+        xml: SIDE + "/subtitle.xml?tvid=" + encodeURIComponent(context.tvid)
       };
       var output = items.filter(function (item) { return !item || typeof item.xml !== "string" || item.xml.indexOf(SIDE + "/subtitle.xml?") !== 0; })
         .map(function (item) {
@@ -401,8 +456,9 @@
         if (Array.isArray(node)) { node.forEach(function (child) { scan(child,parent,depth+1); }); return; }
         var albumId = String(node.albumId || node.album_id || parent.albumId || "");
         var prefix = String(node.prefix || node.dstl || parent.prefix || "");
-        var title = [node.entityTitle,node.display_name_v2,node.display_name,node.tvName,node.tv_name,node.title,node.name]
-          .find(function (item) { return typeof item === "string" && item; }) || parent.title || "";
+        var candidates = [node.entityTitle,node.display_name_v2,node.display_name,node.tvName,node.tv_name,node.title,node.name]
+          .filter(function (item) { return typeof item === "string" && item; });
+        var title = candidates.find(numberedSeriesTitle) || candidates[0] || parent.title || "";
         var id = String(node.tvId || node.tvid || node.tv_id || node.entityId || node.entity_id || "");
         var orderMatch = String(title).match(/第\s*(\d+)\s*集|(?:episode|ep)\s*(\d+)/i);
         var order = orderMatch ? Number(orderMatch[1] || orderMatch[2]) : Number(node.orderRseat || node.order || 0);
@@ -436,7 +492,7 @@
         groups.get(episode.albumId).push(episode);
       });
       groups.forEach(function (group, albumId) {
-        var data = {albumId:albumId,title:group[0].title.replace(/\s*第\s*\d+\s*集.*$/,""),episodes:group};
+        var data = {albumId:albumId,title:numberedSeriesTitle(group[0].title),episodes:group};
         var ready = postOnce(JSON.stringify(data), "/api/album/register", data, listPosted);
         group.forEach(function (episode) {
           var track = episode.tracks.find(function (item) { return item.lid === "1"; }) ||
@@ -453,20 +509,101 @@
       Promise.all([worker(),worker()]);
     }
     if (typeof module !== "undefined" && module.exports) module.exports = {rewrite: rewrite};
-    if (root && root.setInterval && !root.__iqiyiSessionSync &&
-        (!root.location.hostname || root.location.hostname === "localwebapp.iqiyi.com")) {
+    if (root && root.setInterval && !root.__iqiyiSessionSync) {
       root.__iqiyiSessionSync = true;
       syncPlayerSession();
       if (root.setInterval) root.setInterval(syncPlayerSession, 5000);
     }
     if (!root) return;
     var nativePlayer = /(^|\/)player(?:_mac)?\.html$/i.test(root.location.pathname);
-    var iqPlayer = /(^|\.)iq\.com$/i.test(root.location.hostname) && /\/play\//i.test(root.location.pathname);
+    var iqPlayer = /(^|\.)iq\.com$/i.test(root.location.hostname) && /\/play\//i.test(root.location.pathname) ||
+      /(^|\.)iqiyi\.com$/i.test(root.location.hostname) && /(?:\/play\/|\/v_[^/]+\.html?$)/i.test(root.location.pathname);
     if (!nativePlayer && !iqPlayer) return;
+    // Web pages can expose the active video before any intercepted subtitle request.
+    function syncWebEpisode() {
+      if (!iqPlayer) return;
+      var page = root.Q && root.Q.PageInfo;
+      var stage = root.playbackPageStageStatus;
+      var accelerated = stage && stage._accData || root.QiyiPlayerProphetData;
+      var info = accelerated && accelerated.videoInfo || page && page.playPageInfo;
+      if (!info || typeof info !== "object") return;
+      var tvid = String(info.tvId || info.tvid || "");
+      var albumId = String(info.albumId || info.album_id || "");
+      if (!/^\d{1,20}$/.test(tvid) || !/^\d{1,24}$/.test(albumId)) return;
+      var album = info.album || {};
+      var title = String(info.tvName || info.entityTitle || info.name || info.title || album.albumName || album.name || "");
+      var order = title.match(/第\s*(\d+)\s*集/);
+      var data = {tvid:tvid, albumId:albumId, title:title,
+        order:Number(info.order || (order && order[1]) || 0), tracks:[]};
+      var albumTitle = String(info.albumName || album.albumName || album.name || numberedSeriesTitle(title));
+      if (albumTitle) data.albumTitle = albumTitle;
+      postOnce(JSON.stringify(data), "/api/register", data, registered);
+    }
     installSubtitleStyle();
     if (root.__iqiyiSubtitleEngine) return;
+    syncWebEpisode();
+    if (iqPlayer && root.setInterval) root.setInterval(syncWebEpisode, 3000);
     installSubtitleMenuGuard();
-    root.__iqiyiSubtitleEngine = {version: 6, rewrite: rewrite, titles: titles};
+    root.__iqiyiSubtitleEngine = {version: 11, rewrite: rewrite, titles: titles};
+
+    // The accelerator assigns encoded DASH metadata directly, bypassing fetch/XHR/JSONP.
+    function rewriteAccelerator(value) {
+      if (!value || typeof value !== "object" || typeof value.ev !== "string") return value;
+      try {
+        var plain = value.ev.split("").map(function (ch) { return String.fromCharCode(ch.charCodeAt(0) ^ 90); }).join("");
+        var parsed = JSON.parse(plain);
+        var next = rewrite(parsed);
+        if (next === parsed) return value;
+        var encoded = JSON.stringify(next).split("").map(function (ch) { return String.fromCharCode(ch.charCodeAt(0) ^ 90); }).join("");
+        return Object.assign({}, value, {ev:encoded});
+      } catch (_) { return value; }
+    }
+    if (iqPlayer) {
+      var bootstrapDescriptor = Object.getOwnPropertyDescriptor(root, "QiyiPlayerProphetData");
+      if (!bootstrapDescriptor || (bootstrapDescriptor.configurable && !bootstrapDescriptor.get && !bootstrapDescriptor.set && bootstrapDescriptor.writable)) {
+        var bootstrapValue = rewriteAccelerator(root.QiyiPlayerProphetData);
+        Object.defineProperty(root, "QiyiPlayerProphetData", {
+          configurable:true, enumerable:true,
+          get:function () { return bootstrapValue; },
+          set:function (value) { bootstrapValue = rewriteAccelerator(value); syncWebEpisode(); }
+        });
+      }
+    }
+
+    // The web player also loads DASH through JSONP. Rewrite its payload before
+    // the player's callback consumes it, just as the fetch/XHR hooks do below.
+    function hookJsonp(script) {
+      if (!script || script.tagName !== "SCRIPT" || !script.src) return;
+      var url;
+      try { url = new URL(script.src, root.location.href); } catch (_) { return; }
+      if (!/(^|\.)iqiyi\.com$/i.test(url.hostname)) return;
+      var name = url.searchParams.get("callback") || url.searchParams.get("cb");
+      if (!name || !/^[A-Za-z_$][\w$]*$/.test(name)) return;
+      var callback = root[name];
+      if (typeof callback !== "function" || jsonpCallbacks.has(callback)) return;
+      var wrapped = function () {
+        var self = this, args = Array.prototype.slice.call(arguments);
+        var ids = trackTvids(args[0]);
+        if (!ids.length) return callback.apply(self, args);
+        return Promise.all(ids.map(getTranslationState)).then(function () {
+          args[0] = rewrite(args[0]);
+          return callback.apply(self, args);
+        });
+      };
+      jsonpCallbacks.add(wrapped);
+      root[name] = wrapped;
+    }
+    var jsonpCallbacks = new WeakSet();
+    if (root.Node && root.Node.prototype) {
+      ["appendChild", "insertBefore"].forEach(function (key) {
+        var original = root.Node.prototype[key];
+        if (!original) return;
+        root.Node.prototype[key] = function (node) {
+          hookJsonp(node);
+          return original.apply(this, arguments);
+        };
+      });
+    }
     if (root.fetch) {
       root.fetch = function (input, init) {
         if (requestUrl(input).indexOf(SIDE + "/") === 0) return nativeFetch(input, init);

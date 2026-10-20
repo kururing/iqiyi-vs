@@ -1,205 +1,808 @@
-(() => {
-  if (window.__iqiyiViExt) return;
-  window.__iqiyiViExt = true;
+/* iqiyi-vi */
+(function () {
+  var ENGINE_VERSION = 117;
+  var IS_PLAYER = /(^|\/)player(?:_mac)?\.html$/i.test(location.pathname);
+  if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
+    if (window.__iqiyiViReload) window.__iqiyiViReload(window.__iqiyiViDict);
+    return;
+  }
+  if (window.__iqiyiViStop) window.__iqiyiViStop();
+  var oldStyle = document.getElementById("iqiyi-vi-css");
+  if (oldStyle) oldStyle.remove();
+  var D = window.__iqiyiViDict || {};
+  // Tên Việt chính thức của phim (khóa là tên gốc chữ Hán). Tra trước từ điển UI để tên phim
+  // không bị ghép nghĩa/dịch từng chữ.
+  var TITLES = window.__iqiyiViTitles || {};
+  var TITLE_KEYS = Object.keys(TITLES).sort(function (a, b) { return b.length - a.length; });
+  var INTERNATIONAL_TITLE_CACHE = {};
+  var INTERNATIONAL_TITLE_PENDING = {};
+  function keysOf() {
+    return Object.keys(D)
+      .filter(function (k) { return k.length >= 1; })
+      .sort(function (a, b) { return b.length - a.length; });
+  }
+  var KEYS = keysOf();
+  var LONG = KEYS;
+  var TEXT_CACHE = new Map();
+  var SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, NOSCRIPT: 1, CODE: 1 };
+  // V4 contained mixed-language results caused by translating already-translated DOM text.
+  var AUTO_KEY = "__iqiyiViAutoV10";
+  var AUTO_CACHE = {};
+  var AUTO_PENDING = {};
+  var AUTO_QUEUE = [];
+  var AUTO_ACTIVE = false;
+  try { AUTO_CACHE = JSON.parse(localStorage.getItem(AUTO_KEY) || "{}"); } catch (e) {}
 
-  const D = {
-    首页: "Trang chủ",
-    关注: "Theo dõi",
-    短视频: "Video ngắn",
-    短剧: "Phim ngắn",
-    会员中心: "VIP",
-    电视剧: "Phim bộ",
-    电影: "Phim",
-    动漫: "Anime",
-    综艺: "Variety",
-    少儿: "Thiếu nhi",
-    云影院: "Rạp mây",
-    漫剧: "Phim manga",
-    纪录片: "Tài liệu",
-    知识: "Kiến thức",
-    体育: "Thể thao",
-    直播: "Live",
-    全部频道: "Mọi kênh",
-    搜索: "Tìm kiếm",
-    开通会员: "Mở VIP",
-    开通VIP: "Mở VIP",
-    消息: "Tin nhắn",
-    历史: "Lịch sử",
-    登录: "Đăng nhập",
-    注册: "Đăng ký",
-    退出登录: "Đăng xuất",
-    正在热播: "Đang hot",
-    推荐: "Đề xuất",
-    最热: "Hot nhất",
-    最新: "Mới nhất",
-    免费: "Miễn phí",
-    广告: "Quảng cáo",
-    筛选: "Lọc",
-    播放: "Phát",
-    收藏: "Yêu thích",
-    更多: "Thêm",
-    查看更多: "Xem thêm",
-    立即观看: "Xem ngay",
-    会员: "VIP",
-    稍后再看: "Xem sau",
-    预约: "Đặt lịch",
-    已预约: "Đã đặt",
-    排行榜: "Xếp hạng",
-    频道: "Kênh",
-    片库: "Kho phim",
-    设置: "Cài đặt",
-    帮助: "Trợ giúp",
-    反馈: "Phản hồi",
-    下载: "Tải",
-    我的下载: "Tải của tôi",
-    观看历史: "Đã xem",
-    个人中心: "Tài khoản",
-    我的: "Của tôi",
-    热播榜: "Bảng hot",
-    热搜榜: "Tìm kiếm hot",
-    猜你喜欢: "Gợi ý cho bạn",
-    相关推荐: "Liên quan",
-    正在播放: "Đang phát",
-    下一集: "Tập sau",
-    上一集: "Tập trước",
-    全屏: "Toàn màn",
-    倍速: "Tốc độ",
-    清晰度: "Độ nét",
-    字幕: "Phụ đề",
-    弹幕: "Danmaku",
-    分享: "Chia sẻ",
-    投屏: "Chiếu TV",
-    关闭: "Đóng",
-    取消: "Hủy",
-    确定: "OK",
-    确认: "Xác nhận",
-    重试: "Thử lại",
-    刷新: "Tải lại",
-    加载中: "Đang tải",
-    "加载中...": "Đang tải...",
-    正在加载: "Đang tải",
-    综合: "Tổng hợp",
-    用户: "Người dùng",
-    播放量: "Lượt xem",
-    完结: "Hết",
-    连载: "Đang chiếu",
-    独播: "Độc quyền",
-    自制: "Tự sản xuất",
-    会员免费: "VIP miễn phí",
-    限免: "Free tạm",
-    学习时刻: "Học tập",
-    网络错误: "Lỗi mạng",
-    请稍后重试: "Thử lại sau",
-    暂无内容: "Chưa có nội dung",
-    暂无数据: "Chưa có dữ liệu",
-    没有更多了: "Hết rồi",
-    全部: "Tất cả",
-    高清: "HD",
-    超清: "Siêu nét",
-    蓝光: "Blu-ray",
-    流畅: "Mượt",
-    自动: "Tự động",
-    原画: "Gốc",
-    跳过片头片尾: "Bỏ intro/outro",
-    开通黄金VIP: "Mở VIP vàng",
-    以非会员观看: "Xem không VIP",
-    试看已结束: "Hết xem thử",
-    观看完整版: "Xem bản đầy đủ",
-    请登录后观看: "Đăng nhập để xem",
-    青少年模式: "Chế độ trẻ em",
-    继续播放: "Xem tiếp",
-    重新播放: "Phát lại",
-    播放记录: "Lịch sử xem",
-    清空历史: "Xóa lịch sử",
-    今天: "Hôm nay",
-    昨天: "Hôm qua",
-    更早: "Cũ hơn",
-    刚刚: "Vừa xong",
-    简介: "Tóm tắt",
-    详情: "Chi tiết",
-    演职员: "Diễn viên",
-    评论: "Bình luận",
-    相关: "Liên quan",
-    正片: "Phim chính",
-    预告: "Trailer",
-    花絮: "Hậu trường",
-    更新至: "Cập nhật tới",
-    不感兴趣: "Không quan tâm",
-    举报: "Báo cáo",
-    点赞: "Thích",
-    已关注: "Đã theo dõi",
-    取消关注: "Bỏ theo dõi",
-    系统消息: "Tin hệ thống",
-    全部已读: "Đọc hết",
-    热门搜索: "Tìm hot",
-    历史搜索: "Đã tìm",
-    猜你想搜: "Gợi ý tìm",
-    综合: "Tổng hợp",
-    用户: "Người dùng",
-    播放量: "Lượt xem",
-    更新: "Cập nhật",
-    完结: "Hết",
-    连载: "Đang chiếu",
-    独播: "Độc quyền",
-    自制: "Tự sản xuất",
-    会员免费: "VIP miễn phí",
-    用券: "Dùng vé",
-    付费: "Trả phí",
-    限免: "Free tạm",
-    学习时刻: "Học tập",
-    筛选: "Lọc",
-    搜索: "Tìm kiếm"
+  function cjkCount(s) {
+    var m = String(s || "").match(/[\u3400-\u9fff]/g);
+    return m ? m.length : 0;
+  }
+
+  function saveAutoCache() {
+    try { localStorage.setItem(AUTO_KEY, JSON.stringify(AUTO_CACHE)); } catch (e) {}
+  }
+
+  function applyAuto(text, translated) {
+    var waiting = AUTO_PENDING[text] || [];
+    delete AUTO_PENDING[text];
+    for (var i = 0; i < waiting.length; i++) {
+      var item = waiting[i];
+      var node = item && item.node ? item.node : item;
+      if (!node || !node.isConnected) continue;
+      if (item && item.source != null && node.nodeType === 3 && node.nodeValue !== item.source) continue;
+      if (item && item.set) {
+        item.set(translated);
+        continue;
+      }
+      if (!cjkCount(node.nodeValue)) continue;
+      var lead = node.nodeValue.match(/^\s*/)[0];
+      var tail = node.nodeValue.match(/\s*$/)[0];
+      node.nodeValue = lead + translated + tail;
+    }
+  }
+
+  function pumpAuto() {
+    if (AUTO_ACTIVE || !AUTO_QUEUE.length || !window.fetch) return;
+    AUTO_ACTIVE = true;
+    var batch = [];
+    var url = "https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=zh-CN&tl=vi";
+    while (AUTO_QUEUE.length && batch.length < 8) {
+      var part = "&q=" + encodeURIComponent(AUTO_QUEUE[0]);
+      if (batch.length && url.length + part.length > 5000) break;
+      batch.push(AUTO_QUEUE.shift());
+      url += part;
+    }
+    Promise.race([
+      fetch(url),
+      new Promise(function (_, reject) {
+        setTimeout(function () { reject(new Error("timeout")); }, 8000);
+      })
+    ])
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)); })
+      .then(function (data) {
+        for (var i = 0; i < batch.length; i++) {
+          var text = batch[i];
+          var translated = data && data[i];
+          if (translated && cjkCount(translated) === 0) {
+            AUTO_CACHE[text] = translated;
+            applyAuto(text, translated);
+          } else {
+            delete AUTO_PENDING[text];
+          }
+        }
+        saveAutoCache();
+      })
+      .catch(function () {
+        for (var i = 0; i < batch.length; i++) delete AUTO_PENDING[batch[i]];
+      })
+      .then(function () {
+        AUTO_ACTIVE = false;
+        setTimeout(pumpAuto, 250);
+      });
+  }
+
+  function mostlyCjk(s) {
+    var t = String(s || "").replace(/\s/g, "");
+    if (!t) return false;
+    return cjkCount(t) >= Math.max(1, t.length * 0.6);
+  }
+
+  function wordChar(ch) {
+    return !!ch && /[A-Za-z0-9À-ỹĐđ\u3400-\u9fff]/.test(ch);
+  }
+
+  function replaceWithSpacing(source, find, replacement) {
+    var out = "";
+    var from = 0;
+    var index;
+    while ((index = source.indexOf(find, from)) !== -1) {
+      var before = source.charAt(index - 1);
+      var after = source.charAt(index + find.length);
+      var left = before && (wordChar(before) || before === "|");
+      var right = after && (wordChar(after) || after === "|");
+      out += source.slice(from, index);
+      if (left && !/\s$/.test(out) && !/^\s/.test(replacement)) out += " ";
+      out += replacement;
+      if (right && !/\s$/.test(replacement)) out += " ";
+      from = index + find.length;
+    }
+    return from ? out + source.slice(from) : source;
+  }
+
+  function canTranslateWhole(s) {
+    var text = String(s || "").replace(/\s/g, "");
+    return cjkCount(text) >= 2 && (mostlyCjk(text) || text.length <= 80);
+  }
+
+  // Chuỗi giống tiêu đề phim/series: còn chữ Hán sau khi bỏ mùa, số tập và nhãn phụ.
+  // Tên phim phải được dịch trọn tên, không ghép từng chữ (古偶榜 -> "Cổ ngẫu" là lỗi).
+  var TITLE_NOISE = /最新|热播|独播|自制|完结|连载|更新至|全\d+集|共\d+集|第\d+[集季部]|预告|花絮|看点|预告片|抢先|限免|会员|VIP|豆瓣|榜|No\.?\d+|\d+\s*(?:万|亿|次|人|分钟|分|年|月|日|集|季)/gi;
+  function looksLikeTitle(s) {
+    var text = String(s || "");
+    if (!cjkCount(text)) return false;
+    var core = text.replace(TITLE_NOISE, "").replace(/[《》「」『』【】\[\]（）()·:：,，.。!！?？\s"“”]/g, "");
+    return cjkCount(core) >= 2;
+  }
+
+  function titleMatch(text) {
+    for (var i = 0; i < TITLE_KEYS.length; i++) {
+      var key = TITLE_KEYS[i];
+      if (key.length >= 2 && text.indexOf(key) !== -1) return TITLES[key];
+    }
+    return "";
+  }
+
+  function internationalTitleId(value) {
+    var id = String(value || "").trim();
+    return /^\d{14,20}$/.test(id) || /^[A-Za-z0-9]{8,20}$/.test(id) ? id : "";
+  }
+
+  function titleIdFromUrl(value) {
+    try {
+      var url = new URL(value, location.href);
+      var params = url.searchParams;
+      var queryKeys = ["albumId", "qipuId", "tvid"];
+      for (var i = 0; i < queryKeys.length; i++) {
+        var found = internationalTitleId(params.get(queryKeys[i]));
+        if (found) return found;
+      }
+      var path = url.pathname.match(/(?:^|\/)(?:play|album)\/([A-Za-z0-9]{8,20})(?=\/|\.html|$)|\/(?:m|a|v)_([A-Za-z0-9]{8,20})(?=\.html|\/|$)/i);
+      return path ? internationalTitleId(path[1] || path[2]) : "";
+    } catch (e) { return ""; }
+  }
+
+  function findInternationalTitleId(node) {
+    var el = node && node.nodeType === 3 ? node.parentElement : node;
+    var attrs = ["data-albumid", "data-album-id", "data-qipuid", "data-qipu-id", "data-tvid", "data-tv-id"];
+    var pageTitle = false, titleNode = false;
+    for (var depth = 0; el && depth < 9; depth++) {
+      if (el.nodeType === 1) {
+        if (el.tagName === "BUTTON" || el.getAttribute("role") === "button") return "";
+        var label = String(el.className || "") + " " + (el.id || "");
+        if (depth < 3) {
+          if (el.tagName === "TITLE" || el.tagName === "H1" || /(?:player|detail)[-_]?(?:name|title)|(?:name|title)[-_]?(?:player|detail)|meta_title(?:TextBlock|NotCloud)/i.test(label)) pageTitle = true;
+          if (pageTitle || /^H[1-6]$/.test(el.tagName) || /(?:^|[\s_-])(?:title|name)(?:Text|Main|Link|Label)?(?:[\s_-]|$)|(?:album|video|movie)[-_]?(?:name|title)|(?:name|title)[-_]?(?:album|video|movie)/i.test(label)) titleNode = true;
+        }
+        if (titleNode) {
+          for (var i = 0; i < attrs.length; i++) {
+            var found = internationalTitleId(el.getAttribute(attrs[i]));
+            if (found) return found;
+          }
+        }
+        if (el.tagName === "A") {
+          // A movie link can also contain play buttons, descriptions and badges.
+          if (!titleNode) return "";
+          var fromLink = titleIdFromUrl(el.getAttribute("href") || "");
+          if (fromLink) return fromLink;
+        }
+      }
+      if (el.parentElement) el = el.parentElement;
+      else {
+        var tree = el.getRootNode && el.getRootNode();
+        el = tree && tree.host ? tree.host : null;
+      }
+    }
+    return pageTitle ? titleIdFromUrl(location.href) : "";
+  }
+
+  function requestInternationalTitle(node, value, setter) {
+    var raw = String(value || "");
+    if (!looksLikeTitle(raw)) return false;
+    var id = findInternationalTitleId(node);
+    if (!id) return false;
+
+    function apply(title) {
+      if (findInternationalTitleId(node) !== id) return;
+      var result = title;
+      if (result) {
+        var lead = raw.match(/^\s*/)[0];
+        var tail = raw.match(/\s*$/)[0];
+        result = lead + result + tail;
+      } else {
+        var local = tr(raw);
+        if (local !== raw && !cjkCount(local)) {
+          if (setter) setter(local);
+          else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = local;
+          return;
+        }
+        var lead = raw.match(/^\s*/)[0];
+        var tail = raw.match(/\s*$/)[0];
+        autoTranslate(node, raw, function (translated) {
+          if (findInternationalTitleId(node) !== id) return;
+          var fallback = lead + translated + tail;
+          if (setter) setter(fallback);
+          else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = fallback;
+        }, true);
+        return;
+      }
+      if (setter) setter(result);
+      else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(INTERNATIONAL_TITLE_CACHE, id)) {
+      var cached = INTERNATIONAL_TITLE_CACHE[id];
+      if (cached.expires > Date.now()) { apply(cached.title); return true; }
+      delete INTERNATIONAL_TITLE_CACHE[id];
+    }
+    var token = window.__iqiyiViToken || "";
+    if (!token || !window.fetch) return !!window.__iqiyiViTokenPending;
+    var callback = apply;
+    if (INTERNATIONAL_TITLE_PENDING[id]) {
+      INTERNATIONAL_TITLE_PENDING[id].push(callback);
+      return true;
+    }
+    INTERNATIONAL_TITLE_PENDING[id] = [callback];
+    fetch("http://127.0.0.1:18766/api/international-title?id=" + encodeURIComponent(id), {
+      headers: { "X-Iqiyi-Token": token }, cache: "no-store"
+    })
+      .then(function (response) { return response.ok ? response.json() : Promise.reject(new Error("HTTP " + response.status)); })
+      .then(function (payload) {
+        var title = payload && typeof payload.title === "string" && !cjkCount(payload.title) ? payload.title.trim() : "";
+        INTERNATIONAL_TITLE_CACHE[id] = {title:title, expires:Date.now() + (title ? 3600000 : 120000)};
+        var waiting = INTERNATIONAL_TITLE_PENDING[id] || [];
+        delete INTERNATIONAL_TITLE_PENDING[id];
+        for (var i = 0; i < waiting.length; i++) waiting[i](title);
+      })
+      .catch(function () {
+        INTERNATIONAL_TITLE_CACHE[id] = {title:"", expires:Date.now() + 15000};
+        var waiting = INTERNATIONAL_TITLE_PENDING[id] || [];
+        delete INTERNATIONAL_TITLE_PENDING[id];
+        for (var i = 0; i < waiting.length; i++) waiting[i]("");
+      });
+    return true;
+  }
+
+  // Các chuỗi gồm ≥2 chữ Hán liền nhau trong một chuỗi UI (tab, nhãn, tiêu đề card...).
+  function cjkRuns(s) {
+    return String(s || "").match(/[\u3400-\u4dbf\u4e00-\u9fff]{2,}/g) || [];
+  }
+
+  // Bản dịch theo từng từ là nguồn của các chuỗi lai vô nghĩa ("Cổ ngẫu BXH số 2",
+  // "Học đườnghoạt hình"). Bản dịch đúng phải là một cụm tiếng Việt đọc được: có dấu,
+  // hoặc là một từ/một chuỗi chữ Latin có khoảng trắng.
+  function gibberish(s) {
+    var t = String(s || "");
+    if (/[\u00C0-\u024F\u1EA0-\u1EF9]/.test(t)) return false;
+    if (/\s/.test(t)) return false;
+    var run = t.match(/[A-Za-z]+/g);
+    if (!run) return false;
+    return run.some(function (word) { return word.length >= 6; });
+  }
+
+  function trCompactFix(s) {
+    var t = s;
+    for (var i = 0; i < COMPACT_FIX.length; i++) t = t.split(COMPACT_FIX[i][0]).join(COMPACT_FIX[i][1]);
+    return t;
+  }
+
+  function autoTranslateMixed(node, value, setter) {
+    var text = String(value || "");
+    if (looksLikeTitle(text) && requestInternationalTitle(node, text, setter)) return;
+    var patterned = trPatterns(text);
+    if (patterned !== text && !cjkCount(patterned)) {
+      if (setter) setter(patterned);
+      else if (node && node.isConnected && node.nodeType === 3) node.nodeValue = patterned;
+      return;
+    }
+    text = patterned;
+    if (canTranslateWhole(text)) {
+      autoTranslate(node, text, setter, true);
+      return;
+    }
+    var matches = text.match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]{2,}/g) || [];
+    var seen = {};
+    var current = text;
+    for (var i = 0; i < matches.length; i++) {
+      (function (part) {
+        if (seen[part]) return;
+        seen[part] = true;
+        autoTranslate(node, part, function (translated) {
+          current = replaceWithSpacing(current, part, trCompactFix(translated));
+          if (setter) {
+            setter(current);
+          } else if (node && node.isConnected && node.nodeType === 3) {
+            node.nodeValue = node.nodeValue.split(part).join(translated);
+          }
+        });
+      })(matches[i]);
+    }
+  }
+
+  function autoTranslate(node, value, setter, allowMixed) {
+    if (!node || !value) return;
+    var text = String(value).trim();
+    // Only translate source text that is predominantly Chinese. This keeps
+    // dictionary/pattern output from being translated a second time.
+    if (!text || text.length > 180 || (!mostlyCjk(text) && !allowMixed)) return;
+    var item = { node: node, set: setter || null, source: node.nodeType === 3 ? node.nodeValue : null };
+    if (AUTO_CACHE[text]) {
+      AUTO_PENDING[text] = [item];
+      applyAuto(text, AUTO_CACHE[text]);
+      return;
+    }
+    if (AUTO_PENDING[text]) {
+      var known = AUTO_PENDING[text].some(function (entry) { return entry.node === node; });
+      if (!known) AUTO_PENDING[text].push(item);
+      return;
+    }
+    AUTO_PENDING[text] = [item];
+    AUTO_QUEUE.push(text);
+    pumpAuto();
+  }
+
+  window.__iqiyiViAutoStatus = function () {
+    return {
+      active: AUTO_ACTIVE,
+      queued: AUTO_QUEUE.length,
+      pending: Object.keys(AUTO_PENDING).length,
+      cached: Object.keys(AUTO_CACHE).length
+    };
   };
 
-  const SKIP = new Set(["SCRIPT", "STYLE", "TEXTAREA", "NOSCRIPT", "CODE", "SVG"]);
+  function trPatterns(s) {
+    return s
+      .replace(/展开\s*(\d+)\s*条回复/g, "$1 trả lời")
+      .replace(/收起\s*(\d+)\s*条回复/g, "$1 trả lời")
+      .replace(/展开\s*(\d+)\s*条/g, "$1")
+      .replace(/(\d+)\s*条回复/g, "$1 trả lời")
+      .replace(/更新至第(\d+)集/g, "Cập nhật tới tập $1")
+      .replace(/更新至(\d+)集/g, "Cập nhật tới tập $1")
+      .replace(/更新至第(\d+)/g, "Cập nhật tới tập $1")
+      .replace(/全(\d+)集/g, "$1 tập")
+      .replace(/共(\d+)集/g, "$1 tập")
+      .replace(/^第(\d+)集$/g, "Tập $1")
+      .replace(/(\d+)集全/g, "$1 tập")
+      .replace(/第(\d+)-(\d+)集/g, "Tập $1-$2")
+      .replace(/限免第?(\d+)-(\d+)集/g, "Miễn phí tập $1-$2")
+      .replace(/限免第?(\d+)集/g, "Miễn phí tập $1")
+      .replace(/今日(\d{1,2}:\d{2})更新/g, "Cập nhật hôm nay lúc $1")
+      .replace(/明日(\d{1,2}:\d{2})更新/g, "Cập nhật ngày mai lúc $1")
+      .replace(/今日(\d{1,2}:\d{2})上线/g, "Phát hành hôm nay lúc $1")
+      .replace(/明日(\d{1,2}:\d{2})上线/g, "Phát hành ngày mai lúc $1")
+      .replace(/近(\d+)月上新/g, "Mới trong $1 tháng qua")
+      .replace(/近(\d+)月转免/g, "Miễn phí trong $1 tháng qua")
+      .replace(/近(\d+)周上新/g, "Mới trong $1 tuần qua")
+      .replace(/弹幕破(\d+(?:\.\d+)?)万/g, function (_, n) {
+        var total = Number(n) * 10000;
+        if (total >= 1000000) return "Bình luận vượt " + (total / 1000000).toFixed(total % 1000000 ? 1 : 0) + " triệu";
+        return "Bình luận vượt " + (total / 1000).toFixed(total % 1000 ? 1 : 0) + " nghìn";
+      })
+      .replace(/(\d+(?:\.\d+)?)万/g, function (_, n) {
+        var total = Number(n) * 10000;
+        if (total >= 1000000) return (total / 1000000).toFixed(total % 1000000 ? 1 : 0) + " triệu";
+        return (total / 1000).toFixed(total % 1000 ? 1 : 0) + " nghìn";
+      })
+      .replace(/(\d+) 部新片/g, "$1 phim mới")
+      .replace(/(\d+) 部短剧/g, "$1 phim ngắn")
+      .replace(/(\d{2}-\d{2})期/g, "Kỳ $1")
+      .replace(/(\d+)分钟/g, "$1 phút")
+      .replace(/(\d+(?:\.\d+)?)分(?!钟)/g, "$1 điểm")
+      .replace(/(\d{4})年/g, "Năm $1")
+      .replace(/观看至第(\d+)集/g, "Đã xem tới tập $1")
+      .replace(/第(\d+)集/g, "Tập $1")
+      .replace(/第(\d+)季/g, "Mùa $1")
+      .replace(/总榜No\.(\d+)/g, " - BXH tổng số $1")
+      .replace(/剧榜No\.(\d+)/g, " - BXH phim số $1")
+      .replace(/榜No\.(\d+)/g, " - BXH số $1")
+      .replace(/剧榜No\.(\d+)/g, " - BXH phim số $1")
+      .replace(/短剧榜No\.(\d+)/g, " - BXH phim ngắn số $1")
+      .replace(/最高热度破(\d+)/g, "Độ hot cao nhất vượt $1")
+      .replace(/最高热度破万/g, "Độ hot cao nhất vượt 10 nghìn")
+      .replace(/不看：/g, "Không xem: ")
+      .replace(/(\d+)人正在看/g, "$1 người đang xem")
+      .replace(/(\d+\.?\d*)万人正在看/g, "$10k người đang xem")
+      .replace(/(\d+)万次播放/g, "$10k lượt xem")
+      .replace(/(\d+)亿次播放/g, "$100 triệu lượt xem")
+      .replace(/(\d+)次播放/g, "$1 lượt xem")
+      .replace(/(\d+)分钟前/g, "$1 phút trước")
+      .replace(/(\d+)小时前/g, "$1 giờ trước")
+      .replace(/(\d+)天前/g, "$1 ngày trước")
+      .replace(/(\d+)秒后可/g, "$1 giây nữa có thể ")
+      .replace(/(\d+)秒后/g, "$1 giây nữa")
+      .replace(/会员专享/g, "Độc quyền VIP")
+      .replace(/用券解锁/g, "Mở bằng vé");
+  }
 
-  // Từ điển này chỉ có từng từ. Thay một từ bên trong cụm dài sẽ ra câu lai
-  // ("古偶榜No.2" -> "Cổ ngẫu BXH số 2"), nên chỉ dịch khi khớp TRỌN chuỗi.
-  function translate(s) {
+  var COMPACT_FIX = [
+    ["Ngôi sao đang đến", "Star"],
+    ["Ngôi sao đang", "Star"],
+    ["Sáng tạo thứ hai", "Remix"],
+    ["bàn luận", "Bàn"],
+    ["Bàn luận", "Bàn"],
+    ["Hot nhất", "Hot"],
+    ["Mới nhất", "Mới"],
+    ["Trả lời", "Trả"],
+    ["Mở rộng", "Mở"],
+    ["Openwidth", "Mở"],
+    ["Hài kịchdanh sách vuamiệngmùaMùa 2", "Vua hài độc thoại mùa 2"],
+    ["Hài kịchdanh sách vuamiệngmùa 2", "Vua hài độc thoại mùa 2"],
+    ["MớiTrailer", "Mới · Trailer"],
+    ["Ngày mailên sóng", "Ngày mai · lên sóng"],
+    ["phim truyền hìnhHot", "Phim bộ · Hot"],
+    ["Học đườnghoạt hình", "Học đường · Hoạt hình"],
+    ["Yến Ni giơ bảng phản đốiCông sởquấy rối", "Yến Ni giơ bảng phản đối quấy rối nơi công sở"],
+    ["Tạ Thanh Viên,biến ngày khai trương thành võ đài", "Tạ Thanh Viên biến ngày khai trương thành võ đài"],
+    ["NgayPhát", "Phát ngay"],
+    ["tậpthổ cẩm", "tập tuyển chọn"],
+    ["Tuyệt vờitậpthổ cẩm", "Tuyệt vời · tập tuyển chọn"],
+    ["sinhNgày đang đến", "Ngày sinh đang đến"],
+    ["Tạ Thanh Nguyênbiến", "Tạ Thanh Nguyên biến"],
+    ["Tìm kiếm đảo hoangsinh，Xây dựng nơi trú ẩn từ đầu", "Sinh tồn trên đảo hoang, xây dựng nơi trú ẩn từ đầu"],
+    ["ngàykỷ luật khiêu vũ", "Ngày kỷ luật khiêu vũ"],
+    ["KHÔNGkểmọi người", "Không thể nói cho người khác"],
+    ["Cúc Tịnh YTrần Triết Nguyên", "Cúc Tịnh Y · Trần Triết Nguyên"],
+    ["Hứa KhảiNgô Gia Nghĩa", "Hứa Khải · Ngô Gia Nghĩa"],
+    ["ngàyTôn trọng huyền thoại", "Tôn trọng huyền thoại"],
+    ["Tuyệt vờiPhim ngắnThìCó con đâyiQIYI", "Tuyệt vời · Phim ngắn · Xem ngay trên iQIYI"],
+    ["Yêu cầu ngày tận thếsinh", "Sinh tồn sau ngày tận thế"],
+    ["phim mớiSắp chiếu rạp", "phim mới · Sắp chiếu rạp"],
+    ["Hứa KhảiWu Jiayi", "Hứa Khải · Ngô Gia Nghĩa"],
+    ["Bạch LộcHứa Khải", "Bạch Lộc · Hứa Khải"],
+    ["Cúc Tịnh YQuách Tuấn Thần", "Cúc Tịnh Y · Quách Tuấn Thần"],
+    ["Ao Thụy BằngJenny Sun", "Ao Thụy Bằng · Jenny Sun"],
+    ["Vương Tử KỳQuan Hiểu Đồng", "Vương Tử Kỳ · Quan Hiểu Đồng"],
+    ["Yến NiĐặng Ân Hi", "Yến Ni · Đặng Ân Hi"],
+    ["Nhậm Gia LuânTần Tuấn Kiệt", "Nhậm Gia Luân · Tần Tuấn Kiệt"],
+    ["Trương Nhất SơnLý Mộc Thần", "Trương Nhất Sơn · Lý Mộc Thần"],
+    ["ngày Tôn trọng huyền thoại", "Tôn trọng huyền thoại"],
+    ["Tuyệt vời Phim ngắn Thì Có con đây iQIYI", "Tuyệt vời · Phim ngắn · Xem ngay trên iQIYI"],
+    ["Hài kịch danh sách vua miệng mùa Mùa 2", "Vua hài độc thoại mùa 2"],
+    ["Yến Ni giơ bảng phản đối Công sở quấy rối", "Yến Ni giơ bảng phản đối quấy rối nơi công sở"]
+  ];
+
+  function trCompactFix(s) {
+    var t = s;
+    for (var i = 0; i < COMPACT_FIX.length; i++) t = t.split(COMPACT_FIX[i][0]).join(COMPACT_FIX[i][1]);
+    return t;
+  }
+
+  function tr(s) {
     if (!s) return s;
-    const t = s.trim();
-    if (!t || t.length > 40) return s;
-    const hit = D[t];
-    return hit ? s.replace(t, hit) : s;
+    var source = String(s);
+    if (TEXT_CACHE.has(source)) return TEXT_CACHE.get(source);
+    var translated = translateText(source);
+    if (TEXT_CACHE.size >= 2000) TEXT_CACHE.delete(TEXT_CACHE.keys().next().value);
+    TEXT_CACHE.set(source, translated);
+    return translated;
+  }
+
+  function translateText(s) {
+    var orig = String(s);
+    var lead = orig.match(/^\s*/)[0];
+    var tail = orig.match(/\s*$/)[0];
+    var t = orig.slice(lead.length, orig.length - tail.length);
+    if (!t) return orig;
+    // 1. Từ điển khớp đúng nguyên chuỗi là bản dịch đáng tin nhất.
+    if (D[t] && !gibberish(D[t])) return lead + trCompactFix(D[t]) + tail;
+    // 2. Tên phim/series: dùng tên Việt chính thức, ghép với phần còn lại đã dịch theo cụm.
+    if (TITLE_KEYS.length) {
+      var title = titleMatch(t);
+      if (title) {
+        var rest = t;
+        for (var k = 0; k < TITLE_KEYS.length; k++) {
+          if (rest.indexOf(TITLE_KEYS[k]) !== -1) { rest = rest.split(TITLE_KEYS[k]).join("\u0000"); break; }
+        }
+        var restVi = rest.replace(/\u0000/g, "").trim() ? translateByUnit(rest.replace(/\u0000/g, "")) : "";
+        return lead + trCompactFix((title + " " + restVi).trim()) + tail;
+      }
+    }
+    var p = trPatterns(t);
+    if (p !== t && !/[\u4e00-\u9fff]/.test(p)) return lead + trCompactFix(p) + tail;
+    if (p !== t) t = p;
+    // 3. Chuỗi giống tiêu đề phim (còn chữ Hán sau khi bỏ nhãn như 榜/更新至/第N集) thì không được
+    // ghép từng từ: giữ chữ Hán để engine dịch cả chuỗi thành một cụm đọc được.
+    if (looksLikeTitle(t)) return lead + trCompactFix(t) + tail;
+    return lead + translateByUnit(t) + tail;
+  }
+
+  // Dịch theo cụm dài nhất có trong từ điển; bản dịch vô nghĩa thì bỏ qua, giữ chữ Hán.
+  function translateByUnit(t) {
+    if (t.length <= 180 && /[\u4e00-\u9fff]/.test(t)) {
+      for (var i = 0; i < LONG.length; i++) {
+        if (t.indexOf(LONG[i]) === -1) continue;
+        var value = D[LONG[i]];
+        if (gibberish(value)) continue;
+        t = replaceWithSpacing(t, LONG[i], value);
+      }
+    }
+    return trCompactFix(t);
+  }
+
+  function injectCSS() {
+    if (!document.documentElement || document.getElementById("iqiyi-vi-css")) return;
+    var s = document.createElement("style");
+    s.id = "iqiyi-vi-css";
+    s.textContent =
+      'img[src*="/watermark_rightTop"],img[src*="/watermark_rightBottom"]{display:none!important;}' +
+      'html[lang="vi"] { overflow-wrap:normal; }' +
+      'html[lang="vi"] [class*="tabName"],' +
+      'html[lang="vi"] [class*="tagName"],' +
+      'html[lang="vi"] [class*="tagHeader"],' +
+      'html[lang="vi"] [class*="mainTabs"] span,' +
+      'html[lang="vi"] [class*="comments_filter"],' +
+      'html[lang="vi"] [class*="comments_replyBtn"],' +
+      'html[lang="vi"] [class*="comments_expandBtn"],' +
+      'html[lang="vi"] [class*="tabMenu_title"],' +
+      'html[lang="vi"] [class*="tabMenu_tabItem"],' +
+      'html[lang="vi"] [class*="side_item"],' +
+      'html[lang="vi"] [class*="side_sideText"],' +
+      'html[lang="vi"] [class*="filterTab"],' +
+      'html[lang="vi"] [class*="sortTab"]{' +
+      "white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis;word-break:keep-all;}" +
+      'html[lang="vi"] [data-iqiyi-vi-fit="1"]{' +
+      "white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;" +
+      "overflow-wrap:normal!important;word-break:normal!important;}" +
+      'html[lang="vi"] [class*="topbar_downloadClientBtn"]{min-width:64px!important;}' +
+      'html[lang="vi"] #pcw_topbar{width:auto!important;flex-shrink:0!important;}' +
+      'html[lang="vi"] #pcw_topbar>div{flex-shrink:0!important;}' +
+      'html[lang="vi"] #pwaBtn{width:96px!important;flex:0 0 96px!important;}' +
+      'html[lang="vi"] .pwaguide-entry-box{width:100%!important;min-width:0!important;box-sizing:border-box!important;align-items:center!important;}' +
+      'html[lang="vi"] .pwaguide-entry-box-text{width:auto!important;white-space:nowrap!important;}' +
+      'html[lang="vi"] [class*="side_sideText"]{' +
+      'flex:1 1 0!important;min-width:0!important;width:auto!important;max-width:none!important;' +
+      'white-space:normal!important;overflow:visible!important;text-overflow:clip!important;' +
+      'overflow-wrap:normal!important;word-break:normal!important;line-height:18px!important;height:auto!important;font-size:13px!important;}' +
+      'html[lang="vi"] [class*="side_leftBlock"],html[lang="vi"] [class*="side_activeLeftBlock"]{flex-shrink:0!important;}' +
+      '[class*="marks_container"]:has(img[src*="0db0e14b9886439098aa3cadf1b817ab"]),' +
+      '[class*="marks_container"]:has(img[src*="c4de74820c254b39ae0d692eef59f3a8"]),' +
+      '[class*="marks_container"]:has(img[src*="0b3bd1c78a4b4368b4e2da2fb206b5c8"]),' +
+      '[class*="marks_container"]:has(img[src*="ac0bbaca7ffb4528a3a210b4078afbdf"]),' +
+      '[class*="marks_container"]:has(img[src*="308107f863864cd8b364bc428f50f4ec"]){overflow:hidden!important;}' +
+      '[class*="marks_container"]:has(img[src*="0db0e14b9886439098aa3cadf1b817ab"]) img,' +
+      '[class*="marks_container"]:has(img[src*="c4de74820c254b39ae0d692eef59f3a8"]) img,' +
+      '[class*="marks_container"]:has(img[src*="0b3bd1c78a4b4368b4e2da2fb206b5c8"]) img,' +
+      '[class*="marks_container"]:has(img[src*="ac0bbaca7ffb4528a3a210b4078afbdf"]) img,' +
+      '[class*="marks_container"]:has(img[src*="308107f863864cd8b364bc428f50f4ec"]) img{visibility:hidden!important;}' +
+      '[class*="marks_container"]:has(img[src*="0db0e14b9886439098aa3cadf1b817ab"])::after{content:"Sắp chiếu";background:#4acbe7;color:#123b4a;}' +
+      '[class*="marks_container"]:has(img[src*="c4de74820c254b39ae0d692eef59f3a8"])::after{content:"VIP";background:#e5bd5f;color:#453313;}' +
+      '[class*="marks_container"]:has(img[src*="0b3bd1c78a4b4368b4e2da2fb206b5c8"])::after{content:"Miễn phí";background:#44cf98;color:#123d2c;}' +
+      '[class*="marks_container"]:has(img[src*="ac0bbaca7ffb4528a3a210b4078afbdf"])::after{content:"Miễn phí";background:#44cf98;color:#123d2c;}' +
+      '[class*="marks_container"]:has(img[src*="308107f863864cd8b364bc428f50f4ec"])::after{content:"VIP";background:#e5bd5f;color:#453313;}' +
+      '[class*="marks_container"]:has(img[src*="0db0e14b9886439098aa3cadf1b817ab"])::after,' +
+      '[class*="marks_container"]:has(img[src*="c4de74820c254b39ae0d692eef59f3a8"])::after,' +
+      '[class*="marks_container"]:has(img[src*="0b3bd1c78a4b4368b4e2da2fb206b5c8"])::after,' +
+      '[class*="marks_container"]:has(img[src*="ac0bbaca7ffb4528a3a210b4078afbdf"])::after,' +
+      '[class*="marks_container"]:has(img[src*="308107f863864cd8b364bc428f50f4ec"])::after{' +
+      'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;white-space:nowrap;' +
+      'font:600 10px/1 Arial,Helvetica,sans-serif;border-radius:2px;pointer-events:none;}' +
+      '#pcaSubtitleContainer,#pcaSubtitleContainer *,.caption-main,.caption-main *{' +
+      'font-family:Arial,Helvetica,sans-serif!important;font-weight:700!important;color:#fff!important;' +
+      '-webkit-text-stroke:1.2px #111!important;paint-order:stroke fill;' +
+      'text-shadow:0 1px 1px #111,1px 0 1px #111,-1px 0 1px #111,0 -1px 1px #111,0 2px 4px #000!important;}' +
+      'video::cue{font-family:Arial,Helvetica,sans-serif;font-weight:700;color:#fff;background:transparent;' +
+      'text-shadow:0 1px 1px #111,1px 0 1px #111,-1px 0 1px #111,0 -1px 1px #111,0 2px 4px #000;}';
+    (document.head || document.documentElement).appendChild(s);
+  }
+
+  function setDirectText(el, next) {
+    // React owns the DOM structure; replacing text nodes breaks its next commit.
+    if (el.childNodes.length === 1 && el.firstChild.nodeType === 3) {
+      el.firstChild.nodeValue = next;
+    }
+  }
+
+  function compactTranslate(el) {
+    if (!el || el.nodeType !== 1 || el.id === "pcaSubtitleContainer") return false;
+    if (el.childNodes.length !== 1 || el.firstChild.nodeType !== 3) return false;
+    var all = (el.textContent || "").replace(/\s+/g, " ").trim();
+    if (!all || all.length > 36) return false;
+    if (!/[\u3400-\u9fff]/.test(all)) return false;
+    var next = tr(all);
+    if (next === all) return false;
+    // Ghép từng từ chỉ để lại chuỗi lai ("Cổ ngẫu BXH số 2"): để engine dịch cả cụm.
+    if (gibberish(next)) {
+      autoTranslate(el.firstChild, all);
+      return false;
+    }
+    setDirectText(el, next);
+    fitCompact(el);
+    return true;
+  }
+
+  // Sau khi từ điển để lại chữ Hán trong một chuỗi ngắn, giao lại cho engine dịch cả chuỗi
+  // thay vì để giao diện hiện câu nửa Việt nửa Trung.
+  function rescueMixed(node, source) {
+    if (!node || node.nodeType !== 3) return;
+    var text = String(source || node.nodeValue || "").trim();
+    if (!text || text.length > 180 || !cjkCount(text)) return;
+    autoTranslate(node, text);
+  }
+
+
+  function translateDocumentTitle() {
+    var title = document.querySelector("title");
+    if (!title) return;
+    var raw = title.textContent || "";
+    if (title.firstChild && requestInternationalTitle(title.firstChild, raw, function (translated) {
+      if ((title.textContent || "") === raw && title.firstChild && title.firstChild.nodeType === 3) title.firstChild.nodeValue = translated;
+    })) return;
+    var next = tr(raw);
+    if (next !== raw && title.firstChild && title.firstChild.nodeType === 3) title.firstChild.nodeValue = next;
+    if (cjkCount(next) && title.firstChild) {
+      autoTranslateMixed(title.firstChild, next, function (translated) {
+        if ((title.textContent || "") === next && title.firstChild && title.firstChild.nodeType === 3) title.firstChild.nodeValue = translated;
+      });
+    }
+  }
+
+  function fitCompact(node) {
+    var el = node && node.nodeType === 3 ? node.parentElement : node;
+    if (!el || el.nodeType !== 1 || el.childElementCount) return;
+    if (el.id === "pcaSubtitleContainer") return;
+    // Hidden tooltips have zero width; forcing their overflow visible creates vertical text.
+    if (el.clientWidth <= 0 || el.clientHeight <= 0) return;
+    var text = (el.innerText || "").replace(/\s+/g, " ").trim();
+    if (!text || text.length > 120) return;
+    var fs = parseFloat((window.getComputedStyle(el).fontSize) || "12") || 12;
+    var parent = el.parentElement;
+    if (parent && parent.clientWidth > 0 && el.clientWidth > parent.clientWidth + 2) {
+      el.style.maxWidth = "100%";
+      el.style.boxSizing = "border-box";
+    }
+    if (el.clientHeight > 4 && el.clientHeight <= fs * 1.85 && el.scrollWidth <= el.clientWidth + 2) return;
+    if (el.scrollHeight <= el.clientHeight + 2 && el.scrollWidth <= el.clientWidth + 2) return;
+    el.setAttribute("data-iqiyi-vi-fit", "1");
+    el.style.whiteSpace = "nowrap";
+    el.style.overflow = "hidden";
+    var size = fs;
+    while (size > 12 && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1)) {
+      size -= 0.5;
+      el.style.fontSize = size + "px";
+    }
+    if (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) {
+      el.style.overflowWrap = "normal";
+      el.style.textOverflow = "ellipsis";
+      if (!el.title) el.title = text;
+    }
   }
 
   function walk(node) {
     if (!node) return;
     if (node.nodeType === 3) {
-      const n = translate(node.nodeValue);
-      if (n !== node.nodeValue) node.nodeValue = n;
+      var raw = node.nodeValue;
+      if (requestInternationalTitle(node, raw, function (translated) {
+        if (node.isConnected && node.nodeValue === raw) node.nodeValue = translated;
+      })) return;
+      var next = tr(raw);
+      if (next !== raw) node.nodeValue = next;
+      if (cjkCount(next)) autoTranslateMixed(node, canTranslateWhole(raw) ? raw : next);
+      else fitCompact(node);
       return;
-    }
-    if (node.nodeType !== 1 || SKIP.has(node.tagName)) return;
+    }    if (node.nodeType !== 1 || SKIP[node.tagName] || node.id === "pcaSubtitleContainer" || /subtitleContainer|caption-main/i.test(String(node.className || "") + " " + node.id)) return;
     if (node.shadowRoot) walk(node.shadowRoot);
     if (node.tagName === "HTML" && node.getAttribute("lang") === "zh") node.setAttribute("lang", "vi");
-    for (const a of ["title", "placeholder", "aria-label", "alt"]) {
-      const v = node.getAttribute && node.getAttribute(a);
-      if (!v) continue;
-      const n = translate(v);
-      if (n !== v) node.setAttribute(a, n);
-    }
+    var cls = String(node.className || "");
+    var joined = (node.textContent || "").replace(/\s+/g, "");
+    var chipLike = node.childElementCount > 0 && node.childElementCount <= 6 &&
+      ((node.clientHeight > 0 && node.clientHeight <= 48) ||
+        /tabName|tagName|tagHeader|chip|sort|filter|reply|hot/i.test(cls) ||
+        /展开\d+条|条回复|最热|最新|明星在追|二次创作/.test(joined));
+    if (chipLike && compactTranslate(node)) return;
+    ["title", "placeholder", "aria-label", "alt", "value"].forEach(function (a) {
+      if (a === "value" && node.tagName !== "INPUT" && node.tagName !== "BUTTON") return;
+      var v = node.getAttribute && node.getAttribute(a);
+      if (!v && a === "value" && node.value) v = node.value;
+      if (!v) return;
+      if (requestInternationalTitle(node, v, function (translated) {
+        if (node.getAttribute(a) === v) {
+          if (a === "value" && "value" in node) node.value = translated;
+          else node.setAttribute(a, translated);
+        }
+      })) return;
+      var n = tr(v);
+      if (n !== v) {
+        if (a === "value" && "value" in node) node.value = n;
+        else node.setAttribute(a, n);
+      } else if (cjkCount(v)) {
+        autoTranslateMixed(node, v, function (translated) {
+          if (node.getAttribute(a) === v) {
+            if (a === "value" && "value" in node) node.value = translated;
+            else node.setAttribute(a, translated);
+          }
+        });
+      }
+    });
     if (node.tagName === "META" && /^(description|keywords)$/i.test(node.getAttribute("name") || "")) {
-      const v = node.getAttribute("content");
-      const n = translate(v);
-      if (n !== v) node.setAttribute("content", n);
+      var content = node.getAttribute("content");
+      if (content) {
+        var translatedContent = tr(content);
+        if (translatedContent !== content) node.setAttribute("content", translatedContent);
+      }
     }
-    for (const c of node.childNodes) walk(c);
+    var kids = node.childNodes;
+    var hasEl = false;
+    for (var i = 0; i < kids.length; i++) {
+      if (kids[i].nodeType === 1) { hasEl = true; break; }
+    }
+    if (!hasEl && kids.length === 1 && kids[0].nodeType === 3) {
+      var all = node.textContent;
+      if (requestInternationalTitle(node, all, function (translated) {
+        if (node.isConnected && node.childNodes.length === 1 && node.firstChild.nodeType === 3 && node.textContent === all) {
+          node.firstChild.nodeValue = translated;
+        }
+      })) return;
+      var t = tr(all);
+      if (t !== all) kids[0].nodeValue = t;
+      if (cjkCount(t) && node.firstChild && node.firstChild.nodeType === 3) {
+        // Ghép từng từ không ra cụm đọc được thì dịch trọn chuỗi.
+        if (gibberish(t)) rescueMixed(node.firstChild, all);
+        else autoTranslateMixed(node.firstChild, canTranslateWhole(all) ? all : t);
+      } else {
+        fitCompact(node);
+      }
+      return;
+    }
+    for (var j = 0; j < kids.length; j++) walk(kids[j]);
   }
 
   function run() {
-    walk(document.documentElement || document.body);
+    try {
+      injectCSS();
+      translateDocumentTitle();
+      document.querySelectorAll('[data-iqiyi-vi-fit="1"]').forEach(function (el) {
+        if (!el.childElementCount) return;
+        el.removeAttribute("data-iqiyi-vi-fit");
+        if (String(el.className).indexOf("settingBtnAnchor") !== -1) el.removeAttribute("title");
+        ["whiteSpace", "overflow", "overflowWrap", "fontSize", "textOverflow", "maxWidth", "boxSizing"].forEach(function (key) {
+          el.style[key] = "";
+        });
+      });
+      walk(document.documentElement || document.body);
+    } catch (e) {}
   }
 
-  run();
-  setInterval(run, 800);
-  const obs = new MutationObserver(() => {
+  window.__iqiyiVi = true;
+  window.__iqiyiViVersion = ENGINE_VERSION;
+  window.__iqiyiViReload = function (next, titles) {
+    if (next) {
+      D = next;
+      window.__iqiyiViDict = next;
+      KEYS = keysOf();
+      LONG = KEYS;
+    }
+    if (titles) {
+      TITLES = titles;
+      window.__iqiyiViTitles = titles;
+      TITLE_KEYS = Object.keys(TITLES).sort(function (a, b) { return b.length - a.length; });
+    }
+    TEXT_CACHE.clear();
+    run();
+  };
+
+  if (document.body) run();
+  else document.addEventListener("DOMContentLoaded", run);
+  var runTimer = setInterval(run, 1500);
+  var obs;
+  try {
+    obs = new MutationObserver(function () {
+      if (run._t) cancelAnimationFrame(run._t);
+      run._t = requestAnimationFrame(run);
+    });
+    obs.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+  } catch (e) {}
+  window.__iqiyiViStop = function () {
+    clearInterval(runTimer);
+    if (obs) obs.disconnect();
     if (run._t) cancelAnimationFrame(run._t);
-    run._t = requestAnimationFrame(run);
-  });
-  obs.observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-    characterData: true
-  });
+  };
 })();

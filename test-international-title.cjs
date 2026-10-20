@@ -1,0 +1,24 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const source = fs.readFileSync('ui-engine.js', 'utf8');
+const code = source.slice(source.indexOf('  function requestInternationalTitle('), source.indexOf('  // Các chuỗi'));
+(async () => {
+ let calls=0, resolveFetch;
+ const context = vm.createContext({looksLikeTitle:()=>true, tr:()=> 'Tên từ điển', cjkCount:s=>/[\u3400-\u9fff]/.test(s), findInternationalTitleId:()=> '1234567890123456', INTERNATIONAL_TITLE_CACHE:{}, INTERNATIONAL_TITLE_PENDING:{}, Date, encodeURIComponent, window:{__iqiyiViToken:'test',fetch:true}, fetch:()=>{calls++;return new Promise(r=>resolveFetch=r)}, autoTranslate:()=>{throw Error('Unexpected machine translation')}});
+ vm.runInContext(code,context);
+ let first,second;
+ context.requestInternationalTitle({},'中文',v=>first=v);
+ context.requestInternationalTitle({},'中文',v=>second=v);
+ assert.equal(calls,1);
+ resolveFetch({ok:true,json:async()=>({title:'Tên quốc tế'})});
+ await new Promise(setImmediate);
+ assert.equal(first,'Tên quốc tế');assert.equal(second,'Tên quốc tế');
+ context.INTERNATIONAL_TITLE_CACHE['1234567890123456']={title:'',expires:Date.now()+10000};
+ context.requestInternationalTitle({},'中文',v=>first=v);
+ assert.equal(first,'Tên từ điển');
+ context.INTERNATIONAL_TITLE_CACHE['1234567890123456'].expires=0;
+ context.requestInternationalTitle({},'中文',()=>{});
+ assert.equal(calls,2);
+ console.log('PASS: international first, shared request, dictionary fallback, expired cache retry');
+})().catch(e=>{console.error(e);process.exitCode=1});
