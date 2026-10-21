@@ -28,7 +28,9 @@
     ensureToken();
     var TRACK = /^(xml|srt|webvtt|vtt)$/;
     var VI_LID = 23;
-    var VI_NAME = "Tiếng Việt (AI)";
+    var VI_NAME = "Tiếng Việt AI";
+    var OFFICIAL_LID = 90023;
+    var OFFICIAL_NAME = "Tiếng Việt iq.com";
     var titles = new Map();
     var albumIds = new Map();
     var registered = new Set();
@@ -42,14 +44,17 @@
     var translationStates = new Map();
     var activeViTvid = "";
     var activeViDisabled = true;
+    var activeAiManaged = true;
+    var activeOfficialAvailable = false;
     var disabledOptionState = new WeakMap();
+    var hiddenOptionState = new WeakMap();
     var menuObserver = null;
     var menuScanTimer = null;
     function syncPlayerSession() {
       if (!root || syncPlayerSession.pending) return;
       var account = root.QySdk && root.QySdk.Account;
       var nativeAccount = account && typeof account.getLoginInfo === "function";
-      var web = /(^|\.)(?:iqiyi\.com|iq\.com)$/i.test(root.location.hostname) &&
+      var web = /(^|\.)iqiyi\.com$/i.test(root.location.hostname) &&
         root.location.hostname !== "localwebapp.iqiyi.com";
       if (!nativeAccount && (!web || !root.document || (root.top && root.top !== root))) return;
       syncPlayerSession.pending = true;
@@ -113,7 +118,9 @@
         if (!response.ok) throw new Error("Translation status unavailable");
         return response.json();
       }).then(function (state) {
-        var value = {available:state.available === true, translating:state.translating === true};
+        var value = {available:state.available === true, translating:state.translating === true,
+          officialAvailable:state.officialAvailable === true, officialLoading:state.officialLoading === true,
+          officialError:String(state.officialError || "")};
         translationStates.set(tvid, {value:value, expires:Date.now() + 500});
         return value;
       }).catch(function () {
@@ -125,42 +132,147 @@
       return job;
     }
     function isViLabel(value) {
-      return /^(?:tiếng\s*việt(?:\s*\(ai\))?|vietnamese(?:\s*\(ai\))?|越南语|越南文)$/i.test(
+      return /^(?:tiếng\s*việt(?:\s*(?:ai|\(ai\)))?|vietnamese(?:\s*\(ai\))?|越南语|越南文)$/i.test(
         String(value || "").replace(/\s+/g, " ").trim());
+    }
+    function isOfficialLabel(value) {
+      return String(value || "").replace(/\s+/g, " ").trim() === OFFICIAL_NAME;
+    }
+    var officialNativeControl = null;
+    var officialRuntimeRequire = null;
+    function installOfficialSubtitleName() {
+      // The PC player keeps its SDK and subtitle controller inside Webpack, not window.QySdk.
+      var chunks = root && root.webpackChunk_iqiyi_webapp;
+      if (!officialRuntimeRequire && chunks && chunks.push !== Array.prototype.push) {
+        chunks.push([["iqiyiViOfficialSubtitle"], {}, function (require) { officialRuntimeRequire = require; }]);
+      }
+      if (!officialNativeControl && officialRuntimeRequire && officialRuntimeRequire.m) {
+        Object.keys(officialRuntimeRequire.m).some(function (id) {
+          var code = String(officialRuntimeRequire.m[id]);
+          if (code.indexOf("_getSubTitleList") < 0 || code.indexOf("getAllParams") < 0) return false;
+          try {
+            var exports = officialRuntimeRequire(id);
+            return Object.keys(exports).some(function (key) {
+              var value = exports[key];
+              if (!value || typeof value._getSubTitleList !== "function" || typeof value.openSubTitle !== "function") return false;
+              officialNativeControl = value;
+              var originalList = value._getSubTitleList;
+              value._getSubTitleList = function () {
+                var tracks = originalList.apply(this, arguments);
+                return Array.isArray(tracks) ? tracks.map(function (track) {
+                  if (Number(track.lid) === OFFICIAL_LID) return Object.assign({}, track, {name:OFFICIAL_NAME});
+                  if (Number(track.lid) === VI_LID && activeAiManaged) return Object.assign({}, track, {name:VI_NAME});
+                  return track;
+                }) : tracks;
+              };
+              return true;
+            });
+          } catch (_) { return false; }
+        });
+      }
+      installOfficialSubtitleLayout();
+    }
+    function officialRegionText(data, pts, region) {
+      if (!Array.isArray(data)) return "";
+      return Array.from(new Set(data.filter(function (cue) {
+        return (region == null || cue.iqcomRegion === region) && Number(cue.st) <= pts && Number(cue.et) > pts;
+      }).map(function (cue) { return String(cue.viText || cue.iqcomText || cue.sub || "").trim(); }).filter(Boolean))).join("\n");
+    }
+    function equalizeSubtitleSize(view) {
+      var main = view.captionInstances && view.captionInstances.get(1);
+      var sub = view.captionInstances && view.captionInstances.get(2);
+      if (!main || !sub || sub.__iqiyiEqualSubtitleSize ||
+          typeof main.getDualCaptionFontSize !== "function" ||
+          typeof sub.getDualCaptionFontSize !== "function" || typeof sub.updateCaptionStyle !== "function") return;
+      var original = sub.getDualCaptionFontSize;
+      sub.getDualCaptionFontSize = function (height) {
+        var primary = view.captionInstances.get(1);
+        return primary ? primary.getDualCaptionFontSize(height) : original.call(this, height);
+      };
+      sub.__iqiyiEqualSubtitleSize = true;
+      sub.updateCaptionStyle(sub.isDualCaption);
+    }
+    function installOfficialSubtitleLayout() {
+      var sdk = officialNativeControl && officialNativeControl.subtitleSdk && officialNativeControl.subtitleSdk.sdk;
+      var view = sdk && sdk.view;
+      if (!view || view.__iqiyiOfficialLayout || typeof view.getCurrentData !== "function" ||
+          typeof view.updateCaptions !== "function") return;
+      view.__iqiyiOfficialLayout = true;
+      var getCurrent = view.getCurrentData;
+      view.getCurrentData = function (data, pts) {
+        if (!Array.isArray(data) || !data.length || (!data[0].iqcomRegion && !data[0].viText)) return getCurrent.apply(this, arguments);
+        var text = officialRegionText(data, pts, data[0].iqcomRegion ? "bottom" : null);
+        return text ? {sub:text} : undefined;
+      };
+      var update = view.updateCaptions;
+      view.updateCaptions = function () {
+        equalizeSubtitleSize(this);
+        var result = update.apply(this, arguments);
+        var selected = this.captionLids && Number(this.captionLids.get(1)) === OFFICIAL_LID;
+        var data = selected && this.model && this.model.data[1] && this.model.data[1][OFFICIAL_LID];
+        var text = selected ? officialRegionText(data, this.currentPts, "top") : "";
+        var stage = this.$stage && this.$stage[0];
+        var upper = this.__iqiyiOfficialUpper;
+        if (text && stage && !upper) {
+          upper = root.document.createElement("div");
+          upper.className = "iqiyi-official-upper";
+          stage.appendChild(upper);
+          this.__iqiyiOfficialUpper = upper;
+        }
+        if (upper) {
+          if (upper.textContent !== text) upper.textContent = text;
+          var display = text ? "block" : "none";
+          if (upper.style.display !== display) upper.style.display = display;
+          var main = this.captionInstances && this.captionInstances.get(1);
+          if (main && main.fontSize > 0) {
+            var fontSize = Math.max(14, main.fontSize * 0.8) + "px";
+            if (upper.style.fontSize !== fontSize) upper.style.fontSize = fontSize;
+          }
+        }
+        return result;
+      };
     }
     function subtitleOptionElement(labelNode) {
       var option = labelNode;
-      for (var depth = 0; depth < 4 && option.parentElement && option.parentElement !== root.document.body; depth++) {
+      var label = String(labelNode.textContent || "").replace(/\s+/g, " ").trim();
+      for (var depth = 0; depth < 5 && option && option !== root.document.body; depth++) {
+        if (String(option.textContent || "").replace(/\s+/g, " ").trim() !== label) return null;
         var role = option.getAttribute("role") || "";
         var className = typeof option.className === "string" ? option.className : "";
-        if (/^(button|option|menuitem)$/i.test(role) || /^(BUTTON|LI)$/.test(option.tagName) ||
-            /(?:^|[-_ ])(?:item|option|track)(?:$|[-_ ])/i.test(className) || option.hasAttribute("tabindex")) break;
+        // Settings buttons can contain the selected language or the whole popup.
+        // Only the actual SDK option row (or an explicit ARIA menu option) is safe to change.
+        if (/^(option|menuitem|menuitemradio)$/i.test(role) ||
+            /(?:^|\s)simpleOptLayer_item__\S+(?:\s|$)/.test(className)) return option;
         option = option.parentElement;
       }
-      return option;
+      return null;
     }
     function optionForTarget(target) {
       var node = target && (target.nodeType === 1 ? target : target.parentElement);
       while (node && node !== root.document.body) {
         var label = String(node.textContent || "").replace(/\s+/g, " ").trim();
-        if (node.nodeType === 1 && isViLabel(label)) return subtitleOptionElement(node);
+        if (node.nodeType === 1 && (isViLabel(label) || isOfficialLabel(label))) {
+          var option = subtitleOptionElement(node);
+          if (option) return {element:option, official:isOfficialLabel(label)};
+        }
         node = node.parentElement;
       }
       return null;
     }
-    function applyDisabledOption(option) {
+    function applyDisabledOption(option, disabled, message) {
       if (!option) return;
       var previous = disabledOptionState.get(option);
-      if (activeViDisabled) {
+      if (disabled) {
         if (!previous) {
           previous = {aria:option.getAttribute("aria-disabled"), disabled:"disabled" in option ? option.disabled : null,
-            opacity:option.style.opacity, cursor:option.style.cursor};
+            opacity:option.style.opacity, cursor:option.style.cursor, title:option.getAttribute("title")};
           disabledOptionState.set(option, previous);
         }
         option.setAttribute("aria-disabled", "true");
         if (previous.disabled !== null) option.disabled = true;
         option.style.opacity = "0.45";
         option.style.cursor = "not-allowed";
+        if (message) option.setAttribute("title", message);
         return;
       }
       if (!previous) return;
@@ -169,7 +281,24 @@
       if (previous.disabled !== null) option.disabled = previous.disabled;
       option.style.opacity = previous.opacity;
       option.style.cursor = previous.cursor;
+      if (previous.title === null) option.removeAttribute("title");
+      else option.setAttribute("title", previous.title);
       disabledOptionState.delete(option);
+    }
+    function applyHiddenOption(option, hidden) {
+      if (!option) return;
+      if (hidden) {
+        if (!hiddenOptionState.has(option)) {
+          hiddenOptionState.set(option, {display:option.style.getPropertyValue("display"),
+            priority:option.style.getPropertyPriority("display")});
+        }
+        option.style.setProperty("display", "none", "important");
+      } else if (hiddenOptionState.has(option)) {
+        var previous = hiddenOptionState.get(option);
+        if (previous.display) option.style.setProperty("display", previous.display, previous.priority);
+        else option.style.removeProperty("display");
+        hiddenOptionState.delete(option);
+      }
     }
     function scanSubtitleMenu() {
       menuScanTimer = null;
@@ -178,31 +307,77 @@
       candidates.forEach(function (node) {
         // Reading innerText forces layout and can trigger unrelated HTTP background images.
         var label = String(node.textContent || "").replace(/\s+/g, " ").trim();
-        if (!isViLabel(label)) return;
-        applyDisabledOption(subtitleOptionElement(node));
+        if (isOfficialLabel(label)) applyHiddenOption(subtitleOptionElement(node), !activeOfficialAvailable);
+        else if (isViLabel(label)) applyDisabledOption(subtitleOptionElement(node), activeViDisabled, "");
       });
     }
     function scheduleSubtitleMenuScan() {
       if (menuScanTimer !== null || !root || !root.setTimeout) return;
       menuScanTimer = root.setTimeout(scanSubtitleMenu, 80);
     }
-    function setActiveViTrack(tvid) {
+    function applyActiveSubtitleState(state) {
+      activeViDisabled = activeAiManaged && (!state.available || state.translating);
+      activeOfficialAvailable = state.officialAvailable === true;
+    }
+    function currentSubtitleTvid() {
+      var manager = officialNativeControl && officialNativeControl.videoDataManager;
+      var data = manager && typeof manager.getCurrentData === "function" && manager.getCurrentData();
+      var tvid = String(data && data.tvId || "");
+      return /^\d{8,24}$/.test(tvid) ? tvid : "";
+    }
+    function retryOfficialSubtitle(tvid, state) {
+      var control = officialNativeControl;
+      var sdk = control && control.subtitleSdk && control.subtitleSdk.sdk;
+      var view = sdk && sdk.view;
+      if (!view || !state.officialAvailable || currentSubtitleTvid() !== String(tvid)) return;
+      // The controller retains the user's choice even when the SDK never activated a failed load.
+      var tracks = control._getSubTitleList();
+      var selected = Array.isArray(tracks) && tracks.some(function (track) {
+        return Number(track.type) === 1 && Number(track.lid) === OFFICIAL_LID && track.status;
+      });
+      if (!selected) return;
+      var loaded = view.model && view.model.data && view.model.data[1] && view.model.data[1][OFFICIAL_LID];
+      var active = view.captionLids && Number(view.captionLids.get(1)) === OFFICIAL_LID;
+      if (loaded && active) return;
+      if (view.__iqiyiOfficialRetryTvid === String(tvid) && Date.now() < (view.__iqiyiOfficialRetryAt || 0)) return;
+      // A cold cache can fail the SDK's initial load, including a saved language choice.
+      view.__iqiyiOfficialRetryTvid = String(tvid);
+      view.__iqiyiOfficialRetryAt = Date.now() + 5000;
+      try { control.openSubTitle(1, OFFICIAL_LID); } catch (_) {}
+    }
+    function setActiveViTrack(tvid, managed) {
       if (!tvid || !root || !root.document) return;
+      // DASH for a prefetched episode must not hide tracks for the video being watched.
+      var playing = currentSubtitleTvid();
+      if (playing && playing !== String(tvid)) return;
       activeViTvid = String(tvid);
-      activeViDisabled = true;
+      activeAiManaged = managed !== false;
+      activeViDisabled = activeAiManaged;
+      var cached = translationStates.get(activeViTvid);
+      activeOfficialAvailable = !!(cached && cached.value && cached.value.officialAvailable);
       scheduleSubtitleMenuScan();
       getTranslationState(activeViTvid).then(function (state) {
         if (activeViTvid !== String(tvid)) return;
-        activeViDisabled = !state.available || state.translating;
+        applyActiveSubtitleState(state);
+        retryOfficialSubtitle(tvid, state);
         scheduleSubtitleMenuScan();
       });
     }
     function refreshActiveViTrack() {
+      installOfficialSubtitleName();
+      var playing = currentSubtitleTvid();
+      if (playing && playing !== activeViTvid) {
+        var tracks = officialNativeControl._getSubTitleList();
+        var vi = Array.isArray(tracks) && tracks.find(function (track) { return Number(track.lid) === VI_LID; });
+        setActiveViTrack(playing, !vi || String(vi.url || "").indexOf(SIDE + "/subtitle.xml?") === 0);
+        return;
+      }
       if (!activeViTvid) return;
       var tvid = activeViTvid;
       getTranslationState(tvid).then(function (state) {
         if (activeViTvid !== tvid) return;
-        activeViDisabled = !state.available || state.translating;
+        applyActiveSubtitleState(state);
+        retryOfficialSubtitle(tvid, state);
         scheduleSubtitleMenuScan();
       });
     }
@@ -210,6 +385,7 @@
       if (activeViTvid !== String(tvid)) return;
       activeViTvid = "";
       activeViDisabled = false;
+      activeOfficialAvailable = false;
       scheduleSubtitleMenuScan();
     }
     function installSubtitleMenuGuard() {
@@ -217,9 +393,10 @@
       if (!doc || !doc.addEventListener || doc.__iqiyiViMenuGuard) return;
       doc.__iqiyiViMenuGuard = true;
       function blockUnavailableSelection(event) {
-        if (!activeViDisabled || !activeViTvid) return;
+        if (!activeViTvid) return;
         if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
-        if (!optionForTarget(event.target)) return;
+        var option = optionForTarget(event.target);
+        if (!option || option.official || !activeViDisabled) return;
         event.preventDefault();
         event.stopPropagation();
         if (event.stopImmediatePropagation) event.stopImmediatePropagation();
@@ -240,15 +417,20 @@
         if (!doc.documentElement) return;
         var style = doc.getElementById("iqiyi-vi-subtitle-css") || doc.createElement("style");
         style.id = "iqiyi-vi-subtitle-css";
-        style.setAttribute("data-hook-version", "11");
+        style.setAttribute("data-hook-version", "27");
         style.textContent =
           'img[src*="/watermark_rightTop"],img[src*="/watermark_rightBottom"]{display:none!important;}' +
-          '#pcaSubtitleContainer,#pcaSubtitleContainer *,.caption-main,.caption-main *{' +
+          '#pcaSubtitleContainer,#pcaSubtitleContainer *,.caption-main,.caption-main *,.caption-sub,.caption-sub *,.iqiyi-official-upper{' +
           'font-family:Arial,Helvetica,sans-serif!important;font-weight:700!important;color:#fff!important;' +
-          '-webkit-text-stroke:1.2px #111!important;paint-order:stroke fill;' +
-          'text-shadow:0 1px 1px #111,1px 0 1px #111,-1px 0 1px #111,0 -1px 1px #111,0 2px 4px #000!important;}' +
+          // Stroke rasterization leaves an inner fringe in the player WebView; use a flat outline.
+          '-webkit-text-stroke:0!important;' +
+          'text-shadow:-1px -1px 0 #111,0 -1px 0 #111,1px -1px 0 #111,1px 0 0 #111,1px 1px 0 #111,0 1px 0 #111,-1px 1px 0 #111,-1px 0 0 #111!important;}' +
+          '.caption-main::after,.caption-sub::after{content:none!important;}' +
+          '.iqiyi-official-upper{position:absolute;top:6%;left:5%;width:90%;box-sizing:border-box;' +
+          'white-space:pre-line;text-align:center;line-height:1.4;pointer-events:none;z-index:2;' +
+          'font-size:clamp(14px,3.8vh,32px);}' +
           'video::cue{font-family:Arial,Helvetica,sans-serif;font-weight:700;color:#fff;background:transparent;' +
-          'text-shadow:0 1px 1px #111,1px 0 1px #111,-1px 0 1px #111,0 -1px 1px #111,0 2px 4px #000;}';
+          '-webkit-text-stroke:0;text-shadow:-1px -1px 0 #111,0 -1px 0 #111,1px -1px 0 #111,1px 0 0 #111,1px 1px 0 #111,0 1px 0 #111,-1px 1px 0 #111,-1px 0 0 #111;}';
         if (!style.parentNode) (doc.head || doc.documentElement).appendChild(style);
       }
       if (doc.documentElement) addStyle();
@@ -336,6 +518,7 @@
       });
     }
     function prepareTracks(items, context) {
+      installOfficialSubtitleName();
       var chinese = items.find(function (item) { return item && String(item.lid) === "1"; });
       var preferred = chinese || items.find(function (item) { return item && String(item.lid) !== String(VI_LID) && trackUrl(item); });
       var sourceTracks = items.filter(function (item) { return item && trackUrl(item) &&
@@ -368,8 +551,10 @@
           return copy;
         });
       if (!context.tvid) return output;
+      output.push({lid:OFFICIAL_LID, main:1, pre:0, name:OFFICIAL_NAME, title:OFFICIAL_NAME,
+        xml:SIDE + "/subtitle.xml?tvid=" + encodeURIComponent(context.tvid) + "&source=iqcom"});
       if (output.some(function (item) { return item && String(item.lid) === String(VI_LID); })) {
-        clearActiveViTrack(context.tvid);
+        setActiveViTrack(context.tvid, false);
         return output;
       }
       var translation = translationStates.get(String(context.tvid));
@@ -399,7 +584,12 @@
           return;
         }
         context = identity(value, context);
-        Object.keys(value).forEach(function (key) { scan(value[key], context, depth + 1); });
+        if (context.tvid && value.program && !Array.isArray(value.program) &&
+            Array.isArray(value.program.video) && value.program.stl == null) found.add(context.tvid);
+        Object.keys(value).forEach(function (key) {
+          if (key === "stl" && Array.isArray(value[key]) && !value[key].length && context.tvid) found.add(context.tvid);
+          scan(value[key], context, depth + 1);
+        });
       }
       scan(body, {tvid:"", title:"", albumId:"", prefix:""}, 0);
       return Array.from(found);
@@ -426,7 +616,18 @@
         }
         context = identity(value, context);
         var before = changes, output = {};
-        Object.keys(value).forEach(function (key) { output[key] = visit(value[key], context, depth + 1); });
+        Object.keys(value).forEach(function (key) {
+          // A film without domestic subtitle tracks can still have an iq.com track.
+          if (key === "stl" && Array.isArray(value[key]) && !value[key].length && context.tvid) {
+            changes++;
+            output[key] = prepareTracks([], context);
+          } else if (key === "program" && context.tvid && value[key] &&
+                     !Array.isArray(value[key]) && Array.isArray(value[key].video) && value[key].stl == null) {
+            output[key] = visit(value[key], context, depth + 1);
+            output[key].stl = prepareTracks([], context);
+            changes++;
+          } else output[key] = visit(value[key], context, depth + 1);
+        });
         if (changes > before) {
           ["dstl", "prefix"].forEach(function (key) {
             if (typeof output[key] === "string") output[key] = "";
@@ -516,8 +717,7 @@
     }
     if (!root) return;
     var nativePlayer = /(^|\/)player(?:_mac)?\.html$/i.test(root.location.pathname);
-    var iqPlayer = /(^|\.)iq\.com$/i.test(root.location.hostname) && /\/play\//i.test(root.location.pathname) ||
-      /(^|\.)iqiyi\.com$/i.test(root.location.hostname) && /(?:\/play\/|\/v_[^/]+\.html?$)/i.test(root.location.pathname);
+    var iqPlayer = /(^|\.)iqiyi\.com$/i.test(root.location.hostname) && /(?:\/play\/|\/v_[^/]+\.html?$)/i.test(root.location.pathname);
     if (!nativePlayer && !iqPlayer) return;
     // Web pages can expose the active video before any intercepted subtitle request.
     function syncWebEpisode() {
@@ -544,7 +744,7 @@
     syncWebEpisode();
     if (iqPlayer && root.setInterval) root.setInterval(syncWebEpisode, 3000);
     installSubtitleMenuGuard();
-    root.__iqiyiSubtitleEngine = {version: 11, rewrite: rewrite, titles: titles};
+    root.__iqiyiSubtitleEngine = {version: 27, rewrite: rewrite, titles: titles};
 
     // The accelerator assigns encoded DASH metadata directly, bypassing fetch/XHR/JSONP.
     function rewriteAccelerator(value) {
@@ -648,6 +848,19 @@
               captureSource(url, value).catch(function(){});
             } catch (_) {}
           }, {once:true});
+          var localUrl = xhr.__iqiyiSubtitleSourceUrl;
+          if (localUrl === SIDE + "/subtitle.xml" || localUrl.indexOf(SIDE + "/subtitle.xml?") === 0) {
+            var args = arguments;
+            function sendLocal(token) {
+              // Native XHR may omit Origin. Authenticate only the exact loopback route;
+              // a query token would leak if CaptionSDK retries through its remote relay.
+              if (token) xhr.setRequestHeader("X-Iqiyi-Token", token);
+              return nativeSend.apply(xhr, args);
+            }
+            if (TOKEN) return sendLocal(TOKEN);
+            ensureToken().then(sendLocal);
+            return;
+          }
           return nativeSend.apply(xhr, arguments);
         };
       }

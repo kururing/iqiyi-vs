@@ -133,6 +133,10 @@ def browser_proxy_token(token: str) -> str:
     return hmac.new(token.encode("utf-8"), b"browser-proxy-v1", hashlib.sha256).hexdigest()
 
 
+def browser_session_token(token: str) -> str:
+    return hmac.new(token.encode("utf-8"), b"browser-session-v1", hashlib.sha256).hexdigest()
+
+
 def python_executable(root: Path, background: bool = False) -> Path:
     """Interpreter for helper processes: the checkout's .venv first, then the running Python.
 

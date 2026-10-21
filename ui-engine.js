@@ -1,6 +1,6 @@
 /* iqiyi-vi */
 (function () {
-  var ENGINE_VERSION = 117;
+  var ENGINE_VERSION = 122;
   var IS_PLAYER = /(^|\/)player(?:_mac)?\.html$/i.test(location.pathname);
   if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
     if (window.__iqiyiViReload) window.__iqiyiViReload(window.__iqiyiViDict);
@@ -26,12 +26,18 @@
   var TEXT_CACHE = new Map();
   var SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, NOSCRIPT: 1, CODE: 1 };
   // V4 contained mixed-language results caused by translating already-translated DOM text.
-  var AUTO_KEY = "__iqiyiViAutoV10";
+  var AUTO_KEY = "__iqiyiViAutoV12";
   var AUTO_CACHE = {};
   var AUTO_PENDING = {};
   var AUTO_QUEUE = [];
   var AUTO_ACTIVE = false;
-  try { AUTO_CACHE = JSON.parse(localStorage.getItem(AUTO_KEY) || "{}"); } catch (e) {}
+  try {
+    for (var cacheIndex = localStorage.length - 1; cacheIndex >= 0; cacheIndex--) {
+      var cacheName = localStorage.key(cacheIndex);
+      if (/^__iqiyiViAutoV/.test(cacheName) && cacheName !== AUTO_KEY) localStorage.removeItem(cacheName);
+    }
+    AUTO_CACHE = JSON.parse(localStorage.getItem(AUTO_KEY) || "{}");
+  } catch (e) {}
 
   function cjkCount(s) {
     var m = String(s || "").match(/[\u3400-\u9fff]/g);
@@ -159,16 +165,69 @@
 
   function titleIdFromUrl(value) {
     try {
+      if (/^qips:\/\//i.test(String(value || ""))) {
+        var nativeLink = String(value).replace(/^qips:\/\//i, "");
+        var nativeAlbum = nativeLink.match(/(?:^|[;?&])albumid=(\d{8,24})(?=[;?&#]|$)/i);
+        var nativeVideo = nativeLink.match(/(?:^|[;?&])tvid=(\d{8,24})(?=[;?&#]|$)/i);
+        return nativeAlbum ? nativeAlbum[1] : nativeVideo ? nativeVideo[1] : "";
+      }
       var url = new URL(value, location.href);
       var params = url.searchParams;
-      var queryKeys = ["albumId", "qipuId", "tvid"];
+      var queryKeys = ["albumId", "albumid", "qipuId", "tvid", "tvId"];
       for (var i = 0; i < queryKeys.length; i++) {
         var found = internationalTitleId(params.get(queryKeys[i]));
         if (found) return found;
       }
+      if (url.pathname === "/tvg/to_page_url" && /(^|\.)iqiyi\.com$/i.test(url.hostname)) {
+        var encodedKeys = ["album_id", "tv_id"];
+        for (var j = 0; j < encodedKeys.length; j++) {
+          var encoded = params.get(encodedKeys[j]);
+          if (!encoded) continue;
+          try {
+            var decoded = atob(encoded);
+            if (/^\d{8,24}$/.test(decoded)) return decoded;
+          } catch (e) {}
+        }
+      }
       var path = url.pathname.match(/(?:^|\/)(?:play|album)\/([A-Za-z0-9]{8,20})(?=\/|\.html|$)|\/(?:m|a|v)_([A-Za-z0-9]{8,20})(?=\.html|\/|$)/i);
       return path ? internationalTitleId(path[1] || path[2]) : "";
     } catch (e) { return ""; }
+  }
+
+  function isMovieTitleNode(node) {
+    var el = node && node.nodeType === 3 ? node.parentElement : node;
+    for (var depth = 0; el && depth < 3; depth++, el = el.parentElement) {
+      if (el.nodeType !== 1) continue;
+      var label = String(el.className || "");
+      var entity = el.getAttribute("data-ai-entity") || "";
+      if (/^(?:卡片|缩略图|影片|视频|专辑|剧集)标题$/.test(entity) ||
+          /thumbnailItemTitle|flexVideoList_title__|meta_title(?:TextBlock|NotCloud)|search-board-item_title|(?:album|movie|video|player|detail)[-_]?(?:name|title)(?:__|\b)/i.test(label)) return true;
+    }
+    return false;
+  }
+
+  function nativeMovieTitleId(node) {
+    if (!/^https:\/\/localwebapp\.iqiyi\.com(?:[:/]|$)/i.test(location.href)) return "";
+    var el = node && node.nodeType === 3 ? node.parentElement : node;
+    if (!el) return "";
+    // Native React cards use click handlers instead of links or data-ID attributes.
+    var key = Object.keys(el).filter(function (name) { return name.indexOf("__reactFiber$") === 0; })[0];
+    var fiber = key && el[key];
+    for (var depth = 0; fiber && depth < 24; depth++, fiber = fiber.return) {
+      var props = fiber.memoizedProps || {};
+      var items = [props.item, props.data, props.originData, props.selectedData, props];
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+        var id = internationalTitleId(item.albumId || item.album_id || item.albumid);
+        if (id) return id;
+        var link = titleIdFromUrl(item.play_url || item.playUrl || item.qipsUrl || item.page_url || item.url || "");
+        if (link) return link;
+        id = internationalTitleId(item.tvId || item.tvid || item.tv_id || item.entity_id);
+        if (id) return id;
+      }
+    }
+    return "";
   }
 
   function findInternationalTitleId(node) {
@@ -181,7 +240,7 @@
         var label = String(el.className || "") + " " + (el.id || "");
         if (depth < 3) {
           if (el.tagName === "TITLE" || el.tagName === "H1" || /(?:player|detail)[-_]?(?:name|title)|(?:name|title)[-_]?(?:player|detail)|meta_title(?:TextBlock|NotCloud)/i.test(label)) pageTitle = true;
-          if (pageTitle || /^H[1-6]$/.test(el.tagName) || /(?:^|[\s_-])(?:title|name)(?:Text|Main|Link|Label)?(?:[\s_-]|$)|(?:album|video|movie)[-_]?(?:name|title)|(?:name|title)[-_]?(?:album|video|movie)/i.test(label)) titleNode = true;
+          if (isMovieTitleNode(el) || pageTitle || /^H[1-6]$/.test(el.tagName) || /(?:^|[\s_-])(?:title|name)(?:Text|Main|Link|Label)?(?:[\s_-]|$)|(?:album|video|movie)[-_]?(?:name|title)|(?:name|title)[-_]?(?:album|video|movie)/i.test(label)) titleNode = true;
         }
         if (titleNode) {
           for (var i = 0; i < attrs.length; i++) {
@@ -202,50 +261,33 @@
         el = tree && tree.host ? tree.host : null;
       }
     }
-    return pageTitle ? titleIdFromUrl(location.href) : "";
+    return (titleNode && nativeMovieTitleId(node)) || (pageTitle ? titleIdFromUrl(location.href) : "");
   }
 
   function requestInternationalTitle(node, value, setter) {
     var raw = String(value || "");
-    if (!looksLikeTitle(raw)) return false;
+    var movieTitle = isMovieTitleNode(node);
+    if (!looksLikeTitle(raw)) return movieTitle;
     var id = findInternationalTitleId(node);
-    if (!id) return false;
+    if (!id) return movieTitle;
 
-    function apply(title) {
-      if (findInternationalTitleId(node) !== id) return;
-      var result = title;
-      if (result) {
-        var lead = raw.match(/^\s*/)[0];
-        var tail = raw.match(/\s*$/)[0];
-        result = lead + result + tail;
-      } else {
-        var local = tr(raw);
-        if (local !== raw && !cjkCount(local)) {
-          if (setter) setter(local);
-          else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = local;
-          return;
-        }
-        var lead = raw.match(/^\s*/)[0];
-        var tail = raw.match(/\s*$/)[0];
-        autoTranslate(node, raw, function (translated) {
-          if (findInternationalTitleId(node) !== id) return;
-          var fallback = lead + translated + tail;
-          if (setter) setter(fallback);
-          else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = fallback;
-        }, true);
-        return;
-      }
+    function apply(payload) {
+      if (findInternationalTitleId(node) !== id || !payload.title) return;
+      var source = payload.sourceTitle || "";
+      // Only replace the verified Chinese album name; keep episode numbers and other text.
+      if (!source || raw.indexOf(source) === -1) return;
+      var result = raw.split(source).join(payload.title);
       if (setter) setter(result);
       else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
     }
 
     if (Object.prototype.hasOwnProperty.call(INTERNATIONAL_TITLE_CACHE, id)) {
       var cached = INTERNATIONAL_TITLE_CACHE[id];
-      if (cached.expires > Date.now()) { apply(cached.title); return true; }
+      if (cached.expires > Date.now()) { apply(cached); return true; }
       delete INTERNATIONAL_TITLE_CACHE[id];
     }
     var token = window.__iqiyiViToken || "";
-    if (!token || !window.fetch) return !!window.__iqiyiViTokenPending;
+    if (!token || !window.fetch) return true;
     var callback = apply;
     if (INTERNATIONAL_TITLE_PENDING[id]) {
       INTERNATIONAL_TITLE_PENDING[id].push(callback);
@@ -258,16 +300,16 @@
       .then(function (response) { return response.ok ? response.json() : Promise.reject(new Error("HTTP " + response.status)); })
       .then(function (payload) {
         var title = payload && typeof payload.title === "string" && !cjkCount(payload.title) ? payload.title.trim() : "";
-        INTERNATIONAL_TITLE_CACHE[id] = {title:title, expires:Date.now() + (title ? 3600000 : 120000)};
+        INTERNATIONAL_TITLE_CACHE[id] = {title:title, sourceTitle:payload && payload.sourceTitle || "", expires:Date.now() + (title ? 3600000 : 120000)};
         var waiting = INTERNATIONAL_TITLE_PENDING[id] || [];
         delete INTERNATIONAL_TITLE_PENDING[id];
-        for (var i = 0; i < waiting.length; i++) waiting[i](title);
+        for (var i = 0; i < waiting.length; i++) waiting[i](INTERNATIONAL_TITLE_CACHE[id]);
       })
       .catch(function () {
         INTERNATIONAL_TITLE_CACHE[id] = {title:"", expires:Date.now() + 15000};
         var waiting = INTERNATIONAL_TITLE_PENDING[id] || [];
         delete INTERNATIONAL_TITLE_PENDING[id];
-        for (var i = 0; i < waiting.length; i++) waiting[i]("");
+        for (var i = 0; i < waiting.length; i++) waiting[i]({title:""});
       });
     return true;
   }
@@ -330,6 +372,7 @@
 
   function autoTranslate(node, value, setter, allowMixed) {
     if (!node || !value) return;
+    if (isMovieTitleNode(node)) return;
     var text = String(value).trim();
     // Only translate source text that is predominantly Chinese. This keeps
     // dictionary/pattern output from being translated a second time.
@@ -587,10 +630,11 @@
       'font:600 10px/1 Arial,Helvetica,sans-serif;border-radius:2px;pointer-events:none;}' +
       '#pcaSubtitleContainer,#pcaSubtitleContainer *,.caption-main,.caption-main *{' +
       'font-family:Arial,Helvetica,sans-serif!important;font-weight:700!important;color:#fff!important;' +
-      '-webkit-text-stroke:1.2px #111!important;paint-order:stroke fill;' +
-      'text-shadow:0 1px 1px #111,1px 0 1px #111,-1px 0 1px #111,0 -1px 1px #111,0 2px 4px #000!important;}' +
+      '-webkit-text-stroke:0!important;' +
+      'text-shadow:-1px -1px 0 #111,0 -1px 0 #111,1px -1px 0 #111,1px 0 0 #111,1px 1px 0 #111,0 1px 0 #111,-1px 1px 0 #111,-1px 0 0 #111!important;}' +
+      '.caption-main::after,.caption-sub::after{content:none!important;}' +
       'video::cue{font-family:Arial,Helvetica,sans-serif;font-weight:700;color:#fff;background:transparent;' +
-      'text-shadow:0 1px 1px #111,1px 0 1px #111,-1px 0 1px #111,0 -1px 1px #111,0 2px 4px #000;}';
+      '-webkit-text-stroke:0;text-shadow:-1px -1px 0 #111,0 -1px 0 #111,1px -1px 0 #111,1px 0 0 #111,1px 1px 0 #111,0 1px 0 #111,-1px 1px 0 #111,-1px 0 0 #111;}';
     (document.head || document.documentElement).appendChild(s);
   }
 
@@ -603,6 +647,7 @@
 
   function compactTranslate(el) {
     if (!el || el.nodeType !== 1 || el.id === "pcaSubtitleContainer") return false;
+    if (isMovieTitleNode(el)) return false;
     if (el.childNodes.length !== 1 || el.firstChild.nodeType !== 3) return false;
     var all = (el.textContent || "").replace(/\s+/g, " ").trim();
     if (!all || all.length > 36) return false;

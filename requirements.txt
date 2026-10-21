@@ -1,4 +1,3 @@
 # Runtime dependencies of the subtitle manager and the Việt hóa tooling.
-# Everything below is standard library only; the manager talks to any
-# OpenAI-compatible chat-completions endpoint over urllib.
-# This file exists so `pip install -r requirements.txt` is a valid no-op step.
+# The AI client uses urllib. Playwright reads subtitles with the synced iq.com session in the background.
+playwright>=1.49,<2

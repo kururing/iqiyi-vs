@@ -23,8 +23,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlencode, urljoin, urlsplit
 
-from iqiyi_common import api_token, atomic_write, browser_proxy_token, player_token
+from iqiyi_common import api_token, atomic_write, browser_proxy_token, browser_session_token, player_token
 from windows_runtime import run_elevated
+from iqcom_session import IqcomSession, has_vietnamese_track
+from proxy_support import DesktopProxyRelay
+from launcher import apply_running_iqiyi_proxy
 import subtitle_agent as agent
 
 ROOT = Path(__file__).resolve().parent
@@ -37,6 +40,9 @@ DEFAULT_AI_PROFILE_MODEL = ""
 PLAYER_LOG = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "LStyle" / "playerh5.log"
 PORT = 18766
 EPISODES: dict[str, dict] = {}
+LIBRARY_ADMISSIONS_PATH = ROOT / ".local" / "library-admissions.json"
+LIBRARY_ADMISSIONS: dict[str, str] = {}
+LIBRARY_ADMISSIONS_LOCK = threading.RLock()
 TRANSLATION_PROGRESS: dict[str, dict] = {}
 TRANSLATION_CANCEL_EVENTS: dict[str, threading.Event] = {}
 AGENT_PROFILE_LOCKS: dict[str, threading.Lock] = {}
@@ -51,8 +57,26 @@ SESSION_LOCK = threading.Lock()
 SESSION_VERSION = 0
 IQIYI_PROXY_URL = ""
 IQIYI_PROXY_LOCK = threading.Lock()
-INTERNATIONAL_TITLE_CACHE: dict[str, tuple[float, str]] = {}
+IQIYI_PROXY_APPLY_LOCK = threading.Lock()
+
+
+def current_player_proxy() -> str:
+    with IQIYI_PROXY_LOCK:
+        return IQIYI_PROXY_URL
+
+
+IQCOM_SESSION = IqcomSession(ROOT / ".local" / "iqcom-browser")
+DESKTOP_PROXY = DesktopProxyRelay(current_player_proxy)
+INTERNATIONAL_TITLE_CACHE: dict[str, tuple[float, dict[str, str]]] = {}
 INTERNATIONAL_TITLE_LOCK = threading.Lock()
+INTERNATIONAL_TITLE_PENDING: set[str] = set()
+INTERNATIONAL_ALBUM_IDS: dict[str, tuple[float, str]] = {}
+IQCOM_ALBUM_CACHE: dict[str, tuple[float, dict, dict]] = {}
+IQCOM_ALBUM_LOCK = threading.Lock()
+TITLE_LOOKUP_POOL = ThreadPoolExecutor(max_workers=3, thread_name_prefix="movie-title")
+OFFICIAL_SUBTITLE_CACHE: dict[str, dict] = {}
+OFFICIAL_SUBTITLE_LOCK = threading.Lock()
+OFFICIAL_SUBTITLE_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="official-subtitle")
 APP_LOCALIZATION_LOCK = threading.Lock()
 APP_LOCALIZATION_STATE = {"status": "idle", "action": "", "message": ""}
 
@@ -269,7 +293,8 @@ def sync_album_list(album_id: str, title: str) -> None:
 
 def refresh_album_lists() -> None:
     with LOCK_GUARD:
-        albums = {str(item.get("albumId", "")): episode_series_title(item) for item in list(EPISODES.values())}
+        albums = {str(item.get("albumId", "")): episode_series_title(item)
+                  for item in list(EPISODES.values()) if library_status(item) == "accepted"}
         for album_id, title in albums.items():
             if not re.fullmatch(r"\d{1,24}", album_id) or album_id == "0":
                 continue
@@ -360,7 +385,77 @@ def retry_translation_call(tvid: str, callback, *args, **kwargs):
             wait_for_translation_cancel(tvid, delay)
 
 
+def library_keys(item: dict) -> list[str]:
+    provider = item.get("provider", "iqiyi")
+    keys = []
+    if item.get("albumId") and str(item["albumId"]) != "0":
+        keys.append(f"{provider}:album:{item['albumId']}")
+    title = episode_series_title(item).casefold().strip()
+    if title:
+        keys.append(f"{provider}:title:{title}")
+    return keys or [f"{provider}:episode:{item.get('tvid', '')}"]
+
+
+def library_status(item: dict) -> str:
+    with LIBRARY_ADMISSIONS_LOCK:
+        states = {LIBRARY_ADMISSIONS.get(key) for key in library_keys(item)}
+        return "accepted" if "accepted" in states else "dismissed" if "dismissed" in states else "pending"
+
+
+def set_library_status(items, status: str) -> None:
+    with LIBRARY_ADMISSIONS_LOCK:
+        updated = dict(LIBRARY_ADMISSIONS)
+        for item in items:
+            updated.update({key: status for key in library_keys(item)})
+        atomic_write(LIBRARY_ADMISSIONS_PATH, json.dumps(updated, ensure_ascii=False, indent=2))
+        LIBRARY_ADMISSIONS.clear()
+        LIBRARY_ADMISSIONS.update(updated)
+
+
+def load_library_admissions() -> None:
+    with LIBRARY_ADMISSIONS_LOCK:
+        if LIBRARY_ADMISSIONS_PATH.exists():
+            saved = json.loads(LIBRARY_ADMISSIONS_PATH.read_text(encoding="utf-8"))
+            if not isinstance(saved, dict) or any(value not in ("accepted", "dismissed") for value in saved.values()):
+                raise ValueError("Danh sách chấp nhận phim không hợp lệ.")
+            LIBRARY_ADMISSIONS.clear()
+            LIBRARY_ADMISSIONS.update(saved)
+        else:
+            # Preserve the existing library once; future discoveries require acceptance.
+            set_library_status(EPISODES.values(), "accepted")
+
+
+def pending_movies() -> list[dict]:
+    groups = {}
+    for tvid, item in list(EPISODES.items()):
+        if library_status(item) != "pending":
+            continue
+        provider = item.get("provider", "iqiyi")
+        title = episode_series_title(item)
+        key = (provider, title.casefold() or str(item.get("albumId") or tvid))
+        group = groups.setdefault(key, {"tvid": tvid, "provider": provider,
+            "title": vietnamese_series_title(item) or title or tvid,
+            "originalTitle": title, "episodes": 0, "discoveredAt": item.get("discoveredAt", 0)})
+        group["episodes"] += 1
+    return sorted(groups.values(), key=lambda row: -float(row["discoveredAt"] or 0))
+
+
+def decide_discovery(tvid: str, action: str) -> dict:
+    if action not in ("accept", "dismiss") or tvid not in EPISODES:
+        raise ValueError("Thông báo phim không hợp lệ.")
+    with LOCK_GUARD:
+        item = EPISODES[tvid]
+        ids = album_episode_ids(str(item.get("albumId", "")), item.get("provider", "iqiyi"), episode_series_title(item)) or [tvid]
+        if action == "dismiss" and library_status(item) == "accepted":
+            raise ValueError("Phim đã có trong thư viện.")
+        set_library_status([EPISODES[key] for key in ids], "accepted" if action == "accept" else "dismissed")
+    if action == "accept" and item.get("provider", "iqiyi") == "iqiyi" and item.get("albumId"):
+        queue_album_sync(str(item["albumId"]), episode_series_title(item))
+    return {"message": "Đã thêm phim vào thư viện." if action == "accept" else "Đã bỏ qua phim này."}
+
+
 def save_episode(tvid: str, item: dict) -> None:
+    item["tvid"] = tvid
     if item.get("provider", "iqiyi") == "iqiyi":
         album_title = ALBUM_LISTS.get(str(item.get("albumId", "")), {}).get("title")
         if album_title:
@@ -382,6 +477,7 @@ def load_library() -> None:
                 continue
             if item.get("provider") not in ("iqiyi", "youku"):
                 item["provider"] = "youku" if folder.name.startswith("yk-") else "iqiyi"
+            item["tvid"] = folder.name
             album_pattern = r"\d{1,24}" if item["provider"] == "iqiyi" else r"yk-[A-Za-z0-9_-]{1,100}"
             if item.get("albumId") and not re.fullmatch(album_pattern, str(item["albumId"])):
                 item["albumId"] = ""
@@ -404,6 +500,7 @@ def load_library() -> None:
                     save_translation_state(folder, load_translation_state(folder, source))
         except (OSError, ValueError, ET.ParseError):
             continue
+    load_library_admissions()
 
 
 def sync_current_player() -> None:
@@ -737,6 +834,7 @@ VÍ DỤ (minh họa nguyên tắc, không phải dữ liệu thật)
 QUY TẮC ĐẦU RA
 - Trả đúng một kết quả cho mỗi id cần dịch, theo thứ tự danh sách; giữ nguyên id số nguyên, không thêm, xóa, trùng hay đổi id.
 - Không bỏ lời thoại nào, kể cả câu ngắn, câu lặp, tiếng đệm, cảm thán, câu dở dang. Không tóm tắt, không gộp hai câu, không tự thêm nội dung.
+- Một cue có thể chứa nhiều lượt lời của những người khác nhau, kể cả khi source chỉ ngăn bằng khoảng trắng. Dùng ngữ cảnh để nhận diện, dịch đủ từng lượt và tách bằng xuống dòng trong cùng translation; không ghép lời cảm thán của người này với câu hỏi của người khác thành một câu. Không tự tách chỉ vì thấy khoảng trắng.
 - Giữ ký hiệu như ♪, dấu ngoặc, dấu câu biểu đạt và xuống dòng trong cùng cue khi cần. Nguồn có nhãn người nói thì giữ đủ nhãn (dịch nhất quán). Không biến chỉ dẫn phi ngôn ngữ thành lời thoại mới. Văn bản chỉ là dấu câu hoặc âm thanh vẫn có bản dịch phù hợp. Câu đã là tiếng Việt thì giữ nguyên.
 - Mỗi phần tử chỉ có id và translation; translation là chuỗi không rỗng (xuống dòng phải escape đúng JSON). Không Markdown, chú thích hay giải thích ngoài JSON.
 - Trước khi xuất, đối chiếu từng bản dịch với source về nghĩa, phủ định, xưng hô; kiểm tra đủ id, không trùng, không rỗng.
@@ -931,10 +1029,6 @@ class SubtitleAccessRequired(ValueError):
     pass
 
 
-class IqiyiProxyError(ValueError):
-    pass
-
-
 class NoSessionRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise ValueError("Session metadata redirects are not allowed")
@@ -960,88 +1054,311 @@ def validate_iqiyi_proxy_url(value: str) -> str:
 
 
 def iqiyi_open(request, timeout: int = 15, no_session_redirect: bool = False):
-    with IQIYI_PROXY_LOCK:
-        proxy_url = IQIYI_PROXY_URL
-    # An empty proxy setting means direct access, including on Windows.
-    handlers = [urllib.request.ProxyHandler({"http": proxy_url, "https": proxy_url} if proxy_url else {})]
+    # Metadata, film titles and subtitle files always bypass player/system proxies.
+    handlers = [urllib.request.ProxyHandler({})]
     if no_session_redirect:
         handlers.append(NoSessionRedirect())
-    try:
-        return urllib.request.build_opener(*handlers).open(request, timeout=timeout)
-    except urllib.error.URLError as exc:
-        if proxy_url and (isinstance(exc.reason, ConnectionRefusedError) or
-                          getattr(exc.reason, "winerror", None) == 10061):
-            raise IqiyiProxyError("Proxy iQIYI từ chối kết nối. Kiểm tra proxy đã chạy và đúng cổng, "
-                                 "hoặc chọn Tắt proxy để kết nối trực tiếp") from None
-        if proxy_url and isinstance(exc.reason, TimeoutError):
-            raise IqiyiProxyError("Kết nối qua proxy iQIYI hết thời gian chờ. Kiểm tra proxy hoặc thử lại") from None
-        raise
-    except TimeoutError:
-        if proxy_url:
-            raise IqiyiProxyError("Kết nối qua proxy iQIYI hết thời gian chờ. Kiểm tra proxy hoặc thử lại") from None
-        raise
+    return urllib.request.build_opener(*handlers).open(request, timeout=timeout)
 
 
-def international_movie_title(identifier: str) -> str:
+def public_iqiyi_json(url: str) -> dict:
+    host = urlsplit(url).hostname or ""
+    referer = "https://www.iqiyi.com/" if host.endswith(".iqiyi.com") else "https://www.iq.com/"
+    request = urllib.request.Request(url, headers={
+        "Accept": "application/json", "Referer": referer,
+        "User-Agent": "Mozilla/5.0"})
+    with iqiyi_open(request, timeout=8, no_session_redirect=True) as response:
+        raw = response.read(4_000_001)
+    if len(raw) > 4_000_000:
+        raise ValueError("Metadata tên phim iQIYI quá lớn.")
+    payload = json.loads(raw.decode("utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("Metadata tên phim iQIYI không hợp lệ.")
+    return payload
+
+
+def international_movie_title(identifier: str) -> dict[str, str]:
+    """Resolve a domestic title through iqiyi metadata, then search iq.com's Chinese catalog."""
     identifier = str(identifier or "").strip()
-    if not (re.fullmatch(r"\d{14,20}", identifier) or re.fullmatch(r"[A-Za-z0-9]{8,20}", identifier)):
+    if not re.fullmatch(r"[A-Za-z0-9]{8,24}", identifier):
         raise ValueError("Mã phim iQIYI không hợp lệ.")
-    now = time.monotonic()
+    if not identifier.isdigit():
+        # Decode iqiyi.com page IDs using its original player's patchToID algorithm.
+        value = int(identifier, 36) ^ 0x75706971676C
+        identifier = str(100 * (value + 900000) if value < 900000 else value)
+    cache_key = identifier
     with INTERNATIONAL_TITLE_LOCK:
-        cached = INTERNATIONAL_TITLE_CACHE.get(identifier)
-        if cached and cached[0] > now:
-            return cached[1]
+        cached = INTERNATIONAL_TITLE_CACHE.get(cache_key)
+        if cached and cached[0] > time.monotonic():
+            return dict(cached[1])
 
-    def request_json(url: str) -> dict:
-        request = urllib.request.Request(url, headers={
-            "Accept": "application/json", "Referer": "https://www.iq.com/",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                          "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"})
-        with iqiyi_open(request, timeout=8) as response:
-            raw = response.read(1_000_001)
-        if len(raw) > 1_000_000:
-            raise ValueError("Metadata tên phim iQIYI quá lớn.")
-        payload = json.loads(raw.decode("utf-8"))
-        if not isinstance(payload, dict):
-            raise ValueError("Metadata tên phim iQIYI không hợp lệ.")
-        return payload
+    def clean(value) -> str:
+        return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]*>", "", str(value or "")))).strip()
 
+    def title_key(value) -> str:
+        return re.sub(r"[\s《》「」『』【】]", "", clean(value)).casefold()
+
+    request_json = public_iqiyi_json
+
+    result = {"title": "", "sourceTitle": ""}
     try:
-        qipu_id = identifier
-        if not identifier.isdigit():
-            decode_url = "https://pcw-api.iq.com/api/decode/" + identifier + "?" + urlencode({
-                "platformId": 3, "modeCode": "intl", "langCode": "vi_vn"})
-            decoded = request_json(decode_url)
-            value = decoded.get("data")
-            if isinstance(value, dict):
-                value = value.get("qipuId") or value.get("id") or value.get("tvid")
-            qipu_id = str(value or "").strip()
-            if not re.fullmatch(r"\d{8,20}", qipu_id):
-                raise ValueError("iQIYI không giải mã được mã phim.")
+        domestic = {}
+        kinds = ("album", "video") if identifier.endswith("01") else ("video", "album")
+        for kind in kinds:
+            payload = request_json(f"https://pcw-api.iqiyi.com/{kind}/{kind}/baseinfo/{identifier}")
+            data = payload.get("data")
+            if payload.get("code") == "A00000" and isinstance(data, dict):
+                domestic = data
+                break
+        chinese = clean(domestic.get("albumName") or domestic.get("name"))
+        result["sourceTitle"] = chinese
+        if chinese and re.search(r"[\u3400-\u9fff]", chinese):
+            year = str(domestic.get("year") or domestic.get("publishDate") or
+                       (domestic.get("firstVideo") or {}).get("publishDate") or "")[:4]
+            year = year if re.fullmatch(r"(?:19|20)\d{2}", year) else ""
+            params = {"key": chinese, "pn": 1, "ps": 10, "intentPn": 1, "intentPs": 0,
+                      "chnId": 0, "dataType": "1;should,2;should", "platformId": 3,
+                      "modeCode": "intl", "langCode": "zh_cn", "deviceId": "ew",
+                      "isVip": 0, "pspUid": "", "pspStatus": "-1"}
+            payload = request_json("https://pcw-api.iq.com/api/search2?" + urlencode(params))
+            data = payload.get("data")
+            candidates = {}
+            if payload.get("code") in (0, "0") and isinstance(data, dict):
+                for row in data.get("epg", []):
+                    if not isinstance(row, dict) or row.get("type") not in (0, 1):
+                        continue
+                    if title_key(row.get("name")) != title_key(chinese):
+                        continue
+                    if year and str(row.get("publishTime") or "")[:4] != year:
+                        continue
+                    if domestic.get("channelId") and str(row.get("chnId")) != str(domestic["channelId"]):
+                        continue
+                    qipu_id = str(row.get("qipuId") or row.get("albumId") or "")
+                    if re.fullmatch(r"\d{8,24}", qipu_id):
+                        candidates[qipu_id] = row
+            # Separate regional editions can be absent from search. Verify catalog IDs
+            # against Chinese metadata before fetching their Vietnamese title.
+            # https://www.iq.com/album/19rrhxoou9?lang=vi_vn
+            catalog_id = {"236709101": "249155501"}.get(str(domestic.get("albumId") or identifier))
+            if not candidates and catalog_id:
+                params = {"platformId": 4, "langCode": "zh_cn", "modeCode": "intl", "deviceId": "ew"}
+                payload = request_json(f"https://pcw-api.iq.com/api/epgInfo/{catalog_id}?" + urlencode(params))
+                data = payload.get("data")
+                if (payload.get("code") in (0, "0") and isinstance(data, dict) and
+                        title_key(data.get("albumName") or data.get("name")) == title_key(chinese) and
+                        (not domestic.get("channelId") or str(data.get("chnId")) == str(domestic["channelId"])) and
+                        (not year or str(data.get("publishTime") or "")[:4] == year)):
+                    candidates[catalog_id] = data
+            if len(candidates) == 1:
+                qipu_id = next(iter(candidates))
+                with INTERNATIONAL_TITLE_LOCK:
+                    INTERNATIONAL_ALBUM_IDS[cache_key] = (time.monotonic() + 3600, qipu_id)
+                params = {"platformId": 4, "langCode": "vi_vn", "modeCode": "intl",
+                          "deviceId": "ew", "uid": "", "pspStatus": ""}
+                payload = request_json(f"https://pcw-api.iq.com/api/epgInfo/{qipu_id}?" + urlencode(params))
+                data = payload.get("data")
+                if payload.get("code") in (0, "0") and isinstance(data, dict):
+                    title = clean(data.get("albumName") or data.get("name"))
+                    if (title and len(title) <= 200 and not re.search(r"[\u3400-\u9fff]", title) and
+                            data.get("matchedLang", 15) == 15):
+                        result["title"] = title
+    except (OSError, ValueError, TypeError, AttributeError, urllib.error.URLError):
+        pass
 
-        epg_query = urlencode({"platformId": 4, "langCode": "vi_vn", "modeCode": "intl",
-                               "deviceId": "ew", "uid": "", "pspStatus": ""})
-        metadata = request_json(f"https://pcw-api.iq.com/api/epgInfo/{qipu_id}?{epg_query}")
-        data = metadata.get("data")
-        title = ""
-        if metadata.get("code") in (0, "0", "A00000") and isinstance(data, dict):
-            for candidate in (data.get("albumName"), data.get("name"), data.get("title")):
-                if not isinstance(candidate, str):
-                    continue
-                candidate = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]*>", "", candidate))).strip()
-                if candidate and not re.search(r"[\u3400-\u9fff]", candidate):
-                    title = candidate[:200]
-                    break
-    except (OSError, ValueError, urllib.error.URLError, TimeoutError, json.JSONDecodeError):
-        title = ""
-
-    expires = time.monotonic() + (3600 if title else 120)
     with INTERNATIONAL_TITLE_LOCK:
         if len(INTERNATIONAL_TITLE_CACHE) >= 512:
             oldest = min(INTERNATIONAL_TITLE_CACHE, key=lambda key: INTERNATIONAL_TITLE_CACHE[key][0])
             INTERNATIONAL_TITLE_CACHE.pop(oldest, None)
-        INTERNATIONAL_TITLE_CACHE[identifier] = (expires, title)
-    return title
+            INTERNATIONAL_ALBUM_IDS.pop(oldest, None)
+        INTERNATIONAL_TITLE_CACHE[cache_key] = (time.monotonic() + (3600 if result["title"] else 120), dict(result))
+    return result
+
+
+def public_iqcom_page(suffix: str) -> dict:
+    url = urljoin("https://www.iq.com/play/", suffix)
+    parsed = urlsplit(url)
+    if parsed.scheme != "https" or parsed.netloc != "www.iq.com" or not parsed.path.startswith("/play/"):
+        raise ValueError("Liên kết tập iq.com không hợp lệ.")
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.iq.com/"})
+    # Public iq.com requests never receive the domestic player's login cookies.
+    with iqiyi_open(request, timeout=15, no_session_redirect=True) as response:
+        raw = response.read(4_000_001)
+    if len(raw) > 4_000_000:
+        raise ValueError("Metadata tập iq.com quá lớn.")
+    match = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', raw.decode("utf-8"), re.S)
+    if not match:
+        raise ValueError("iq.com chưa trả metadata tập phim.")
+    return json.loads(match[1])
+
+
+def iqcom_album_metadata(global_album: str, *, refresh: bool = False) -> tuple[dict, dict, dict | None]:
+    """Cache public catalog metadata for five minutes, never signed playback URLs."""
+    with IQCOM_ALBUM_LOCK:
+        cached = IQCOM_ALBUM_CACHE.get(global_album)
+        if not refresh and cached and cached[0] > time.monotonic():
+            return cached[1], cached[2], None
+    params = urlencode({"platformId": 4, "langCode": "vi_vn", "modeCode": "intl", "deviceId": "ew"})
+    album = public_iqiyi_json(f"https://pcw-api.iq.com/api/epgInfo/{global_album}?{params}").get("data", {})
+    if str(album.get("qipuId")) != global_album:
+        raise ValueError("Metadata phim iq.com không khớp.")
+    page = public_iqcom_page(str(album.get("playLocSuffix") or ""))
+    lists = page.get("props", {}).get("initialState", {}).get("play", {}).get("cachePlayList", {})
+    if not isinstance(lists, dict) or not any(isinstance(rows, list) and rows for rows in lists.values()):
+        raise ValueError("iq.com chưa trả danh sách tập phim.")
+    # Keep only catalog fields; the first caller can still reuse the freshly read page.
+    album = {key: album.get(key) for key in ("qipuId", "defaultTvId", "playLocSuffix")}
+    lists = {key: [{field: row.get(field) for field in
+                   ("tvId", "qipuId", "albumId", "order", "contentType", "playLocSuffix")}
+                  for row in rows if isinstance(row, dict)]
+             for key, rows in lists.items() if isinstance(rows, list)}
+    with IQCOM_ALBUM_LOCK:
+        if len(IQCOM_ALBUM_CACHE) >= 128 and global_album not in IQCOM_ALBUM_CACHE:
+            oldest = min(IQCOM_ALBUM_CACHE, key=lambda key: IQCOM_ALBUM_CACHE[key][0])
+            IQCOM_ALBUM_CACHE.pop(oldest)
+        IQCOM_ALBUM_CACHE[global_album] = (time.monotonic() + 300, album, lists)
+    return album, lists, page
+
+
+def fetch_official_subtitle(tvid: str) -> dict:
+    """Resolve the exact international episode and shift its Vietnamese track by video ends."""
+    domestic = public_iqiyi_json(f"https://pcw-api.iqiyi.com/video/video/baseinfo/{tvid}").get("data", {})
+    if str(domestic.get("tvId")) != tvid:
+        raise ValueError("Không xác nhận được tập iqiyi.com.")
+    album_id = str(domestic.get("albumId") or "")
+    order = int(domestic.get("order") or 0)
+    if not re.fullmatch(r"\d{8,24}", album_id) or order < 1:
+        raise ValueError("Chưa xác nhận được số tập của phim.")
+    international_movie_title(album_id)
+    with INTERNATIONAL_TITLE_LOCK:
+        mapping = INTERNATIONAL_ALBUM_IDS.get(album_id)
+    if not mapping or mapping[0] <= time.monotonic():
+        raise ValueError("Chưa tìm được phim khớp chính xác trên iq.com.")
+    global_album = mapping[1]
+    for attempt in range(2):
+        album, lists, page = iqcom_album_metadata(global_album, refresh=bool(attempt))
+        candidates = {}
+        for rows in lists.values():
+            for row in rows:
+                if (str(row.get("albumId")) == global_album and str(row.get("order")) == str(order) and
+                        str(row.get("contentType")) == "1"):
+                    identifier = str(row.get("tvId") or row.get("qipuId") or "")
+                    if re.fullmatch(r"\d{8,24}", identifier):
+                        candidates[identifier] = row
+        # A newly released episode may be absent from a still-valid cached list.
+        if candidates or page is not None:
+            break
+    if len(candidates) != 1:
+        raise ValueError("Chưa tìm được duy nhất một tập chính thức khớp số tập trên iq.com.")
+    global_tvid, episode = next(iter(candidates.items()))
+    international = public_iqiyi_json(f"https://pcw-api.iqiyi.com/video/video/baseinfo/{global_tvid}").get("data", {})
+    if (str(international.get("tvId")) != global_tvid or str(international.get("albumId")) != global_album or
+            str(international.get("order")) != str(order)):
+        raise ValueError("Tập iq.com không khớp phim hoặc số tập.")
+    domestic_duration = int(domestic.get("durationSec") or 0)
+    global_duration = int(international.get("durationSec") or 0)
+    if not (0 < domestic_duration <= 86400 and 0 < global_duration <= 86400):
+        raise ValueError("Chưa lấy được thời lượng hai video để căn theo cuối.")
+    if page is None or global_tvid != str(album.get("defaultTvId")):
+        page = public_iqcom_page(str(episode.get("playLocSuffix") or album.get("playLocSuffix") or ""))
+    data = page.get("props", {}).get("initialProps", {}).get("pageProps", {}).get("prePlayerData", {}).get("dash", {}).get("data", {})
+    public_track = has_vietnamese_track(data, global_tvid)
+    if not public_track and IQCOM_SESSION.saved:
+        data = IQCOM_SESSION.dash(str(episode.get("playLocSuffix") or album.get("playLocSuffix") or ""), global_tvid)
+    if str(data.get("tvid")) != global_tvid:
+        raise ValueError("Metadata phát iq.com không đúng tập.")
+    tracks = (data.get("program") or {}).get("stl") or []
+    track = next((row for row in tracks if isinstance(row, dict) and str(row.get("lid")) == "23"), None)
+    if not track:
+        raise ValueError(f"iq.com chưa trả phụ đề Việt cho tập này (trạng thái {data.get('st', 'không rõ')}). "
+                         "Mở Đăng nhập iq.com để kiểm tra phiên VIP và quyền xem tập.")
+    fmt = next((key for key in ("xml", "webvtt", "vtt", "srt") if track.get(key)), None)
+    if not fmt:
+        raise ValueError("iq.com chưa cung cấp tệp phụ đề Việt.")
+    url = normalize_track(urljoin(data.get("dstl") or "https://meta.video.iqiyi.com/", track[fmt]))
+    if url.startswith("http:"):
+        url = "https:" + url[5:]
+    with iqiyi_open(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.iq.com/"}),
+                    timeout=15, no_session_redirect=True) as response:
+        raw = response.read(4_000_001)
+    if len(raw) > 4_000_000:
+        raise ValueError("Tệp phụ đề iq.com quá lớn.")
+    shift = (domestic_duration - global_duration) * 1000
+    xml, count = official_subtitle_xml(raw.decode("utf-8-sig"), fmt, shift, domestic_duration * 1000)
+    return {"xml": xml, "shiftMs": shift, "internationalTvid": global_tvid, "cues": count}
+
+
+def official_subtitle_xml(raw: str, fmt: str, shift: int, duration: int) -> tuple[bytes, int]:
+    """Keep official placement separate from dialogue; the player stacks upper cues."""
+    source = ET.fromstring(raw) if fmt == "xml" else ET.fromstring(to_xml(parse_source(raw, fmt)))
+    output = ET.Element("xml")
+    for dia in source.iter("dia"):
+        start, end, text = (dia.findtext(k, "") for k in ("st", "et", "sub"))
+        if not start.isdigit() or not end.isdigit() or not text.strip():
+            continue
+        if int(end) <= int(start):
+            raise ValueError("Invalid subtitle interval")
+        start, end = max(0, int(start) + shift), min(duration, int(end) + shift)
+        if end <= start:
+            continue
+        text = html.unescape(text).replace("\r\n", "\n").replace("\r", "\n").strip()
+        position = dia.find("style/position")
+        upper = False
+        if position is not None:
+            margin = position.get("vertical-margin", "").rstrip("%")
+            upper = position.get("alignment", "").lower().startswith("top") or (
+                bool(re.fullmatch(r"\d+(?:\.\d+)?", margin)) and float(margin) < 50)
+        else:
+            upper = bool(re.fullmatch(r"\[[\s\S]*\]|【[\s\S]*】", text))
+        # Preserve the source's bottom placement for bracketed thoughts; lyrics stay above.
+        upper = upper or bool(re.search(r"[♪♫♬]", text))
+        node = ET.SubElement(output, "dia")
+        # The native SDK splits sub at CR/LF into main/sub tracks, discarding later lines.
+        # Keep the full cue for our renderer and give the SDK a single-line fallback.
+        for key, value in (("st", start), ("et", end), ("sub", text.replace("\n", " ")),
+                           ("iqcomText", text), ("iqcomRegion", "top" if upper else "bottom")):
+            ET.SubElement(node, key).text = str(value)
+    if not len(output):
+        raise ValueError("Phụ đề iq.com không có câu hợp lệ sau khi căn giờ.")
+    return ET.tostring(output, encoding="utf-8", xml_declaration=True), len(output)
+
+
+def _load_official_subtitle(tvid: str) -> None:
+    session_version = IQCOM_SESSION.version
+    lifetime = 120
+    try:
+        value = {**fetch_official_subtitle(tvid), "available": True, "loading": False, "error": ""}
+        lifetime = 3600
+    except OSError:
+        value = {"available": False, "loading": False, "error": "Kết nối iq.com chưa thành công; sẽ thử lại sau ít giây."}
+        lifetime = 10
+    except Exception as exc:
+        value = {"available": False, "loading": False, "error": str(exc)[:250]}
+    value["expires"] = time.monotonic() + lifetime
+    value["sessionVersion"] = session_version
+    with OFFICIAL_SUBTITLE_LOCK:
+        if session_version == IQCOM_SESSION.version:
+            OFFICIAL_SUBTITLE_CACHE[tvid] = value
+        elif OFFICIAL_SUBTITLE_CACHE.get(tvid, {}).get("sessionVersion") == session_version:
+            OFFICIAL_SUBTITLE_CACHE.pop(tvid, None)
+
+
+def official_subtitle_status(tvid: str) -> dict:
+    if not re.fullmatch(r"\d{8,24}", tvid):
+        return {"available": False, "loading": False, "error": "Mã tập không hợp lệ."}
+    with OFFICIAL_SUBTITLE_LOCK:
+        value = OFFICIAL_SUBTITLE_CACHE.get(tvid)
+        if not value or value.get("sessionVersion", 0) != IQCOM_SESSION.version or (not value.get("loading") and value.get("expires", 0) <= time.monotonic()):
+            if sum(bool(row.get("loading")) for row in OFFICIAL_SUBTITLE_CACHE.values()) >= 8:
+                return {"available": False, "loading": True, "error": "Đang chờ tra phụ đề iq.com."}
+            if len(OFFICIAL_SUBTITLE_CACHE) >= 128:
+                oldest = next((key for key, row in OFFICIAL_SUBTITLE_CACHE.items() if not row.get("loading")), None)
+                if oldest:
+                    OFFICIAL_SUBTITLE_CACHE.pop(oldest)
+            value = {"available": False, "loading": True, "error": "Đang tìm phụ đề Việt chính thức trên iq.com.",
+                     "sessionVersion": IQCOM_SESSION.version}
+            OFFICIAL_SUBTITLE_CACHE[tvid] = value
+            OFFICIAL_SUBTITLE_POOL.submit(_load_official_subtitle, tvid)
+        return {key: value[key] for key in ("available", "loading", "error")}
 
 
 def search_iqiyi_albums(keyword: str) -> list[dict]:
@@ -1125,8 +1442,6 @@ def fetch_episode_tracks(tvid: str, vid: str, session: dict | None = None) -> li
     try:
         with iqiyi_open(request, timeout=20, no_session_redirect=bool(auth)) as response:
             payload = json.loads(response.read(15_000_001))
-    except IqiyiProxyError:
-        raise
     except (OSError, ValueError):
         raise ValueError("Không lấy được metadata phụ đề từ iQIYI; hãy thử lại.") from None
     if not isinstance(payload, dict):
@@ -1305,12 +1620,16 @@ def to_srt(cues: list[tuple[int, int, str]]) -> str:
     ) + "\n"
 
 
-def to_xml(cues: list[tuple[int, int, str]]) -> bytes:
+def to_xml(cues: list[tuple[int, int, str]], *, for_player: bool = False) -> bytes:
     root = ET.Element("xml")
     for start, end, text in cues:
+        if for_player:
+            text = text.replace("\r\n", "\n").replace("\r", "\n")
         dia = ET.SubElement(root, "dia")
-        for key, value in (("st", start), ("et", end), ("sub", text)):
+        for key, value in (("st", start), ("et", end), ("sub", text.replace("\n", " ") if for_player else text)):
             ET.SubElement(dia, key).text = str(value)
+        if for_player:
+            ET.SubElement(dia, "viText").text = text
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
@@ -1334,6 +1653,45 @@ def episode_order(item: dict) -> int:
         pass
     match = re.search(r"第\s*(\d+)\s*集|(?:episode|ep)\s*(\d+)", str(item.get("title", "")), re.I)
     return int(match.group(1) or match.group(2)) if match else 0
+
+
+def album_episode_ids(album_id: str, provider: str, title: str = "") -> list[str]:
+    rows = [(key, item) for key, item in list(EPISODES.items())
+            if item.get("provider", "iqiyi") == provider]
+    if not title:
+        names = {episode_series_title(item).casefold() for _, item in rows
+                 if str(item.get("albumId", "")) == album_id and episode_series_title(item)}
+        title = next(iter(names)) if len(names) == 1 else ""
+    title = title.casefold().strip()
+    return sorted(key for key, item in rows if
+                  (title and episode_series_title(item).casefold() == title) or
+                  (not title and album_id and album_id != "0" and str(item.get("albumId", "")) == album_id))
+
+
+def registered_episode_identity(tvid: str, data: dict, previous: dict, provider: str) -> dict:
+    # Track-only responses must not erase metadata from the page or album list.
+    identity = {key: str(data.get(key) or previous.get(key) or "").strip()[:limit]
+                for key, limit in (("title", 500), ("albumId", 100), ("albumTitle", 300))}
+    pattern = r"\d{1,24}" if provider == "iqiyi" else r"yk-[A-Za-z0-9_-]{1,100}"
+    if identity["albumId"] and not re.fullmatch(pattern, identity["albumId"]):
+        raise ValueError("Invalid album ID")
+    try:
+        identity["order"] = max(0, min(int(data.get("order") or previous.get("order") or 0), 100000))
+    except (TypeError, ValueError):
+        raise ValueError("Invalid episode order") from None
+    if provider == "iqiyi" and (not identity["title"] or not identity["albumId"] or not identity["order"]):
+        metadata = public_iqiyi_json(f"https://pcw-api.iqiyi.com/video/video/baseinfo/{tvid}").get("data", {})
+        album_id = str(metadata.get("albumId") or "")
+        if (str(metadata.get("tvId")) != tvid or not re.fullmatch(r"\d{1,24}", album_id)
+                or (identity["albumId"] and identity["albumId"] != album_id)):
+            raise ValueError("Không xác nhận được thông tin tập iQIYI.")
+        identity["title"] = identity["title"] or str(metadata.get("name") or "")[:500]
+        identity["albumId"] = album_id
+        identity["albumTitle"] = identity["albumTitle"] or str(metadata.get("albumName") or "")[:300]
+        identity["order"] = identity["order"] or max(0, min(int(metadata.get("order") or 0), 100000))
+        if not identity["title"]:
+            raise ValueError("iQIYI chưa trả tên phim cho tập này.")
+    return identity
 
 
 TITLE_TRANSLATIONS: dict[str, str] | None = None
@@ -1391,7 +1749,28 @@ def title_translations() -> dict[str, str]:
     return TITLE_TRANSLATIONS
 
 
+def _load_international_series_title(identifier: str) -> None:
+    try:
+        international_movie_title(identifier)
+    finally:
+        with INTERNATIONAL_TITLE_LOCK:
+            INTERNATIONAL_TITLE_PENDING.discard(identifier)
+
+
 def vietnamese_series_title(item: dict, translated: str = "") -> str:
+    if item.get("provider") != "youku":
+        identifier = next((str(value) for value in (item.get("albumId"), item.get("tvid"))
+                           if re.fullmatch(r"\d{8,24}", str(value or ""))), "")
+        if not identifier:
+            return ""
+        with INTERNATIONAL_TITLE_LOCK:
+            cached = INTERNATIONAL_TITLE_CACHE.get(identifier)
+            if cached and cached[0] > time.monotonic():
+                return cached[1]["title"]
+            if identifier not in INTERNATIONAL_TITLE_PENDING:
+                INTERNATIONAL_TITLE_PENDING.add(identifier)
+                TITLE_LOOKUP_POOL.submit(_load_international_series_title, identifier)
+        return ""
     if translated.strip():
         return translated.strip()
     if item.get("albumTitleVi"):
@@ -2019,26 +2398,31 @@ dialog{width:min(560px,calc(100vw - 28px));max-height:calc(100vh - 32px);overflo
 .providerRow{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr) auto auto}
 .pickerRow{grid-template-columns:repeat(2,minmax(0,1fr))}.pickerRow>*{min-width:0;max-width:100%}
 @media(max-width:760px){.topActions button{flex:1 1 140px;white-space:normal;line-height:1.25;min-height:44px}.providerRow{grid-template-columns:repeat(2,minmax(0,1fr))}.providerRow input{grid-column:1/-1;min-height:44px}.providerRow button{min-height:44px;white-space:normal}.providerAdd,.pickerRow{grid-template-columns:minmax(0,1fr)}}
+.discoveryActions{display:flex;gap:8px;flex-wrap:wrap}#notificationsDialog{width:min(720px,calc(100vw - 32px));box-sizing:border-box}#notificationsCount{display:inline-block;min-width:18px;padding:1px 5px;margin-left:4px;border-radius:12px;background:#4e73e5;color:white}#notificationsList{max-height:60vh;overflow:auto}#notificationsStatus{margin-top:12px}
 </style>
 <main>
- <header class="pageTop"><div><h1>Thư viện phụ đề</h1><p class="hint">iQIYI · Youku</p></div><nav class="topActions" aria-label="Thao tác thư viện"><button id="localizeIqiyiButton" onclick="runAppLocalization('apply')">Việt hóa iQIYI</button><button id="restoreIqiyiButton" class="secondary" onclick="runAppLocalization('restore')">Khôi phục tiếng Trung</button><button id="addMovieButton" class="secondary" aria-controls="movieSearch" aria-expanded="false" onclick="toggleSearch()">+ Thêm phim</button><button class="secondary" onclick="openIqiyiProxySettings()">Proxy</button><button class="secondary" onclick="openSettings()">Cài đặt</button></nav></header>
+ <header class="pageTop"><div><h1>Thư viện phụ đề</h1><p class="hint">iQIYI · Youku</p></div><nav class="topActions" aria-label="Thao tác thư viện"><button id="localizeIqiyiButton" onclick="runAppLocalization('apply')">Việt hóa iQIYI</button><button id="restoreIqiyiButton" class="secondary" onclick="runAppLocalization('restore')">Khôi phục tiếng Trung</button><button id="addMovieButton" class="secondary" aria-controls="movieSearch" aria-expanded="false" onclick="toggleSearch()">+ Thêm phim</button><button id="notificationsButton" class="secondary" aria-haspopup="dialog" aria-controls="notificationsDialog" onclick="document.getElementById('notificationsDialog').showModal()">Thông báo <span id="notificationsCount">0</span></button><button class="secondary" onclick="openIqiyiProxySettings()">Proxy</button><button class="secondary" onclick="openSettings()">Cài đặt</button></nav></header>
  <div id="appLocalizationStatus" role="status" aria-live="polite"></div>
+ <div id="iqcomAccount" class="hint"><button id="iqcomLoginButton" class="secondary" onclick="loginIqcom()">Kiểm tra iq.com</button> <span id="iqcomStatus" role="status" aria-live="polite">Dùng phiên iq.com của trình duyệt hiện tại</span></div>
  <div id="accountStatus" class="hint" role="status" aria-atomic="true"></div>
  <section class="overview" aria-label="Tổng quan thư viện"><div class="metric"><strong id="metricTotal">0</strong><span>Tập trong thư viện</span></div><div class="metric"><strong id="metricDownloaded">0</strong><span>Đã có phụ đề gốc</span></div><div class="metric"><strong id="metricTranslated">0</strong><span>Đã dịch</span></div><div class="metric"><strong id="metricAttention">0</strong><span>Cần chú ý</span></div></section>
  <nav class="providerNav" aria-label="Điều hướng nền tảng"><a id="navIqiyi" href="#iqiyi" aria-current="page">iQIYI <span id="countIqiyi">0</span></a><a id="navYouku" href="#youku">Youku <span id="countYouku">0</span></a></nav>
  <section id="movieSearch" class="movieSearch" role="search" aria-labelledby="movieSearchTitle" hidden><label id="movieSearchTitle" for="movieQuery">Tìm và thêm phim iQIYI</label><form id="movieSearchForm" autocomplete="off"><div class="movieSearchControls"><input id="movieQuery" name="iw_movie_q" type="text" maxlength="100" placeholder="Tên phim hoặc tên gốc tiếng Trung" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required><button id="movieSearchButton">Tìm</button></div></form><div id="movieSearchStatus" role="status" aria-live="polite"></div><div id="movieSearchResults" class="searchResults" aria-live="polite"></div></section>
- <div class="libraryTools"><button id="toggleAllAlbums" class="secondary" onclick="toggleAllAlbums()">Thu gọn tất cả</button></div>
+ <div class="libraryTools"><button id="toggleAllAlbums" class="secondary" onclick="toggleAllAlbums()">Mở tất cả</button></div>
  <div id="status" role="status" aria-live="polite"></div><section id="items"></section>
 </main>
+<dialog id="notificationsDialog" aria-labelledby="notificationsTitle"><div class="settingsHead"><h2 id="notificationsTitle">Phim vừa nhận diện</h2><button class="secondary" onclick="document.getElementById('notificationsDialog').close()" aria-label="Đóng thông báo">Đóng</button></div>
+<p class="settingsHint">Phim chỉ được thêm vào thư viện khi bạn chấp nhận. Bỏ qua để không nhận lại thông báo cho phim đó.</p>
+<div id="notificationsList"></div><div id="notificationsStatus" role="status" aria-live="polite"></div></dialog>
 <dialog id="settingsDialog" aria-labelledby="settingsTitle"><div class="settingsHead"><h2 id="settingsTitle">Cài đặt dịch phim</h2><button class="secondary" onclick="settingsDialog.close()" aria-label="Đóng">Đóng</button></div>
 <div class="settingsField"><label>Nhà cung cấp API</label><div id="providersList" class="providerList"></div><div class="providerAdd"><select id="providerPreset"><option value="">— Tùy chỉnh —</option><option value="openai">OpenAI</option><option value="gemini">Gemini</option><option value="deepseek">DeepSeek</option><option value="openrouter">OpenRouter</option></select><button class="secondary" onclick="addProvider()">+ Thêm nhà cung cấp</button></div><div class="settingsHint">Chọn mẫu để điền sẵn tên và địa chỉ API; mỗi nhà cung cấp có API key riêng. Để trống API key để giữ key đã lưu khi địa chỉ API không đổi.</div></div>
 <div class="tierBlock"><h3>Tầng dịch (biên dịch từng câu)</h3><div class="pickerRow"><select id="translateProvider" aria-label="Nhà cung cấp dịch" onchange="rebuildModelOptions()"></select><select id="translateModel" aria-label="Model dịch"></select></div></div>
 <div class="tierBlock"><h3>Tầng hồ sơ (continuity editor)</h3><div class="pickerRow"><select id="profileProvider" aria-label="Nhà cung cấp hồ sơ" onchange="rebuildModelOptions()"></select><select id="profileModel" aria-label="Model hồ sơ"></select></div><div class="settingsHint">Dùng model mạnh để nhận diện bối cảnh, nhân vật và xưng hô; có thể chọn nhà cung cấp khác với tầng dịch.</div></div>
 <div id="settingsStatus" role="status" aria-live="polite"></div><div class="settingsActions"><button class="secondary" onclick="settingsDialog.close()">Hủy</button><button onclick="saveAiSettings(this)">Lưu cài đặt</button></div></dialog>
 <dialog id="iqiyiProxyDialog" aria-labelledby="iqiyiProxyTitle"><div class="settingsHead"><h2 id="iqiyiProxyTitle">Proxy iQIYI và web</h2><button class="secondary" onclick="iqiyiProxyDialog.close()" aria-label="Đóng">Đóng</button></div>
-<div class="settingsField"><label for="iqiyiProxyUrl">HTTP proxy đặt tại Trung Quốc đại lục</label><input id="iqiyiProxyUrl" type="password" autocomplete="off" maxlength="4096" placeholder="host:port hoặc http://user:password@host:port"><div class="settingsHint">Dùng cho tìm phim, tải phụ đề và trang/video iQIYI trên web khi bật tiện ích Việt hóa. Sau khi lưu, chờ khoảng 30 giây rồi tải lại trang iQIYI. Proxy chỉ được lưu trong phiên chạy hiện tại. Video trong app iQIYI dùng kết nối riêng.</div></div>
+<div class="settingsField"><label for="iqiyiProxyUrl">HTTP proxy đặt tại Trung Quốc đại lục</label><input id="iqiyiProxyUrl" type="password" autocomplete="off" maxlength="4096" placeholder="host:port hoặc http://user:password@host:port"><div class="settingsHint">Proxy dùng cho web/player iQIYI. App phụ đề luôn lấy tên phim, metadata và tải phụ đề trực tiếp, kể cả trình đọc iq.com nền. Khi lưu hoặc tắt proxy, iQIYI đang mở sẽ tự khởi động lại; video đang xem có thể bị gián đoạn. Tiện ích web đồng bộ trong khoảng 30 giây. Proxy chỉ được lưu trong phiên chạy hiện tại.</div></div>
 <div id="iqiyiProxyStatus" role="status" aria-live="polite"></div><div class="settingsActions"><button class="secondary" onclick="clearIqiyiProxy(this)">Tắt proxy</button><button onclick="saveIqiyiProxy(this)">Lưu proxy</button></div></dialog>
-<dialog id="agentProfileDialog" aria-labelledby="agentProfileTitle"><div class="settingsHead"><h2 id="agentProfileTitle">Ngữ cảnh agent tự nhận diện</h2><button class="secondary" onclick="document.getElementById('agentProfileDialog').close()">Đóng</button></div><div id="agentProfileContent" role="status" aria-live="polite"></div></dialog>
+<dialog id="agentProfileDialog" aria-labelledby="agentProfileTitle"><div class="settingsHead"><h2 id="agentProfileTitle">Hồ sơ phim</h2><button class="secondary" onclick="document.getElementById('agentProfileDialog').close()">Đóng</button></div><div id="agentProfileContent" role="status" aria-live="polite"></div></dialog>
 <script>
 const API_TOKEN=__IQIYI_TOKEN__;
 function apiFetch(url,options={}){return fetch(url,{...options,headers:{...options.headers,"X-Iqiyi-Token":API_TOKEN}})}
@@ -2048,9 +2432,24 @@ const statusNode=document.getElementById("status"),itemsNode=document.getElement
 const settingsDialog=document.getElementById("settingsDialog");
 const iqiyiProxyDialog=document.getElementById("iqiyiProxyDialog");
 let aiProviders=[];
-const expandedAlbums=new Set(),collapsedAlbums=new Set(),providerAlbumsOpen={iqiyi:true,youku:true},expandedCues=new Set(),detailCache=new Map(),selectedEpisodes=new Map(),episodeMessages=new Map();
+const expandedAlbums=new Set(),collapsedAlbums=new Set(),providerAlbumsOpen={iqiyi:false,youku:false},expandedCues=new Set(),detailCache=new Map(),selectedEpisodes=new Map(),episodeMessages=new Map();
 let albumLists={},episodeData=[],lastRenderSignature="",refreshBusy=false;
 let activeProvider=location.hash.toLowerCase()==="#youku"?"youku":"iqiyi",iqiyiSynced=false,iqiyiSources={};
+let iqcomChecking=false;
+let discoveries=[],discoveriesSignature="";
+const discoveryBusy=new Set();
+function renderDiscoveries(){
+ const count=document.getElementById("notificationsCount");count.textContent=String(discoveries.length);
+ document.getElementById("notificationsButton").setAttribute("aria-label","Thông báo: "+discoveries.length+" phim chờ chấp nhận");
+ const signature=JSON.stringify([discoveries,[...discoveryBusy]]);if(signature===discoveriesSignature)return;discoveriesSignature=signature;
+ document.getElementById("notificationsList").innerHTML=discoveries.length?discoveries.map(movie=>"<article class='searchResult'><div><div class='searchResultTitle'>"+esc(movie.title)+"</div><div class='searchResultMeta'>"+esc(movie.provider==="youku"?"Youku":"iQIYI")+" · "+movie.episodes+" tập đã nhận diện</div>"+(movie.originalTitle&&movie.originalTitle!==movie.title?"<div class='searchResultMeta'>Tên gốc: "+esc(movie.originalTitle)+"</div>":"")+"</div><div class='discoveryActions'><button class='secondary' onclick=\"decideDiscovery("+jsArg(movie.tvid)+",'dismiss')\" "+(discoveryBusy.has(movie.tvid)?"disabled":"")+">Bỏ qua</button><button onclick=\"decideDiscovery("+jsArg(movie.tvid)+",'accept')\" "+(discoveryBusy.has(movie.tvid)?"disabled":"")+">Chấp nhận</button></div></article>").join(""):"<p class='hint'>Chưa có phim mới chờ chấp nhận.</p>";
+}
+async function decideDiscovery(tvid,action){
+ if(discoveryBusy.has(tvid))return;discoveryBusy.add(tvid);renderDiscoveries();const status=document.getElementById("notificationsStatus");status.textContent="Đang xử lý…";
+ try{const r=await apiFetch("/api/discoveries/decide",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tvid,action})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không xử lý được thông báo.");status.textContent=x.message;await refresh(true)}catch(e){status.textContent=e.message}finally{discoveryBusy.delete(tvid);renderDiscoveries()}
+}
+function updateIqcomStatus(state){const button=document.getElementById("iqcomLoginButton"),status=document.getElementById("iqcomStatus");button.disabled=iqcomChecking;button.textContent=iqcomChecking?"Đang kiểm tra…":"Kiểm tra iq.com";if(!iqcomChecking)status.textContent=state.message||"Kiểm tra phiên iq.com của trình duyệt hiện tại; không mở cửa sổ mới.";status.setAttribute("aria-busy",String(iqcomChecking))}
+async function loginIqcom(){if(iqcomChecking)return;iqcomChecking=true;updateIqcomStatus({});document.getElementById("iqcomStatus").textContent="Đang kiểm tra phiên iq.com của trình duyệt này…";try{const state=await new Promise((resolve,reject)=>{const requestId=crypto.randomUUID();let timer;function receive(event){if(event.source!==window||event.origin!==location.origin||event.data?.type!=="iqcom-session-result"||event.data.requestId!==requestId)return;clearTimeout(timer);window.removeEventListener("message",receive);event.data.error?reject(Error(event.data.error)):resolve(event.data.state||{})}window.addEventListener("message",receive);timer=setTimeout(()=>{window.removeEventListener("message",receive);reject(Error("Tải lại tiện ích Việt hóa và trang này để kiểm tra phiên của trình duyệt."))},8000);window.postMessage({type:"iqcom-session-check",requestId},location.origin)});iqcomChecking=false;updateIqcomStatus(state)}catch(e){iqcomChecking=false;updateIqcomStatus({message:e.message})}}
 let appLocalizationPoll=0;
 let searchMoviesData=[];
 const addingAlbums=new Set(),movieSearchStatus=document.getElementById("movieSearchStatus");
@@ -2084,7 +2483,7 @@ async function addSearchMovie(index){
  finally{addingAlbums.delete(movie.albumId);renderMovieSearchResults()}
 }
 function seriesName(x){return String(x.albumTitle||x.title||"").replace(/\s*第\s*\d+\s*集.*$|\s*(?:episode|ep)\s*\d+.*$/i,"").trim().replace(/^[《「『【\s]+|[》」』】\s]+$/g,"").trim()}
-function albumKey(x){const provider=x.provider||"iqiyi",id=String(x.albumId||"").trim();return provider+":"+(id&&id!=="0"?"id:"+encodeURIComponent(id):"title:"+encodeURIComponent(seriesName(x).toLowerCase()||x.tvid).replace(/'/g,"%27"))}
+function albumKey(x){const provider=x.provider||"iqiyi",id=String(x.albumId||"").trim(),title=seriesName(x).toLowerCase();return provider+":"+(title?"title:"+encodeURIComponent(title).replace(/'/g,"%27"):id&&id!=="0"?"id:"+encodeURIComponent(id):"episode:"+x.tvid)}
 function orderOf(x){if(Number(x.order)>0)return Number(x.order);const m=String(x.title||"").match(/第\s*(\d+)\s*集|(?:episode|ep)\s*(\d+)/i);return m?Number(m[1]||m[2]):0}
 function episodeLabel(x){return "Tập "+(orderOf(x)||"?")}
 function albumIsOpen(key){return providerAlbumsOpen[activeProvider]?!collapsedAlbums.has(key):expandedAlbums.has(key)}
@@ -2094,7 +2493,7 @@ function selectEpisode(key,id){selectedEpisodes.set(key,id);render(episodeData);
 function retryDownload(id){return post("/api/download",{tvid:id})}
 async function post(url,data,button){if(button)button.disabled=true;const localId=["/api/translate","/api/stop-translation","/api/download","/api/delete-subtitle"].includes(url)?String(data.tvid||""):"";statusNode.textContent=localId?"":"Đang xử lý…";if(localId){episodeMessages.set(localId,url==="/api/translate"?"Agent đang xử lý…":url==="/api/stop-translation"?"Đang gửi yêu cầu dừng…":"Đang xử lý phụ đề…");render(episodeData)}try{const r=await apiFetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});const x=await r.json();if(!r.ok)throw Error(x.error||"Thao tác thất bại");if(localId&&url==="/api/translate"&&expandedCues.has(localId)){expandedCues.delete(localId);detailCache.delete(localId);await detail(localId)}if(localId){if(url==="/api/stop-translation")episodeMessages.delete(localId);else episodeMessages.set(localId,x.message||"Đã xong");render(episodeData)}else statusNode.textContent=x.message||"Đã xong";await refresh(true)}catch(e){if(localId){episodeMessages.set(localId,e.message);render(episodeData)}else statusNode.textContent=e.message;await refresh(true)}finally{if(button)button.disabled=false}}
 function deleteSubtitle(id){const x=episodeData.find(item=>item.tvid===id);if(!x||!confirm("Xóa phụ đề gốc và bản dịch đã lưu của "+episodeLabel(x)+"? Có thể tải lại phụ đề sau."))return;detailCache.delete(id);expandedCues.delete(id);post("/api/delete-subtitle",{tvid:id})}
-function deleteAlbum(tvid){const first=episodeData.find(item=>item.tvid===tvid);if(!first)return;const rows=episodeData.filter(item=>(item.provider||"iqiyi")===(first.provider||"iqiyi")&&(first.albumId&&first.albumId!=="0"?item.albumId===first.albumId:seriesName(item).toLowerCase()===seriesName(first).toLowerCase())),title=rows.map(item=>item.albumTitleVi).find(Boolean)||seriesName(first);if(!confirm("Xóa phim “"+title+"” cùng toàn bộ "+rows.length+" tập, phụ đề gốc, bản dịch và lịch sử đã lưu? Thao tác này không thể hoàn tác."))return;post("/api/delete-album",{provider:first.provider||"iqiyi",albumId:first.albumId||"",seriesTitle:seriesName(first)})}
+function deleteAlbum(tvid){const first=episodeData.find(item=>item.tvid===tvid);if(!first)return;const rows=episodeData.filter(item=>albumKey(item)===albumKey(first)),title=rows.map(item=>item.albumTitleVi).find(Boolean)||seriesName(first);if(!confirm("Xóa phim “"+title+"” cùng toàn bộ "+rows.length+" tập, phụ đề gốc, bản dịch và lịch sử đã lưu? Thao tác này không thể hoàn tác."))return;post("/api/delete-album",{provider:first.provider||"iqiyi",albumId:first.albumId||"",seriesTitle:seriesName(first)})}
 const providerUrls={openai:"https://api.openai.com/v1",gemini:"https://generativelanguage.googleapis.com/v1beta/openai",deepseek:"https://api.deepseek.com",openrouter:"https://openrouter.ai/api/v1"};
 function rowModels(row){try{return JSON.parse(row.dataset.models||"[]")}catch(e){return []}}
 function updateModelCount(row){const n=rowModels(row).length,el=row.querySelector(".mCount");if(el)el.textContent=n?(" ("+n+")"):""}
@@ -2111,7 +2510,7 @@ async function loadProviderModels(row){const message=document.getElementById("se
 function setSelectValue(sel,value){if(!value)return;if(![...sel.options].some(o=>o.value===value)){const o=document.createElement("option");o.value=value;o.textContent=value+" (chưa nạp)";sel.appendChild(o)}sel.value=value}
 async function openSettings(){settingsDialog.showModal();const message=document.getElementById("settingsStatus");message.textContent="Đang tải cài đặt…";try{const r=await apiFetch("/api/settings"),x=await r.json();if(!r.ok)throw Error(x.error||"Không tải được cài đặt");aiProviders=x.providers||[];renderProviders();setSelectValue(document.getElementById("translateProvider"),x.translateProviderId||"");setSelectValue(document.getElementById("profileProvider"),x.profileProviderId||"");rebuildModelOptions();setSelectValue(document.getElementById("translateModel"),x.translateModel||"");setSelectValue(document.getElementById("profileModel"),x.profileModel||"");message.textContent=""}catch(e){message.textContent=e.message}}
 async function openIqiyiProxySettings(){iqiyiProxyDialog.showModal();const message=document.getElementById("iqiyiProxyStatus");message.textContent="Đang kiểm tra…";try{const r=await apiFetch("/api/iqiyi-proxy"),x=await r.json();if(!r.ok)throw Error(x.error||"Không kiểm tra được proxy");message.textContent=x.configured?"Proxy đang bật trong phiên chạy này; nhập URL mới để thay thế.":"Đang kết nối trực tiếp."}catch(e){message.textContent=e.message}}
-async function saveIqiyiProxy(button){if(button)button.disabled=true;const message=document.getElementById("iqiyiProxyStatus");message.textContent="Đang áp dụng…";try{const r=await apiFetch("/api/iqiyi-proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:document.getElementById("iqiyiProxyUrl").value})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không lưu được proxy");document.getElementById("iqiyiProxyUrl").value="";message.textContent=x.configured?"Đã lưu proxy iQIYI; tiện ích web sẽ đồng bộ trong khoảng 30 giây.":"Đã tắt proxy; tiện ích web sẽ cập nhật trong khoảng 30 giây."}catch(e){message.textContent=e.message}finally{if(button)button.disabled=false}}
+async function saveIqiyiProxy(button){if(button)button.disabled=true;const message=document.getElementById("iqiyiProxyStatus");message.textContent="Đang áp dụng và kết nối lại iQIYI…";try{const r=await apiFetch("/api/iqiyi-proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:document.getElementById("iqiyiProxyUrl").value})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không lưu được proxy");document.getElementById("iqiyiProxyUrl").value="";message.textContent=(x.configured?"Đã bật proxy. ":"Đã tắt proxy. ")+(x.desktop?.message||"")+" Tiện ích web đồng bộ trong khoảng 30 giây."}catch(e){message.textContent=e.message}finally{if(button)button.disabled=false}}
 async function clearIqiyiProxy(button){document.getElementById("iqiyiProxyUrl").value="";return saveIqiyiProxy(button)}
 async function saveAiSettings(button){if(button)button.disabled=true;const message=document.getElementById("settingsStatus");message.textContent="Đang lưu…";try{const providers=providerFormData();const r=await apiFetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({providers,translateProviderId:document.getElementById("translateProvider").value,translateModel:document.getElementById("translateModel").value,profileProviderId:document.getElementById("profileProvider").value,profileModel:document.getElementById("profileModel").value})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không lưu được cài đặt");message.textContent="Đã lưu cài đặt dịch."}catch(e){message.textContent=e.message}finally{if(button)button.disabled=false}}
 async function detail(id){if(expandedCues.has(id)){expandedCues.delete(id);render(episodeData);return}try{const r=await apiFetch("/api/detail?tvid="+encodeURIComponent(id));const x=await r.json();detailCache.set(id,x.cues.length?"<table><thead><tr><th># / thời gian</th><th>Phụ đề gốc</th><th>Tiếng Việt</th></tr></thead><tbody>"+x.cues.map(c=>"<tr><td>"+c.n+"<br>"+esc(c.time)+"</td><td class='source'>"+esc(c.source)+"</td><td class='"+(c.translated?"vi":"pending")+"'>"+esc(c.translated||"Chưa dịch")+"</td></tr>").join("")+"</tbody></table>":"<div class='episodeMeta'>"+esc(x.message||"Chưa có dữ liệu phụ đề")+"</div>");expandedCues.add(id);render(episodeData)}catch(e){statusNode.textContent=e.message}}
@@ -2119,10 +2518,10 @@ async function showAgentProfile(id){
  const dialog=document.getElementById("agentProfileDialog"),node=document.getElementById("agentProfileContent");
  node.textContent="Đang đọc ngữ cảnh đã lưu…";dialog.showModal();
  try{const r=await apiFetch("/api/agent-profile?tvid="+encodeURIComponent(id)),x=await r.json();if(!r.ok)throw Error(x.error||"Không đọc được ngữ cảnh");
- if(!x.memory?.setting&&!x.episodeContext?.summary){node.textContent="Agent sẽ tự nhận diện khi dịch tập đầu tiên. Không cần chọn thể loại.";return}
+ if(!x.memory?.setting){node.textContent="Agent sẽ tự lập hồ sơ phim khi dịch. Không cần chọn thể loại.";return}
  const labels={historical:"Cổ trang",modern:"Hiện đại",mixed:"Xuyên không / đan xen thời đại",unknown:"Chưa đủ căn cứ"};
  const renderMemory=(m,film)=>{m=m||{};return (film&&m.setting?"<p><strong>"+esc(labels[m.setting]||m.setting)+"</strong></p>":"")+(m.summary?"<p>"+esc(m.summary)+"</p>":"")+((m.characters||[]).length?"<h4>Nhân vật và xưng hô</h4><ul>"+m.characters.map(c=>"<li><strong>"+esc(c.translation||c.name)+"</strong>: "+esc(c.role)+" — "+esc(c.address)+"</li>").join("")+"</ul>":"")+((m.glossary||[]).length?"<h4>Tên và thuật ngữ</h4><ul>"+m.glossary.map(g=>"<li>"+esc(g.source)+" → "+esc(g.translation)+"</li>").join("")+"</ul>":"")+((m.uncertainties||[]).length?"<h4>Chưa xác định</h4><ul>"+m.uncertainties.map(u=>"<li>"+esc(u)+"</li>").join("")+"</ul>":"")||"<p>Chưa có dữ liệu.</p>"};
- node.innerHTML="<h3>Hồ sơ phim</h3>"+renderMemory(x.memory,true)+"<h3>Ngữ cảnh tập này</h3>"+renderMemory(x.episodeContext,false);
+ node.innerHTML=renderMemory(x.memory,true);
  }catch(e){node.textContent=e.message}
 }
 function episodeState(x){
@@ -2163,6 +2562,7 @@ function updateProviderChrome(data){
  document.getElementById("countIqiyi").textContent=iqiyi.length;document.getElementById("countYouku").textContent=youku.length;
  document.getElementById("navIqiyi").setAttribute("aria-current",activeProvider==="iqiyi"?"page":"false");document.getElementById("navYouku").setAttribute("aria-current",activeProvider==="youku"?"page":"false");
  document.getElementById("addMovieButton").hidden=activeProvider==="youku";
+ document.getElementById("iqcomAccount").hidden=activeProvider==="youku";
  document.getElementById("toggleAllAlbums").textContent=providerAlbumsOpen[activeProvider]?"Thu gọn tất cả":"Mở tất cả";
  const account=document.getElementById("accountStatus"),loginStatus=source=>!source?.synced?"Chưa kết nối":source.connected?"Đã đăng nhập":"Chưa đăng nhập";
  const accountText=activeProvider==="iqiyi"?"iQIYI · App: "+loginStatus(iqiyiSources.app)+" · Web: "+loginStatus(iqiyiSources.web):"Youku lưu phụ đề khi bạn phát phim có phụ đề tiếng Trung";
@@ -2195,7 +2595,7 @@ function render(data){
     "<div class='albumSummary'><strong>"+rows.length+(total>rows.length?" / "+total:"")+" tập</strong> · Gốc "+sourceCount+" · Dịch "+complete+(todo?" · Còn "+todo:"")+(active?" · Đang dịch tập "+(orderOf(active)||"?"):"")+"</div>"+
     (first.provider!=="youku"&&list.stage==="loading"?"<div class='albumSummary' role='status'>Đang lấy toàn bộ danh sách tập từ iQIYI…</div>":first.provider!=="youku"&&list.stage==="error"?"<div class='errorText'>Chưa lấy đủ danh sách tập: "+esc(list.message)+". App sẽ tự thử lại.</div>":"")+"</div>"+
     "<div class='albumTools'>"+(active?"<button class='danger' title='Dừng dịch tập đang chạy' onclick=\"post('/api/stop-translation',{tvid:'"+esc(active.tvid)+"'},this)\">Dừng</button>":todo?"<button title='Dịch các tập đã tải phụ đề gốc' onclick=\"post('/api/translate-all',{albumId:'"+esc(first.albumId||"")+"'},this)\">Dịch "+todo+"</button>":needDownload&&first.provider!=="youku"?"<button title='Tải phụ đề gốc cho các tập' onclick=\"post('/api/download-all',{albumId:'"+esc(first.albumId||"")+"'},this)\">Tải "+needDownload+"</button>":"")+ 
-    "<button class='secondary' title='Ngữ cảnh dịch' onclick=\"showAgentProfile('"+esc(first.tvid)+"')\">Ngữ cảnh</button>"+
+    "<button class='secondary' title='Hồ sơ tổng của phim' onclick=\"showAgentProfile('"+esc(selected.tvid)+"')\">Ngữ cảnh</button>"+
     "<button class='secondary' aria-expanded='"+open+"' aria-controls='"+listId+"' onclick=\"toggleAlbum("+jsArg(key)+")\">"+(open?"Ẩn tập":"Tập "+rows.length)+"</button>"+
     "<details class='menu' data-menu-key='album:"+esc(key)+"'><summary class='secondary' aria-label='Thao tác phim'>···</summary><div class='moreMenu'>"+(first.provider==="youku"?"":"<button onclick=\"post('/api/download-all',{albumId:'"+esc(first.albumId||"")+"'},this)\">Tải phụ đề gốc</button>")+"<button class='danger' onclick=\"deleteAlbum('"+esc(first.tvid)+"')\">Xóa phim</button></div></details></div></div>"+
     "<div id='"+listId+"' class='episodeList' "+(open?"":"hidden")+"><div class='episodeLegend' aria-label='Chú giải trạng thái'><span class='legendItem'><i class='legendDot complete'></i>Đã dịch</span><span class='legendItem'><i class='legendDot'></i>Đã tải</span><span class='legendItem'><i class='legendDot partial'></i>Dịch dở</span><span class='legendItem'><i class='legendDot active'></i>Đang chạy</span><span class='legendItem'><i class='legendDot error'></i>Cần xử lý</span></div><div class='episodeGrid' role='group' aria-label='Chọn tập phim'>"+grid+"</div>"+episodePanel(selected)+"</div></section>";
@@ -2209,7 +2609,7 @@ function render(data){
  scrollPositions.forEach(([id,top,left])=>{const node=document.getElementById(id);if(node){node.scrollTop=top;node.scrollLeft=left}});
  if(focusedId)document.getElementById(focusedId)?.focus({preventScroll:true});window.scrollTo(0,scrollY);
 }
-async function refresh(force){if(refreshBusy)return;refreshBusy=true;try{const r=await apiFetch("/api/episodes");const payload=await r.json(),data=payload.episodes||[];albumLists=payload.albums||{};iqiyiSynced=!!(payload.session&&payload.session.synced);iqiyiSources=payload.session?.sources||{};episodeData=data;updateProviderChrome(data);const signature=JSON.stringify([albumLists,data.map(x=>[x.tvid,x.provider,x.title,x.albumTitle,x.albumTitleVi,x.albumId,x.albumTotal,x.discoveredAt,x.status,x.translated,x.partial,x.translatedCount,x.cues,x.progress,x.vid,x.downloadProgress])]);if(force||signature!==lastRenderSignature){lastRenderSignature=signature;render(data);renderMovieSearchResults()}}catch(e){statusNode.textContent=e.message}finally{refreshBusy=false}}
+async function refresh(force){if(refreshBusy)return;refreshBusy=true;try{const r=await apiFetch("/api/episodes");const payload=await r.json(),data=payload.episodes||[];albumLists=payload.albums||{};discoveries=payload.discoveries||[];renderDiscoveries();iqiyiSynced=!!(payload.session&&payload.session.synced);iqiyiSources=payload.session?.sources||{};updateIqcomStatus(payload.iqcomSession||{});episodeData=data;updateProviderChrome(data);const signature=JSON.stringify([albumLists,data.map(x=>[x.tvid,x.provider,x.title,x.albumTitle,x.albumTitleVi,x.albumId,x.albumTotal,x.discoveredAt,x.status,x.translated,x.partial,x.translatedCount,x.cues,x.progress,x.vid,x.downloadProgress])]);if(force||signature!==lastRenderSignature){lastRenderSignature=signature;render(data);renderMovieSearchResults()}}catch(e){statusNode.textContent=e.message}finally{refreshBusy=false}}
  refreshAppLocalization();refresh(true);setInterval(()=>refresh(false),2500);
 </script>'''
 
@@ -2231,8 +2631,7 @@ class Handler(BaseHTTPRequestHandler):
             parsed = urlsplit(origin or "")
             host = (parsed.hostname or "").lower()
             return (parsed.scheme == "https" and parsed.netloc.lower() == host and
-                    (host == "iqiyi.com" or host.endswith(".iqiyi.com") or
-                     host == "iq.com" or host.endswith(".iq.com")))
+                    (host == "iqiyi.com" or host.endswith(".iqiyi.com")))
         except ValueError:
             return False
 
@@ -2242,8 +2641,9 @@ class Handler(BaseHTTPRequestHandler):
             return False
         origin = self.headers.get("Origin")
         local = (f"http://127.0.0.1:{port}", f"http://localhost:{port}")
-        if urlsplit(self.path).path == "/api/browser-proxy":
-            return (self.command in ("GET", "OPTIONS") and
+        if urlsplit(self.path).path in ("/api/browser-proxy", "/api/browser-session"):
+            methods = ("POST", "OPTIONS") if urlsplit(self.path).path == "/api/browser-session" else ("GET", "OPTIONS")
+            return (self.command in methods and
                     (origin is None or bool(re.fullmatch(r"chrome-extension://[a-p]{32}", origin))))
         if urlsplit(self.path).path == "/":
             return origin is None or origin in local
@@ -2252,7 +2652,6 @@ class Handler(BaseHTTPRequestHandler):
             if not any(urlsplit(self.path).path in PLAYER_API_ROUTES.get(method, ()) for method in methods):
                 return False
         if origin is None or origin in (*local, "null", "https://localwebapp.iqiyi.com",
-                                        "https://iq.com", "https://www.iq.com", "https://pca.iq.com",
                                         "https://iqiyi.com", "https://www.iqiyi.com"):
             return True
         try:
@@ -2260,8 +2659,7 @@ class Handler(BaseHTTPRequestHandler):
             host = (parsed.hostname or "").lower()
             return (parsed.scheme == "https" and parsed.netloc.lower() == host and
                     (host == "youku.com" or host.endswith(".youku.com") or
-                     host == "iqiyi.com" or host.endswith(".iqiyi.com") or
-                     host == "iq.com" or host.endswith(".iq.com")))
+                     host == "iqiyi.com" or host.endswith(".iqiyi.com")))
         except ValueError:
             return False
 
@@ -2283,10 +2681,11 @@ class Handler(BaseHTTPRequestHandler):
                 self.is_iqiyi_origin(origin)):
             return True
         expected = getattr(self.server, "api_token", "")
-        if request.path == "/api/browser-proxy":
-            if expected and secrets.compare_digest(supplied.encode(), browser_proxy_token(expected).encode()):
+        if request.path in ("/api/browser-proxy", "/api/browser-session"):
+            credential = browser_session_token(expected) if request.path == "/api/browser-session" else browser_proxy_token(expected)
+            if expected and secrets.compare_digest(supplied.encode(), credential.encode()):
                 return True
-            self.send_json(403, {"error": "Browser proxy token is invalid"})
+            self.send_json(403, {"error": "Browser token is invalid"})
             return False
         local = (f"http://127.0.0.1:{self.server.server_port}", f"http://localhost:{self.server.server_port}")
         tokens = [expected] if origin is None or origin in local else []
@@ -2346,11 +2745,13 @@ class Handler(BaseHTTPRequestHandler):
         elif request.path == "/health":
             with LOCK_GUARD:
                 busy = any(lock.locked() for lock in EPISODE_LOCKS.values())
-            self.send_json(200, {"ok": True, "app": "subtitle-manager", "version": 12, "busy": busy})
+            self.send_json(200, {"ok": True, "app": "subtitle-manager", "version": 23, "busy": busy})
         elif request.path == "/api/extension-token":
             self.send_json(200, {"token": player_token(self.server.api_token)})
         elif request.path == "/api/app-localization":
             self.send_json(200, app_localization_status())
+        elif request.path == "/api/iqcom-session":
+            self.send_json(200, IQCOM_SESSION.status())
         elif request.path == "/api/agent-profile":
             tvid = parse_qs(request.query).get("tvid", [""])[0]
             if tvid not in EPISODES:
@@ -2385,12 +2786,14 @@ class Handler(BaseHTTPRequestHandler):
         elif request.path == "/api/browser-proxy":
             with IQIYI_PROXY_LOCK:
                 proxy = urlsplit(IQIYI_PROXY_URL) if IQIYI_PROXY_URL else None
+            if proxy and parse_qs(request.query).get("desktop") == ["1"]:
+                proxy = urlsplit(DESKTOP_PROXY.url())
             self.send_json(200, {"proxy": {"host": proxy.hostname, "port": proxy.port,
                                          "username": unquote(proxy.username or ""),
                                          "password": unquote(proxy.password or "")} if proxy else None})
         elif request.path == "/api/international-title":
             identifier = parse_qs(request.query).get("id", [""])[0]
-            self.send_json(200, {"title": international_movie_title(identifier)})
+            self.send_json(200, international_movie_title(identifier))
         elif request.path == "/api/search":
             keyword = parse_qs(request.query).get("q", [""])[0]
             self.send_json(200, {"results": search_iqiyi_albums(keyword)})
@@ -2399,6 +2802,8 @@ class Handler(BaseHTTPRequestHandler):
             refresh_album_lists()
             rows = []
             for tvid, item in list(EPISODES.items()):
+                if library_status(item) != "accepted":
+                    continue
                 folder = episode_dir(tvid)
                 source = folder / "source.srt"
                 source_cues = parse_source(source.read_text(encoding="utf-8-sig"), "srt") if source.exists() else []
@@ -2435,7 +2840,8 @@ class Handler(BaseHTTPRequestHandler):
             rows.sort(key=lambda row: (-first_seen[row.get("albumId") or episode_series_title(row) or row["tvid"]],
                                        row.get("albumId", ""), row.get("order") or 9999))
             self.send_json(200, {"episodes": rows, "albums": dict(ALBUM_LISTS),
-                                 "session": player_session_status()})
+                                 "discoveries": pending_movies(),
+                                 "session": player_session_status(), "iqcomSession": IQCOM_SESSION.status()})
         elif request.path == "/api/detail":
             tvid = parse_qs(request.query).get("tvid", [""])[0]
             folder = episode_dir(tvid)
@@ -2458,7 +2864,10 @@ class Handler(BaseHTTPRequestHandler):
             completed = len(state.get("translations", {}))
             progress = TRANSLATION_PROGRESS.get(tvid) or {}
             translating = episode_lock(tvid).locked() or progress.get("stage") == "translating"
-            self.send_json(200, {"available": completed > 0, "translating": translating})
+            official = official_subtitle_status(tvid)
+            self.send_json(200, {"available": completed > 0, "translating": translating,
+                                 "officialAvailable": official["available"], "officialLoading": official["loading"],
+                                 "officialError": official["error"]})
         elif request.path == "/api/file":
             tvid = parse_qs(request.query).get("tvid", [""])[0]
             cues = translated_cues(tvid)
@@ -2474,11 +2883,15 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
         elif request.path == "/subtitle.xml":
             tvid = parse_qs(request.query).get("tvid", [""])[0]
-            cues = [] if episode_lock(tvid).locked() else translated_cues(tvid)
-            if cues:
-                body, code = to_xml(cues), 200
+            if parse_qs(request.query).get("source", [""])[0] == "iqcom":
+                official_subtitle_status(tvid)
+                with OFFICIAL_SUBTITLE_LOCK:
+                    official = OFFICIAL_SUBTITLE_CACHE.get(tvid, {})
+                    body = official.get("xml") if official.get("available") else None
+                body, code = (body, 200) if body else (b"<?xml version='1.0'?><xml />", 404)
             else:
-                body, code = b"<?xml version='1.0'?><xml />", 404
+                cues = [] if episode_lock(tvid).locked() else translated_cues(tvid)
+                body, code = (to_xml(cues, for_player=True), 200) if cues else (b"<?xml version='1.0'?><xml />", 404)
             self.send_response(code)
             self.send_header("Content-Type", "text/xml; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
@@ -2498,6 +2911,13 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(data, dict):
                 raise ValueError("Request must be a JSON object")
             route = urlsplit(self.path).path
+            if route == "/api/browser-session":
+                self.send_json(200, IQCOM_SESSION.update(data.get("cookies"), data.get("sourceId"),
+                                                       select=data.get("select", False)))
+                return
+            if route == "/api/iqcom-session":
+                self.send_json(200, IQCOM_SESSION.status())
+                return
             if route == "/api/app-localization":
                 action = str(data.get("action", ""))
                 try:
@@ -2510,13 +2930,14 @@ class Handler(BaseHTTPRequestHandler):
             if route == "/api/iqiyi-proxy":
                 proxy_url = validate_iqiyi_proxy_url(data.get("url", ""))
                 global IQIYI_PROXY_URL
-                with IQIYI_PROXY_LOCK:
-                    IQIYI_PROXY_URL = proxy_url
-                with LOCK_GUARD:
-                    for state in ALBUM_LISTS.values():
-                        if state.get("stage") == "error":
-                            state.pop("checked", None)
-                self.send_json(200, {"configured": bool(proxy_url)})
+                with IQIYI_PROXY_APPLY_LOCK:
+                    with IQIYI_PROXY_LOCK:
+                        IQIYI_PROXY_URL = proxy_url
+                    try:
+                        desktop = apply_running_iqiyi_proxy(DESKTOP_PROXY.url() if proxy_url else "")
+                    except (OSError, RuntimeError):
+                        desktop = {"status": "error", "message": "Đã lưu cấu hình nhưng chưa kết nối lại được iQIYI. Đóng iQIYI rồi mở lại bằng launcher."}
+                self.send_json(200, {"configured": bool(proxy_url), "desktop": desktop})
                 return
             if route == "/api/settings":
                 current = load_ai_settings()
@@ -2599,11 +3020,15 @@ class Handler(BaseHTTPRequestHandler):
                 update_player_session(data)
                 self.send_json(200, {"ok": True})
                 return
+            if route == "/api/discoveries/decide":
+                self.send_json(200, decide_discovery(str(data.get("tvid", "")), str(data.get("action", ""))))
+                return
             if route == "/api/album/add":
                 album_id = str(data.get("albumId", ""))
                 title = str(data.get("title", "")).strip()
                 if not re.fullmatch(r"\d{1,24}", album_id) or not title or len(title) > 300:
                     raise ValueError("Phim iQIYI không hợp lệ.")
+                set_library_status([{"provider": "iqiyi", "albumId": album_id, "albumTitle": title}], "accepted")
                 stage = queue_album_sync(album_id, title)
                 message = "Phim đã có trong thư viện." if stage == "ready" else "Đang lấy danh sách tập iQIYI…"
                 self.send_json(200, {"stage": stage, "message": message})
@@ -2627,23 +3052,13 @@ class Handler(BaseHTTPRequestHandler):
                     except ValueError:
                         continue
                 previous = EPISODES.get(tvid, {})
-                album_id = str(data.get("albumId", previous.get("albumId", "")))
-                album_pattern = r"\d{1,24}" if provider == "iqiyi" else r"yk-[A-Za-z0-9_-]{1,100}"
-                if album_id and not re.fullmatch(album_pattern, album_id):
-                    raise ValueError("Invalid album ID")
-                try:
-                    order = int(data.get("order", previous.get("order", 0)) or 0)
-                except (TypeError, ValueError):
-                    raise ValueError("Invalid episode order") from None
-                EPISODES[tvid] = {**previous, "provider": provider,
-                                  "title": str(data.get("title", previous.get("title", "")))[:500],
-                                  "albumId": album_id,
-                                  "albumTitle": str(data.get("albumTitle", previous.get("albumTitle", "")))[:300],
-                                  "order": max(0, min(order, 100000)),
+                identity = registered_episode_identity(tvid, data, previous, provider)
+                album_id = identity["albumId"]
+                EPISODES[tvid] = {**previous, "provider": provider, **identity,
                                   "tracks": tracks or previous.get("tracks", [])}
                 folder.mkdir(parents=True, exist_ok=True)
                 save_episode(tvid, EPISODES[tvid])
-                if provider == "iqiyi" and album_id:
+                if provider == "iqiyi" and album_id and library_status(EPISODES[tvid]) == "accepted":
                     queue_album_sync(album_id, episode_series_title(EPISODES[tvid]))
                 self.send_json(200, {"ok": True})
                 return
@@ -2673,9 +3088,9 @@ class Handler(BaseHTTPRequestHandler):
                                            "format":str(track.get("format", "xml"))})
                         except ValueError:
                             continue
-                    item = {**previous, "title":str(episode.get("title", previous.get("title", "")))[:500],
-                            "albumId":album_id,"albumTitle":album_title or previous.get("albumTitle", ""),
-                            "order":int(episode.get("order", previous.get("order", 0)) or 0),
+                    identity = registered_episode_identity(episode_id,
+                        {**episode, "albumId": album_id, "albumTitle": album_title}, previous, "iqiyi")
+                    item = {**previous, **identity,
                             "tracks":tracks or previous.get("tracks", [])}
                     EPISODES[episode_id] = item
                     episode_folder.mkdir(parents=True, exist_ok=True)
@@ -2730,14 +3145,9 @@ class Handler(BaseHTTPRequestHandler):
                 if album_id and not re.fullmatch(r"(?:\d{1,24}|yk-[A-Za-z0-9_-]{1,100})", album_id):
                     raise ValueError("Invalid album ID")
                 with LOCK_GUARD:
-                    if album_id and album_id != "0":
-                        ids = sorted(key for key, item in EPISODES.items()
-                                     if item.get("provider", "iqiyi") == provider and str(item.get("albumId", "")) == album_id)
-                    elif title:
-                        ids = sorted(key for key, item in EPISODES.items()
-                                     if item.get("provider", "iqiyi") == provider and episode_series_title(item).casefold() == title)
-                    else:
+                    if not (album_id and album_id != "0") and not title:
                         raise ValueError("Invalid movie identity")
+                    ids = album_episode_ids(album_id, provider, title)
                     if not ids:
                         raise ValueError("Không tìm thấy phim này trong thư viện.")
                     album_ids = {album_id} | {str(EPISODES[key].get("albumId", "")) for key in ids}
@@ -2773,6 +3183,7 @@ class Handler(BaseHTTPRequestHandler):
                                     target.replace(source)
                             shutil.rmtree(staging, ignore_errors=True)
                             raise
+                        set_library_status([EPISODES[key] for key in ids], "dismissed")
                         for key in ids:
                             EPISODES.pop(key, None)
                             DOWNLOAD_PROGRESS.pop(key, None)
@@ -2804,7 +3215,7 @@ class Handler(BaseHTTPRequestHandler):
                 album_id = str(data.get("albumId", ""))
                 if not re.fullmatch(r"\d{1,24}", album_id):
                     raise ValueError("Invalid album ID")
-                ids = [key for key, item in list(EPISODES.items()) if str(item.get("albumId")) == album_id]
+                ids = album_episode_ids(album_id, "iqiyi")
                 queued = queue_subtitle_downloads(ids, retry=True)
                 self.send_json(200, {"message": f"Đã xếp lịch tải phụ đề cho {queued} tập."})
             elif route == "/api/translate":
@@ -2823,9 +3234,8 @@ class Handler(BaseHTTPRequestHandler):
                 album_id = str(data.get("albumId", ""))
                 if not re.fullmatch(r"(?:\d{1,24}|yk-[A-Za-z0-9_-]{1,100})", album_id):
                     raise ValueError("Invalid album ID")
-                todo = [episode_id for episode_id, item in list(EPISODES.items())
-                        if str(item.get("albumId", "")) == album_id and
-                        (episode_dir(episode_id) / "source.srt").exists()]
+                todo = [episode_id for episode_id in album_episode_ids(album_id, "youku" if album_id.startswith("yk-") else "iqiyi")
+                        if (episode_dir(episode_id) / "source.srt").exists()]
                 todo.sort(key=lambda episode_id: (episode_order(EPISODES[episode_id]) or float("inf"), episode_id))
                 done, partial, errors, cancelled = 0, 0, [], False
                 for episode_id in todo:
@@ -2870,8 +3280,13 @@ def serve():
     with SubtitleHTTPServer(("127.0.0.1", PORT), Handler) as server:
         load_library()
         server.api_token = api_token(ROOT)
-        atomic_write(ROOT / "ext" / "proxy-token.json", json.dumps({"token": browser_proxy_token(server.api_token)}))
-        server.serve_forever()
+        atomic_write(ROOT / "ext" / "proxy-token.json", json.dumps({"token": browser_proxy_token(server.api_token),
+                     "sessionToken": browser_session_token(server.api_token)}))
+        try:
+            server.serve_forever()
+        finally:
+            DESKTOP_PROXY.close()
+            IQCOM_SESSION.close()
 
 
 if __name__ == "__main__":

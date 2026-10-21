@@ -13,7 +13,7 @@ import time
 import urllib.error
 import urllib.request
 import webbrowser
-from urllib.parse import quote, urlsplit
+from urllib.parse import urlsplit
 
 from iqiyi_common import browser_proxy_token, subtitle_manager_alive
 from iqiyi_common import python_executable as _python_executable
@@ -116,27 +116,50 @@ def webview_runtime() -> str:
     return str(max(versions, default=((), None), key=lambda item: item[0])[1]) if versions else ""
 
 
+def ensure_manager() -> bool:
+    """Start the relay's owner if needed; preserve an already-running manager."""
+    if subtitle_manager_alive():
+        return False
+    with (ROOT / "subtitle-manager.stderr.log").open("a", encoding="utf-8") as errors:
+        subprocess.Popen([str(python_executable(background=True)), str(ROOT / "subtitle_app.py")],
+                         cwd=ROOT, creationflags=CREATE_NO_WINDOW, close_fds=True,
+                         stdout=subprocess.DEVNULL, stderr=errors)
+    for _ in range(50):
+        if subtitle_manager_alive():
+            return True
+        time.sleep(0.1)
+    raise RuntimeError("App phụ đề chưa sẵn sàng. Mở lại app rồi thử launcher.")
+
+
 def iqiyi_player_proxy() -> str:
     """Use the manager's current setting, including an explicit direct connection."""
     try:
+        started = ensure_manager()
         token = (ROOT / ".iqiyi-vi-token").read_text(encoding="ascii").strip()
-        request = urllib.request.Request(MANAGER_URL + "api/browser-proxy", headers={
-            "X-Iqiyi-Token": browser_proxy_token(token)})
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        fallback = os.environ.get("IQIYI_PLAYER_PROXY", "").strip() if started else ""
+        if fallback:
+            request = urllib.request.Request(MANAGER_URL + "api/iqiyi-proxy",
+                data=json.dumps({"url": fallback}).encode(), headers={
+                    "X-Iqiyi-Token": token, "Content-Type": "application/json"})
+            with opener.open(request, timeout=5):
+                pass
+        request = urllib.request.Request(MANAGER_URL + "api/browser-proxy?desktop=1", headers={
+            "X-Iqiyi-Token": browser_proxy_token(token)})
         with opener.open(request, timeout=2) as response:
             proxy = json.load(response)["proxy"]
     except urllib.error.HTTPError as exc:
         raise RuntimeError(f"Không đọc được proxy từ app phụ đề (HTTP {exc.code}).") from None
     except (OSError, urllib.error.URLError):
-        return os.environ.get("IQIYI_PLAYER_PROXY", "").strip()
+        raise RuntimeError("Không kết nối được app phụ đề để cấu hình proxy desktop.") from None
     if not proxy:
         return ""
     host = proxy["host"]
     if ":" in host:
         host = "[" + host + "]"
-    credentials = (quote(proxy["username"], safe="") + ":" + quote(proxy["password"], safe="") + "@"
-                   if proxy.get("username") else "")
-    return f"http://{credentials}{host}:{proxy['port']}"
+    if proxy.get("username") or proxy.get("password"):
+        raise RuntimeError("Khởi động lại app phụ đề để cập nhật hỗ trợ proxy desktop có mật khẩu.")
+    return f"http://{host}:{proxy['port']}"
 
 
 def launch_iqiyi() -> int:
@@ -162,14 +185,34 @@ def launch_iqiyi() -> int:
         print(f"Không tìm thấy QyClient.exe tại: {client or '(trống)'}")
         return 1
 
+    start_iqiyi_client(client, proxy)
+    return open_manager_when_ready("iQIYI")
+
+
+def apply_running_iqiyi_proxy(proxy: str) -> dict:
+    """Reconnect only the running player; keep the manager and translation workers alive."""
+    processes = list_processes()
+    client = next((Path(process.path) for process in processes
+                   if process.name.lower() == "qyclient.exe" and process.path), None)
+    if client is None:
+        return {"status": "closed", "message": "iQIYI đang đóng; cấu hình sẽ được dùng khi mở bằng launcher."}
+    if not client.is_file():
+        raise RuntimeError("Không tìm thấy chương trình iQIYI đang chạy.")
+    start_iqiyi_client(client, proxy, processes)
+    return {"status": "restarted", "message": "iQIYI đã tự mở lại để áp dụng kết nối mới."}
+
+
+def start_iqiyi_client(client: Path, proxy: str, processes=None) -> None:
     install_root = client.parent
     install_prefix = os.path.normcase(str(install_root).rstrip("\\/")) + os.sep
-    qy_processes = [process for process in list_processes()
+    qy_processes = [process for process in (list_processes() if processes is None else processes)
                     if Path(process.name).stem.lower() in {"qyclient", "qyplayer", "qykernel", "qyfragment"}
                     and process.path and os.path.normcase(process.path).startswith(install_prefix)]
     if qy_processes:
-        print("Đang khởi động lại iQIYI để nạp hook phụ đề mới...")
-        stop_processes(qy_processes)
+        print("Đang kết nối lại iQIYI với cấu hình mới...")
+        for process in qy_processes:
+            if not terminate_process(process.pid) and any(row.pid == process.pid for row in list_processes()):
+                raise RuntimeError("Không đóng được iQIYI để đổi kết nối. Đóng iQIYI rồi lưu lại proxy.")
         time.sleep(1)
 
     webview = webview_runtime()
@@ -183,6 +226,7 @@ def launch_iqiyi() -> int:
         browser_args += f" --proxy-server={proxy_server} --proxy-bypass-list=localhost;127.0.0.1;[::1]"
         print("Đang mở iQIYI qua proxy đã cấu hình trong app phụ đề...")
     else:
+        browser_args += " --no-proxy-server"
         for key in tuple(env):
             if key.lower() in ("http_proxy", "https_proxy", "all_proxy"):
                 env.pop(key)
@@ -193,9 +237,7 @@ def launch_iqiyi() -> int:
     try:
         subprocess.Popen([str(client)], cwd=install_root, env=env)
     except OSError as exc:
-        print(f"Không mở được iQIYI: {exc}")
-        return 1
-    return open_manager_when_ready("iQIYI")
+        raise RuntimeError("Không mở lại được iQIYI sau khi đổi kết nối.") from exc
 
 
 def find_youku() -> Path | None:
@@ -245,11 +287,7 @@ def open_manager_when_ready(player: str) -> int:
 
 
 def open_manager() -> int:
-    if not subtitle_manager_alive():
-        with (ROOT / "subtitle-manager.stderr.log").open("a", encoding="utf-8") as errors:
-            subprocess.Popen([str(python_executable(background=True)), str(ROOT / "subtitle_app.py")],
-                             cwd=ROOT, creationflags=CREATE_NO_WINDOW, close_fds=True,
-                             stdout=subprocess.DEVNULL, stderr=errors)
+    ensure_manager()
     return open_manager_when_ready("Thư viện phụ đề")
 
 

@@ -50,19 +50,62 @@ Trạng thái tài khoản trong app phụ đề hiển thị riêng **App** và
 tra phiên web, bật tiện ích `ext/` rồi mở trang iQIYI; không cần phát phim.
 Khi cập nhật tiện ích, tải lại tiện ích và trang iQIYI để nạp hook mới.
 
+Phim mới được nhận diện nằm trong **Thông báo** của trang quản lý. Chọn
+**Chấp nhận** để thêm phim vào thư viện hoặc **Bỏ qua** để không báo lại phim đó.
+Lựa chọn được lưu qua các lần mở app; phim đã có trong thư viện được giữ nguyên.
+Thông tin nhận diện vẫn được lưu tạm để phục vụ player trong lúc chờ chấp nhận.
+
+Nếu trước đó đã chọn **Tiếng Việt iq.com**, player tự nạp lại track này khi
+phụ đề tải xong, kể cả khi lần tải đầu thất bại hoặc vừa chuyển tập.
+Đổi sang ngôn ngữ khác hoặc tắt phụ đề trong lúc chờ sẽ hủy việc tự khôi phục.
+
+Thông tin bộ phim và danh sách tập iq.com được dùng chung trong RAM tối đa
+5 phút; nếu chưa thấy tập cần xem, app tra lại ngay. Metadata phát và URL phụ
+đề vẫn được lấy mới theo từng tập. Trình đọc nền dùng ngay metadata có sẵn
+trong trang khi có track Việt hợp lệ, không cần chờ thêm DASH.
+
+Để dùng phiên VIP **iq.com** của trình duyệt hiện tại, bật tiện ích `ext/` rồi
+bấm **Kiểm tra iq.com** trong app phụ đề. Tiện ích đọc cookie iq.com của chính
+trình duyệt đó, kể cả cookie HttpOnly, và đồng bộ thẳng với server cục bộ.
+Nút kiểm tra chọn trình duyệt/profile cung cấp phiên iq.com; lựa chọn này được
+giữ qua lần khởi động sau. Chỉ nguồn đã chọn được tự đồng bộ đăng nhập/đăng xuất,
+tránh browser hoặc profile khác ghi đè phiên VIP. Bấm kiểm tra ở trình duyệt khác
+để chuyển nguồn. Tiện ích cần thêm quyền lưu định danh profile (`storage`).
+Nút kiểm tra không mở tab/cửa sổ hoặc chuyển trang. Nếu chưa đăng nhập, đăng
+nhập iq.com trong trình duyệt đang dùng rồi kiểm tra lại.
+
+Phiên được chép vào hồ sơ riêng `.local/iqcom-browser/` để lấy phụ đề ở chế độ
+nền và giữ cho lần chạy sau. Thay đổi đăng nhập/đăng xuất trong trình duyệt
+được tiện ích đồng bộ lại. Hồ sơ này tách biệt với tài khoản `iqiyi.com`;
+không chia sẻ hoặc commit thư mục hồ sơ. Cookie không được trả về trang quản lý.
+Sau khi cập nhật, tải lại tiện ích (có thêm quyền cookie) và trang quản lý phụ đề.
+
+Cần cài dependencies bằng `python -m pip install -r requirements.txt`. App ưu
+tiên Edge hoặc Chrome đã cài trên Windows; nếu không có, chạy
+`python -m playwright install chromium`. Khi iq.com yêu cầu xác minh hoặc đăng
+nhập lại, thực hiện trên trình duyệt đang dùng rồi kiểm tra lại. Lưu phiên không kéo dài quyền VIP và
+không bảo đảm mọi tập đều có phụ đề Việt. App phụ đề luôn lấy tên phim,
+metadata và tải phụ đề trực tiếp, bỏ qua proxy trong app và proxy hệ thống.
+Trình đọc iq.com nền cũng kết nối trực tiếp; đổi proxy player không ảnh hưởng
+đến cache phụ đề hoặc phiên iq.com.
+
 Nút **Proxy** trong app phụ đề cũng áp dụng cho trang và video iQIYI trên web
 qua tiện ích `ext/` (Chrome/Edge 120+). Sau khi cập nhật, mở lại app phụ đề,
 tải lại tiện ích và chấp nhận quyền proxy mới. Lưu proxy, chờ khoảng 30 giây
 rồi tải lại trang iQIYI. Tiện ích hỗ trợ proxy HTTP có tài khoản/mật khẩu;
 chỉ các tên miền iQIYI và CDN của iQIYI đi qua proxy. Tắt proxy trong app sẽ
 gỡ cấu hình proxy của tiện ích ở lần đồng bộ tiếp theo. Nếu app tạm ngừng,
-tiện ích giữ cấu hình gần nhất; tắt tiện ích để trả lại proxy trình duyệt.
+tiện ích giữ cấu hình và thông tin xác thực gần nhất khi worker nền khởi động lại
+trong cùng phiên trình duyệt; sau khi khởi động lại toàn bộ trình duyệt, cần app
+phụ đề đang chạy để đồng bộ lại thông tin xác thực. Tắt tiện ích để trả lại proxy trình duyệt.
 Proxy trong app phụ đề được đặt lại khi khởi động app.
 
-Để áp dụng proxy này cho app iQIYI desktop, lưu proxy rồi chạy
-`python launcher.py iqiyi`. Launcher giữ server phụ đề đang chạy, đọc proxy
-hiện tại và mở lại iQIYI với cấu hình đó. Khi đổi hoặc tắt proxy, chạy lại
-launcher để trình phát desktop nhận thay đổi.
+Khi lưu, đổi hoặc tắt proxy, app phụ đề tự mở lại iQIYI đang chạy để áp dụng
+kết nối mới; video đang xem có thể bị gián đoạn. Không cần chạy launcher thủ công.
+Nếu iQIYI đang đóng, dùng `python launcher.py iqiyi` để mở với cấu hình hiện tại.
+Thay đổi proxy giữ nguyên app phụ đề và các tác vụ dịch đang chạy. Proxy desktop đi qua relay nội bộ
+do app phụ đề quản lý để hỗ trợ tài khoản/mật khẩu; giữ app phụ đề chạy trong
+khi xem. Tắt proxy sẽ ép WebView2 kết nối trực tiếp, kể cả khi Windows có proxy.
 
 ## Dữ liệu và cấu hình cục bộ
 

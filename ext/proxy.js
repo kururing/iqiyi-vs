@@ -1,5 +1,6 @@
 /* Proxy settings stay in the extension worker; pages never receive credentials. */
-const IQIYI_PROXY_DOMAINS = ["iqiyi.com", "iq.com", "qiyi.com", "qiyipic.com", "iqiyipic.com", "iqiyicloud.com", "qy.net"];
+importScripts("iqcom-session.js");
+const IQIYI_PROXY_DOMAINS = ["iqiyi.com", "qiyi.com", "qiyipic.com", "iqiyipic.com", "iqiyicloud.com", "qy.net"];
 let currentProxy = null;
 let syncing = null;
 const authAttempts = new Set();
@@ -19,9 +20,15 @@ function proxyConfig(proxy) {
     JSON.stringify("PROXY " + host + ":" + proxy.port) + ";} return 'DIRECT';}"}};
 }
 
+// Session storage is private to trusted extension contexts and survives worker restarts.
+const proxyReady = chrome.storage.session.get("iqiyiProxy").then(stored => {
+  currentProxy = stored.iqiyiProxy || null;
+});
+
 function syncProxy() {
   if (syncing) return syncing;
   syncing = (async () => {
+    await proxyReady;
     const tokenResponse = await fetch(chrome.runtime.getURL("proxy-token.json"), {cache: "no-store"});
     if (!tokenResponse.ok) throw Error("Mở lại app quản lý phụ đề để kết nối proxy web.");
     const {token} = await tokenResponse.json();
@@ -46,6 +53,7 @@ function syncProxy() {
         await chrome.proxy.settings.set({value: config, scope: "regular"});
       }
     }
+    await chrome.storage.session.set({iqiyiProxy: proxy});
     currentProxy = proxy;
   })().finally(() => { syncing = null; });
   return syncing;
