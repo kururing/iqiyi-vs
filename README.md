@@ -50,6 +50,29 @@ Trạng thái tài khoản trong app phụ đề hiển thị riêng **App** và
 tra phiên web, bật tiện ích `ext/` rồi mở trang iQIYI; không cần phát phim.
 Khi cập nhật tiện ích, tải lại tiện ích và trang iQIYI để nạp hook mới.
 
+Nhãn điều hướng, nút chính, ô tìm kiếm và nhãn trạng thái/loại phim dùng sẵn
+bản Việt theo đúng thành phần giao diện, không tra từ điển hay dịch máy.
+Nhãn nằm trong ảnh được thay trực tiếp bằng SVG tiếng Việt, giữ kích thước của thành phần gốc (kể cả ô tập nhỏ).
+Giao diện ưu tiên bản Việt nguyên câu và mẫu soạn sẵn, không ghép nghĩa từng từ.
+Từ bản 1.2.26, nội dung còn thiếu được dịch máy sang tiếng Việt qua Google Translate,
+gộp tối đa 8 chuỗi mỗi yêu cầu và dùng cache trong RAM. Cache dịch máy cũ được xóa.
+Tên phim và diễn viên vẫn đi qua iq.com. Không gửi nội dung ô nhập liệu để dịch.
+Bản 1.2.25 bổ sung nhãn VIP, đổi điểm, ưu đãi, menu tài khoản, thể loại,
+bộ lọc và cài đặt phát; các mẫu số điểm, giá, lịch phát và bảng xếp hạng
+chỉ thay khi khớp cả câu, tránh tạo chuỗi nửa Trung nửa Việt.
+
+Bản 1.2.28 mở rộng quét sang shadow DOM, iframe cùng miền và thuộc tính của popup
+khi chúng thay đổi; nội dung nhập và phụ đề không đi qua bộ dịch giao diện.
+Web gọi dịch qua service worker của extension; app có thêm `/api/ui-translate`
+được bảo vệ bằng token của trình phát, và có thể dùng đường trực tiếp khi dịch vụ cũ
+chưa có endpoint. Mô tả dài được chia nhỏ rồi thay cả đoạn khi dịch xong.
+Sau khi cập nhật code, tải lại extension/trang và khởi động lại app quản lý/watcher
+để nạp phần backend mới; không khởi động lại giữa lúc đang dịch phụ đề.
+
+Các ô tên diễn viên lấy tên bản địa hóa từ API iq.com (`vi_vn`), đối chiếu tên
+gốc và mã người trước khi thay. Nếu iq.com chưa có tên phù hợp, giữ tên gốc;
+không dịch máy tên diễn viên. Kết quả được giữ trong RAM tối đa một giờ.
+
 Phim mới được nhận diện nằm trong **Thông báo** của trang quản lý. Chọn
 **Chấp nhận** để thêm phim vào thư viện hoặc **Bỏ qua** để không báo lại phim đó.
 Lựa chọn được lưu qua các lần mở app; phim đã có trong thư viện được giữ nguyên.
@@ -63,6 +86,17 @@ Thông tin bộ phim và danh sách tập iq.com được dùng chung trong RAM 
 5 phút; nếu chưa thấy tập cần xem, app tra lại ngay. Metadata phát và URL phụ
 đề vẫn được lấy mới theo từng tập. Trình đọc nền dùng ngay metadata có sẵn
 trong trang khi có track Việt hợp lệ, không cần chờ thêm DASH.
+
+Các yêu cầu iq.com trùng đang chạy được gộp lại. Metadata công khai dùng chung
+cache RAM có giới hạn: tìm kiếm 2 phút, thông tin phim/tập 5 phút, lỗi mạng 10 giây.
+Metadata JSON/trang tập hỗ trợ gzip và vẫn giới hạn kích thước sau giải nén.
+Tên diễn viên tận dụng cast đã xác minh của phim; tra riêng ưu tiên bản ghi Việt
+có kèm tên gốc, chỉ gọi thêm bản Trung khi cần đối chiếu. Giao diện gửi tối đa
+4 yêu cầu tên cùng lúc, server tải tối đa 6 metadata công khai cùng lúc.
+DASH chỉ gộp trong cùng phiên đăng nhập; không lưu cache URL phát có chữ ký.
+Các đợt thay đổi cookie được gộp trong 300 ms trước khi đồng bộ, và thứ tự
+cookie không làm phát sinh lần lưu hồ sơ mới. Khởi động lại app phụ đề và tải
+lại tiện ích sau khi cập nhật để áp dụng các luồng này.
 
 Để dùng phiên VIP **iq.com** của trình duyệt hiện tại, bật tiện ích `ext/` rồi
 bấm **Kiểm tra iq.com** trong app phụ đề. Tiện ích đọc cookie iq.com của chính
@@ -124,13 +158,10 @@ Những đường dẫn sau **không** được commit:
 `backup-skin/` và `backup-lwa/` là thứ `launcher.py restore` dựa vào — đừng xoá nếu
 còn muốn khôi phục giao diện gốc.
 
-Từ điển Youku là tùy chọn: watcher tìm `youku-vi.json` ở thư mục dự án trước,
-rồi đến `.local/youku-vi.json`. Khi chưa có từ điển, watcher vẫn nạp engine giao
-diện và hook phụ đề.
-
-Khi chưa có từ điển JSON riêng, installer iQIYI dùng từ điển đã đóng gói trong
-`lwa-vi.js` để dịch skin native. Nếu cả hai nguồn đều thiếu hoặc không hợp lệ,
-installer báo lỗi trước khi thay đổi client.
+Từ bản 1.2.27, các từ điển cũ và bảng tên phim tĩnh đã được gỡ khỏi bộ cài,
+bundle và watcher. iQIYI và Youku dùng nhãn Việt soạn sẵn trong engine;
+phần còn thiếu đi qua dịch máy. Tên phim/diễn viên iQIYI lấy từ API iq.com.
+Bộ cài chỉ dùng nhãn soạn sẵn để thay nội dung tài nguyên native.
 
 ## Prompt và hồ sơ phim
 

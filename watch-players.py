@@ -177,8 +177,9 @@ def inject_runtime() -> None:
         return  # The native app is closed or still starting.
     if not isinstance(targets, list):
         return
+    errors = []
     for target in targets:
-        if not isinstance(target, dict) or target.get("type") != "page":
+        if not isinstance(target, dict) or target.get("type") not in {"page", "iframe", "webview"}:
             continue
         page = urlsplit(target.get("url", ""))
         host = (page.hostname or "").lower()
@@ -190,11 +191,17 @@ def inject_runtime() -> None:
         script = ("window.__iqiyiViTokenPending = true;\n" + LWA_JS.read_text(encoding="utf-8")
                   + "\n" + subtitle_hook(ROOT).decode("utf-8"))
         revision = revision_of(script)
-        if runtime_current(target, "!!window.__iqiyiVi && window.__iqiyiRuntimeVi", revision):
-            continue
-        script += "\nwindow.__iqiyiRuntimeVi = " + json.dumps(revision) + ";"
-        script = "if (/(^|\\.)iqiyi\\.com$/i.test(location.hostname)) {\n" + script + "\n}"
-        CDP.inject(target, [script])
+        try:
+            if runtime_current(target, "!!window.__iqiyiVi && window.__iqiyiRuntimeVi", revision):
+                continue
+            script += "\nwindow.__iqiyiRuntimeVi = " + json.dumps(revision) + ";"
+            script = "if (/(^|\\.)iqiyi\\.com$/i.test(location.hostname)) {\n" + script + "\n}"
+            CDP.inject(target, [script])
+        except (OSError, ValueError, RuntimeError) as exc:
+            errors.append(str(exc))
+    if errors:
+        raise RuntimeError(f"{len(errors)} app target(s): " + errors[0])
+
 
 
 def run_iqiyi() -> int:
@@ -234,16 +241,12 @@ def log(message: str) -> None:
 
 
 def read_scripts() -> list[str]:
-    dictionary_path = ROOT / "youku-vi.json"
-    if not dictionary_path.is_file():
-        dictionary_path = ROOT / ".local" / "youku-vi.json"
-    dictionary = json.loads(dictionary_path.read_text(encoding="utf-8")) if dictionary_path.is_file() else {}
     engine = (ROOT / "ui-engine.js").read_text(encoding="utf-8")
     engine = (engine.replace("iqiyiVi", "youkuVi").replace("iqiyi-vi", "youku-vi")
               .replace("subtitleContainer|caption-main", "subtitleContainer|caption-main|kui-subtitle|youku-vi-subtitle"))
     manager_config = "window.__youkuViApi = 'http://127.0.0.1:18766'; window.__youkuViToken = " + json.dumps(player_token(api_token(ROOT))) + ";\n"
     return [
-        "window.__youkuViDict = " + json.dumps(dictionary, ensure_ascii=False, separators=(",", ":")) + ";\n" + engine,
+        engine,
         manager_config + SUB_HOOK_JS.read_text(encoding="utf-8"),
     ]
 

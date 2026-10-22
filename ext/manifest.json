@@ -1,21 +1,42 @@
 {
   "manifest_version": 3,
   "name": "iQIYI Vietnamese",
-  "version": "1.2.21",
+  "version": "1.2.28",
   "minimum_chrome_version": "120",
   "description": "Dịch giao diện và phụ đề iQIYI sang tiếng Việt",
-  "host_permissions": ["<all_urls>"],
-  "permissions": ["declarativeNetRequestWithHostAccess", "proxy", "alarms", "webRequest", "webRequestAuthProvider", "cookies", "storage"],
-  "background": {"service_worker": "proxy.js"},
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "permissions": [
+    "declarativeNetRequestWithHostAccess",
+    "proxy",
+    "alarms",
+    "webRequest",
+    "webRequestAuthProvider",
+    "cookies",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "proxy.js"
+  },
   "declarative_net_request": {
     "rule_resources": [
-      {"id": "https_resources", "enabled": true, "path": "https-rules.json"}
+      {
+        "id": "https_resources",
+        "enabled": true,
+        "path": "https-rules.json"
+      }
     ]
   },
   "content_scripts": [
     {
-      "matches": ["http://127.0.0.1:18766/*", "http://localhost:18766/*"],
-      "js": ["session-bridge.js"],
+      "matches": [
+        "http://127.0.0.1:18766/*",
+        "http://localhost:18766/*"
+      ],
+      "js": [
+        "session-bridge.js"
+      ],
       "run_at": "document_start"
     },
     {
@@ -23,19 +44,28 @@
         "https://iqiyi.com/*",
         "https://*.iqiyi.com/*"
       ],
-      "js": ["vi-dict.js", "content.js"],
+      "js": [
+        "iqcom-bootstrap.js",
+        "content.js"
+      ],
       "run_at": "document_idle",
-      "all_frames": true
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
     },
     {
       "matches": [
         "https://iqiyi.com/*",
         "https://*.iqiyi.com/*"
       ],
-      "js": ["sub-hook.js"],
+      "js": [
+        "sub-hook.js"
+      ],
       "run_at": "document_start",
       "all_frames": true,
-      "world": "MAIN"
+      "world": "MAIN",
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
     }
   ]
 }

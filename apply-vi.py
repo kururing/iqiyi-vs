@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from html import escape, unescape
 import os
 import re
 import shutil
@@ -26,12 +27,11 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 ROOT = Path(__file__).resolve().parent
-DICT_PATH = ROOT / "vi.json"
 BACKUP = ROOT / "backup-skin"
 BACKUP_LWA = ROOT / "backup-lwa"
-ATTRS = ("text", "tooltip", "hint", "placeholder", "disabledtext")
+ATTRS = ("text", "tooltip", "hint", "placeholder", "disabledtext", "title", "aria-label", "alt")
 ATTR_RE = re.compile(
-    r'(?P<attr>' + "|".join(ATTRS) + r')\s*=\s*(?P<q>["\'])(?P<val>.*?)(?P=q)',
+    r'(?<![\w:-])(?P<attr>' + "|".join(ATTRS) + r')\s*=\s*(?P<q>["\'])(?P<val>.*?)(?P=q)',
     re.DOTALL,
 )
 # Text node giua hai the (trang HTML tinh nhu net/VodOtherErr_White.html khong nap
@@ -49,8 +49,6 @@ PPSTREAM_INI = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "LStyle" / 
 MARKER = "/* iqiyi-vi */"
 LWA_JS = ROOT / "lwa-vi.js"
 LWA_ENGINE = ROOT / "ui-engine.js"
-WEB_DICT = ROOT / "web-vi.json"
-OVERRIDE_DICT = ROOT / "vi-overrides.json"
 SCRIPT_TAG = '<script src="./lwa-vi.js"></script>'
 WRAPPER_APP = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs/iQIYI/resources/app"
 SIGNED_LWA_HTML = frozenset({
@@ -95,76 +93,22 @@ def find_lwa_dirs() -> list[Path]:
     return sorted(found, key=lambda p: p.name, reverse=True)
 
 
-def load_dict() -> dict[str, str]:
-    data: dict[str, str] = {}
-    for path in (DICT_PATH, WEB_DICT, OVERRIDE_DICT):
-        if not path.exists():
-            # Từ điển phát triển nằm ở .local/ (không commit); bản phát hành ở ROOT.
-            path = ROOT / ".local" / path.name
-        if not path.exists():
-            continue
-        try:
-            part = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        if isinstance(part, dict):
-            data.update({k: v for k, v in part.items() if k and v and k != v})
-    if not data:
-        try:
-            bundle = LWA_JS.read_text(encoding="utf-8-sig")
-            assignment = re.match(r"\s*window\.__iqiyiViDict\s*=\s*", bundle)
-            if assignment:
-                part, _ = json.JSONDecoder().raw_decode(bundle, assignment.end())
-                if isinstance(part, dict):
-                    data.update({k: v for k, v in part.items()
-                                 if k and isinstance(v, str) and v and k != v})
-        except (OSError, ValueError):
-            pass
-    return data
-
-
-def load_titles() -> dict[str, str]:
-    """Tên Việt chính thức của phim (titles-vi.json); rỗng nếu chưa có."""
-    data: dict[str, str] = {}
-    for path in (ROOT / "titles-vi.json", ROOT / ".local" / "titles-vi.json"):
-        if not path.exists():
-            continue
-        try:
-            payload = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        rows = payload.get("titles") if isinstance(payload, dict) else None
-        if isinstance(rows, dict):
-            data.update({str(k).strip(): str(v).strip() for k, v in rows.items()
-                         if isinstance(v, str) and str(k).strip() and str(v).strip()})
-    return data
-
-
-def build_lwa_js(mapping: dict[str, str]) -> str:
+def load_prepared_ui() -> dict[str, str]:
+    """Use only the prepared UI copy embedded in the current engine."""
     engine = LWA_ENGINE.read_text(encoding="utf-8")
-    dumped = json.dumps(mapping, ensure_ascii=False, separators=(",", ":"))
-    titles = json.dumps(load_titles(), ensure_ascii=False, separators=(",", ":"))
-    return ("window.__iqiyiViDict = " + dumped + ";\n"
-            + "window.__iqiyiViTitles = " + titles + ";\n" + engine)
+    match = re.search(r"var FIXED_COPY = (\{.*?\});", engine, re.DOTALL)
+    if not match:
+        raise ValueError("Khong tim thay nhan Viet soan san trong ui-engine.js")
+    return json.loads(match.group(1))
 
 
-def sync_extension_sources(mapping: dict[str, str]) -> None:
-    """Bundle the same Vietnamese dictionary and DOM engine for the browser extension."""
+def build_lwa_js() -> str:
+    return LWA_ENGINE.read_text(encoding="utf-8")
+
+
+def sync_extension_sources() -> None:
+    """Sync the DOM engine and subtitle hook without legacy dictionary assets."""
     extension = ROOT / "ext"
-    titles = json.dumps(load_titles(), ensure_ascii=False, separators=(",", ":"))
-    dictionary = (
-        "window.__iqiyiViDict = " + json.dumps(mapping, ensure_ascii=False, separators=(",", ":")) + ";\n"
-        + "window.__iqiyiViTitles = " + titles + ";\n"
-        + '(function(){if(window!==window.top||!(location.hostname==="iqiyi.com"||location.hostname==="www.iqiyi.com"))return;'
-        + 'window.__iqiyiViTokenPending=true;var timer=setTimeout(function(){window.__iqiyiViTokenPending=false;'
-        + 'if(window.__iqiyiViReload)window.__iqiyiViReload()},4000);'
-        + 'fetch("http://127.0.0.1:18766/api/extension-token",{cache:"no-store",credentials:"omit"})'
-        + '.then(function(r){return r.ok?r.json():null}).then(function(x){clearTimeout(timer);'
-        + 'window.__iqiyiViTokenPending=false;if(x&&x.token)window.__iqiyiViToken=x.token;'
-        + 'if(window.__iqiyiViReload)window.__iqiyiViReload()}).catch(function(){clearTimeout(timer);'
-        + 'window.__iqiyiViTokenPending=false;if(window.__iqiyiViReload)window.__iqiyiViReload()});})();\n'
-    )
-    atomic_write(extension / "vi-dict.js", dictionary)
     atomic_write(extension / "content.js", LWA_ENGINE.read_text(encoding="utf-8"))
     atomic_write(extension / "sub-hook.js", (ROOT / "sub-hook.js").read_text(encoding="utf-8"))
 
@@ -201,13 +145,13 @@ def patch_text(raw: str, mapping: dict[str, str]) -> tuple[str, int]:
     def repl(m: re.Match) -> str:
         nonlocal hits
         val = m.group("val")
-        vi = mapping.get(val)
+        vi = mapping.get(unescape(val))
         if vi is None and "\r" in val:
             vi = mapping.get(val.replace("\r\n", "\n").replace("\r", "\n"))
         if vi is None:
             return m.group(0)
         hits += 1
-        return f'{m.group("attr")}={m.group("q")}{vi}{m.group("q")}'
+        return f'{m.group("attr")}={m.group("q")}{escape(vi, quote=True)}{m.group("q")}'
 
     return ATTR_RE.sub(repl, raw), hits
 
@@ -223,7 +167,7 @@ def patch_text_nodes(raw: str, mapping: dict[str, str]) -> tuple[str, int]:
     def repl(m: re.Match) -> str:
         nonlocal hits
         inner = m.group(1)
-        stripped = inner.strip()
+        stripped = unescape(inner.strip())
         if not stripped or not CJK_RE.search(stripped):
             return m.group(0)
         vi = mapping.get(stripped)
@@ -237,9 +181,18 @@ def patch_text_nodes(raw: str, mapping: dict[str, str]) -> tuple[str, int]:
         hits += 1
         lead = inner[: len(inner) - len(inner.lstrip())]
         trail = inner[len(inner.rstrip()):]
-        return f">{lead}{vi}{trail}<"
+        return f">{lead}{escape(vi, quote=False)}{trail}<"
 
-    return TEXT_NODE_RE.sub(repl, raw), hits
+    # Script/style source and editable defaults are not display labels.
+    protected = re.compile(r"<(script|style|textarea|code|noscript)\b[^>]*>.*?</\1\s*>", re.I | re.S)
+    parts = []
+    end = 0
+    for block in protected.finditer(raw):
+        parts.append(TEXT_NODE_RE.sub(repl, raw[end:block.start()]))
+        parts.append(block.group(0))
+        end = block.end()
+    parts.append(TEXT_NODE_RE.sub(repl, raw[end:]))
+    return "".join(parts), hits
 
 
 def patch_native_subtitle_menu(raw: str) -> str:
@@ -468,15 +421,15 @@ def main() -> int:
 def _main() -> int:
     restore = "--restore" in sys.argv
     lwa_only = "--lwa" in sys.argv
-    mapping = load_dict() if not restore else {}
+    mapping = load_prepared_ui() if not restore else {}
     if not restore and not mapping:
-        print("Khong co tu dien Viet hoa. Can lwa-vi.js co tu dien hoac cac file tu dien JSON.")
+        print("Khong co nhan Viet soan san trong ui-engine.js.")
         return 1
     payload = ""
     if mapping:
-        payload = build_lwa_js(mapping)
+        payload = build_lwa_js()
         atomic_write(LWA_JS, payload)
-        sync_extension_sources(mapping)
+        sync_extension_sources()
     elif LWA_JS.exists():
         payload = LWA_JS.read_text(encoding="utf-8")
 
@@ -552,7 +505,7 @@ def _main() -> int:
     except OSError:
         pass
     print(f"Skin: {skin}")
-    print(f"Tu dien: {len(mapping)} chuoi")
+    print(f"Nhan Viet soan san: {len(mapping)} chuoi")
     try:
         files, hits, skipped = apply_skin(skin, mapping)
     except PermissionError:

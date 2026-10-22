@@ -1,5 +1,5 @@
 /* Proxy settings stay in the extension worker; pages never receive credentials. */
-importScripts("iqcom-session.js");
+importScripts("iqcom-session.js", "ui-translate.js");
 const IQIYI_PROXY_DOMAINS = ["iqiyi.com", "qiyi.com", "qiyipic.com", "iqiyipic.com", "iqiyicloud.com", "qy.net"];
 let currentProxy = null;
 let syncing = null;

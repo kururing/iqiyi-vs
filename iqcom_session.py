@@ -73,6 +73,8 @@ class IqcomSession:
         self.poll_pending = False
         self.browser_cookies = None
         self.applied_signature = None
+        self.cookie_store_pending = False
+        self.dash_pending = {}
         try:
             self.source = (self.profile / "browser-source").read_text(encoding="utf-8").strip()
         except (OSError, UnicodeError):
@@ -131,6 +133,7 @@ class IqcomSession:
             if same_site:
                 cookie["sameSite"] = same_site
             cookies.append(cookie)
+        cookies.sort(key=lambda row: (row["domain"], row["path"], row["name"]))
         signature = hashlib.sha256(json.dumps(cookies, sort_keys=True).encode()).hexdigest()
         auth = login_cookie(cookies)
         connected = bool(auth)
@@ -151,9 +154,21 @@ class IqcomSession:
             self.state.update(synced=True, connected=connected, opening=False,
                 message=("Đã nhận phiên iq.com của trình duyệt hiện tại. Quyền VIP được kiểm tra khi lấy phụ đề." if connected else
                          "Chưa đăng nhập iq.com trong trình duyệt hiện tại."))
-        if signature != self.applied_signature:
-            self.pool.submit(self._store_browser_cookies)
+        with self.lock:
+            schedule = signature != self.applied_signature and not self.cookie_store_pending
+            if schedule:
+                self.cookie_store_pending = True
+        if schedule:
+            self.pool.submit(self._store_browser_cookies_job)
         return self.status()
+
+    def _store_browser_cookies_job(self):
+        success = self._store_browser_cookies()
+        with self.lock:
+            again = success and self.cookie_signature != self.applied_signature
+            self.cookie_store_pending = again
+        if again:
+            self.pool.submit(self._store_browser_cookies_job)
 
     def _store_browser_cookies(self):
         try:
@@ -174,7 +189,20 @@ class IqcomSession:
         url = episode_url(suffix)
         if not re.fullmatch(r"\d{8,24}", tvid):
             raise ValueError("Mã tập iq.com không hợp lệ.")
-        return self.pool.submit(self._dash, url, tvid).result(timeout=150)
+        with self.lock:
+            key = (self.state["version"], tvid)
+            future = self.dash_pending.get(key)
+            owner = future is None
+            if owner:
+                future = self.pool.submit(self._dash, url, tvid)
+                self.dash_pending[key] = future
+        if owner:
+            def finished(done):
+                with self.lock:
+                    if self.dash_pending.get(key) is done:
+                        self.dash_pending.pop(key, None)
+            future.add_done_callback(finished)
+        return future.result(timeout=150)
 
     def _set(self, **values):
         with self.lock:
@@ -195,7 +223,7 @@ class IqcomSession:
         if self.playwright is None:
             self.playwright = sync_playwright().start()
         options = {"headless": True, "locale": "vi-VN", "accept_downloads": False,
-                   "service_workers": "block", "args": ["--restore-last-session", "--autoplay-policy=user-gesture-required",
+                   "service_workers": "block", "args": ["--autoplay-policy=user-gesture-required",
                    "--disable-background-mode", "--disable-quic", "--no-proxy-server"]}
         # Use an installed browser; no separate browser download on Windows.
         for channel, vendor in (("msedge", "Microsoft/Edge"), ("chrome", "Google/Chrome")):

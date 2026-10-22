@@ -1,4 +1,0 @@
-{
-  "_comment": "Tên Việt chính thức của phim/series iQIYI. Khóa là tên gốc chữ Hán; giá trị là tên thường dùng trong bản Vietsub chính thức. Dùng cho cả phụ đề (prompt AI) và giao diện (ui-engine.js). Chỉ ghi tên đã được xác nhận, không suy đoán.",
-  "titles": {}
-}

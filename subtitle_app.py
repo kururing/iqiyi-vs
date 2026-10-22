@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import html
+import copy
+import gzip
 import hashlib
 import http.client
 import json
@@ -21,7 +23,7 @@ import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, unquote, urlencode, urljoin, urlsplit
+from urllib.parse import parse_qs, parse_qsl, unquote, urlencode, urljoin, urlsplit
 
 from iqiyi_common import api_token, atomic_write, browser_proxy_token, browser_session_token, player_token
 from windows_runtime import run_elevated
@@ -29,6 +31,8 @@ from iqcom_session import IqcomSession, has_vietnamese_track
 from proxy_support import DesktopProxyRelay
 from launcher import apply_running_iqiyi_proxy
 import subtitle_agent as agent
+from iqcom_requests import PUBLIC_METADATA, singleflight
+from ui_translation import translate_ui
 
 ROOT = Path(__file__).resolve().parent
 LIBRARY = ROOT / "subtitles" / "library"
@@ -67,12 +71,14 @@ def current_player_proxy() -> str:
 
 IQCOM_SESSION = IqcomSession(ROOT / ".local" / "iqcom-browser")
 DESKTOP_PROXY = DesktopProxyRelay(current_player_proxy)
-INTERNATIONAL_TITLE_CACHE: dict[str, tuple[float, dict[str, str]]] = {}
+INTERNATIONAL_TITLE_CACHE: dict[str, tuple[float, dict]] = {}
+INTERNATIONAL_ACTOR_CACHE: dict[str, tuple[float, dict]] = {}
 INTERNATIONAL_TITLE_LOCK = threading.Lock()
 INTERNATIONAL_TITLE_PENDING: set[str] = set()
 INTERNATIONAL_ALBUM_IDS: dict[str, tuple[float, str]] = {}
 IQCOM_ALBUM_CACHE: dict[str, tuple[float, dict, dict]] = {}
 IQCOM_ALBUM_LOCK = threading.Lock()
+PUBLIC_METADATA_SLOTS = threading.BoundedSemaphore(6)
 TITLE_LOOKUP_POOL = ThreadPoolExecutor(max_workers=3, thread_name_prefix="movie-title")
 OFFICIAL_SUBTITLE_CACHE: dict[str, dict] = {}
 OFFICIAL_SUBTITLE_LOCK = threading.Lock()
@@ -1061,14 +1067,38 @@ def iqiyi_open(request, timeout: int = 15, no_session_redirect: bool = False):
     return urllib.request.build_opener(*handlers).open(request, timeout=timeout)
 
 
-def public_iqiyi_json(url: str) -> dict:
+def public_iqiyi_json(url: str, *, refresh: bool = False) -> dict:
+    parsed = urlsplit(url)
+    cacheable = ((parsed.hostname == "pcw-api.iq.com" and
+                  (parsed.path == "/api/search2" or parsed.path.startswith("/api/epgInfo/"))) or
+                 (parsed.hostname == "pcw-api.iqiyi.com" and "/baseinfo/" in parsed.path))
+    if not cacheable:
+        return _fetch_public_iqiyi_json(url)
+    # These empty anonymous fields are optional; other query fields, especially language, stay in the key.
+    query = tuple(sorted((key, value) for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+                         if value or key not in ("uid", "pspStatus")))
+    key = (parsed.scheme, parsed.hostname, parsed.path, query)
+    lifetime = 120 if parsed.path == "/api/search2" else 300
+    payload = PUBLIC_METADATA.run(key, lambda: _fetch_public_iqiyi_json(url), error_ttl=10, refresh=refresh,
+        ttl=lambda value: lifetime if value.get("code") in (0, "0", "A00000") and isinstance(value.get("data"), dict) else 10)
+    return copy.deepcopy(payload)
+
+
+def read_public_metadata(response) -> bytes:
+    if response.headers.get("Content-Encoding", "").strip().lower() == "gzip":
+        with gzip.GzipFile(fileobj=response) as compressed:
+            return compressed.read(4_000_001)
+    return response.read(4_000_001)
+
+
+def _fetch_public_iqiyi_json(url: str) -> dict:
     host = urlsplit(url).hostname or ""
     referer = "https://www.iqiyi.com/" if host.endswith(".iqiyi.com") else "https://www.iq.com/"
     request = urllib.request.Request(url, headers={
-        "Accept": "application/json", "Referer": referer,
+        "Accept": "application/json", "Accept-Encoding": "gzip", "Referer": referer,
         "User-Agent": "Mozilla/5.0"})
-    with iqiyi_open(request, timeout=8, no_session_redirect=True) as response:
-        raw = response.read(4_000_001)
+    with PUBLIC_METADATA_SLOTS, iqiyi_open(request, timeout=8, no_session_redirect=True) as response:
+        raw = read_public_metadata(response)
     if len(raw) > 4_000_000:
         raise ValueError("Metadata tên phim iQIYI quá lớn.")
     payload = json.loads(raw.decode("utf-8"))
@@ -1077,7 +1107,8 @@ def public_iqiyi_json(url: str) -> dict:
     return payload
 
 
-def international_movie_title(identifier: str) -> dict[str, str]:
+@singleflight
+def international_movie_title(identifier: str) -> dict:
     """Resolve a domestic title through iqiyi metadata, then search iq.com's Chinese catalog."""
     identifier = str(identifier or "").strip()
     if not re.fullmatch(r"[A-Za-z0-9]{8,24}", identifier):
@@ -1101,6 +1132,7 @@ def international_movie_title(identifier: str) -> dict[str, str]:
     request_json = public_iqiyi_json
 
     result = {"title": "", "sourceTitle": ""}
+    retry_lifetime = 120
     try:
         domestic = {}
         kinds = ("album", "video") if identifier.endswith("01") else ("video", "album")
@@ -1116,39 +1148,41 @@ def international_movie_title(identifier: str) -> dict[str, str]:
             year = str(domestic.get("year") or domestic.get("publishDate") or
                        (domestic.get("firstVideo") or {}).get("publishDate") or "")[:4]
             year = year if re.fullmatch(r"(?:19|20)\d{2}", year) else ""
-            params = {"key": chinese, "pn": 1, "ps": 10, "intentPn": 1, "intentPs": 0,
-                      "chnId": 0, "dataType": "1;should,2;should", "platformId": 3,
-                      "modeCode": "intl", "langCode": "zh_cn", "deviceId": "ew",
-                      "isVip": 0, "pspUid": "", "pspStatus": "-1"}
-            payload = request_json("https://pcw-api.iq.com/api/search2?" + urlencode(params))
-            data = payload.get("data")
             candidates = {}
-            if payload.get("code") in (0, "0") and isinstance(data, dict):
-                for row in data.get("epg", []):
-                    if not isinstance(row, dict) or row.get("type") not in (0, 1):
-                        continue
-                    if title_key(row.get("name")) != title_key(chinese):
-                        continue
-                    if year and str(row.get("publishTime") or "")[:4] != year:
-                        continue
-                    if domestic.get("channelId") and str(row.get("chnId")) != str(domestic["channelId"]):
-                        continue
-                    qipu_id = str(row.get("qipuId") or row.get("albumId") or "")
-                    if re.fullmatch(r"\d{8,24}", qipu_id):
-                        candidates[qipu_id] = row
             # Separate regional editions can be absent from search. Verify catalog IDs
             # against Chinese metadata before fetching their Vietnamese title.
             # https://www.iq.com/album/19rrhxoou9?lang=vi_vn
             catalog_id = {"236709101": "249155501"}.get(str(domestic.get("albumId") or identifier))
-            if not candidates and catalog_id:
+            if catalog_id:
                 params = {"platformId": 4, "langCode": "zh_cn", "modeCode": "intl", "deviceId": "ew"}
                 payload = request_json(f"https://pcw-api.iq.com/api/epgInfo/{catalog_id}?" + urlencode(params))
                 data = payload.get("data")
                 if (payload.get("code") in (0, "0") and isinstance(data, dict) and
+                        str(data.get("qipuId")) == catalog_id and
                         title_key(data.get("albumName") or data.get("name")) == title_key(chinese) and
                         (not domestic.get("channelId") or str(data.get("chnId")) == str(domestic["channelId"])) and
                         (not year or str(data.get("publishTime") or "")[:4] == year)):
                     candidates[catalog_id] = data
+            if not candidates:
+                params = {"key": chinese, "pn": 1, "ps": 10, "intentPn": 1, "intentPs": 0,
+                          "chnId": 0, "dataType": "1;should,2;should", "platformId": 3,
+                          "modeCode": "intl", "langCode": "zh_cn", "deviceId": "ew",
+                          "isVip": 0, "pspUid": "", "pspStatus": "-1"}
+                payload = request_json("https://pcw-api.iq.com/api/search2?" + urlencode(params))
+                data = payload.get("data")
+                if payload.get("code") in (0, "0") and isinstance(data, dict):
+                    for row in data.get("epg", []):
+                        if not isinstance(row, dict) or row.get("type") not in (0, 1):
+                            continue
+                        if title_key(row.get("name")) != title_key(chinese):
+                            continue
+                        if year and str(row.get("publishTime") or "")[:4] != year:
+                            continue
+                        if domestic.get("channelId") and str(row.get("chnId")) != str(domestic["channelId"]):
+                            continue
+                        qipu_id = str(row.get("qipuId") or row.get("albumId") or "")
+                        if re.fullmatch(r"\d{8,24}", qipu_id):
+                            candidates[qipu_id] = row
             if len(candidates) == 1:
                 qipu_id = next(iter(candidates))
                 with INTERNATIONAL_TITLE_LOCK:
@@ -1157,12 +1191,17 @@ def international_movie_title(identifier: str) -> dict[str, str]:
                           "deviceId": "ew", "uid": "", "pspStatus": ""}
                 payload = request_json(f"https://pcw-api.iq.com/api/epgInfo/{qipu_id}?" + urlencode(params))
                 data = payload.get("data")
-                if payload.get("code") in (0, "0") and isinstance(data, dict):
+                if (payload.get("code") in (0, "0") and isinstance(data, dict) and
+                        str(data.get("qipuId")) == qipu_id):
+                    cache_international_cast(candidates[qipu_id], data)
                     title = clean(data.get("albumName") or data.get("name"))
                     if (title and len(title) <= 200 and not re.search(r"[\u3400-\u9fff]", title) and
                             data.get("matchedLang", 15) == 15):
                         result["title"] = title
-    except (OSError, ValueError, TypeError, AttributeError, urllib.error.URLError):
+    except OSError:
+        retry_lifetime = 10
+        result["retryAfterMs"] = 10000
+    except (ValueError, TypeError, AttributeError):
         pass
 
     with INTERNATIONAL_TITLE_LOCK:
@@ -1170,19 +1209,102 @@ def international_movie_title(identifier: str) -> dict[str, str]:
             oldest = min(INTERNATIONAL_TITLE_CACHE, key=lambda key: INTERNATIONAL_TITLE_CACHE[key][0])
             INTERNATIONAL_TITLE_CACHE.pop(oldest, None)
             INTERNATIONAL_ALBUM_IDS.pop(oldest, None)
-        INTERNATIONAL_TITLE_CACHE[cache_key] = (time.monotonic() + (3600 if result["title"] else 120), dict(result))
+        INTERNATIONAL_TITLE_CACHE[cache_key] = (time.monotonic() + (3600 if result["title"] else retry_lifetime), dict(result))
     return result
 
 
+def cache_international_cast(source: dict, localized: dict) -> None:
+    """Reuse already verified album cast records, matching people by ID rather than order."""
+    def people(data):
+        cast = data.get("cast")
+        if not isinstance(cast, dict):
+            return {}
+        return {str(row.get("id")): row.get("n")
+                for group in ("mainActor", "actor", "star", "host", "guest")
+                for row in (cast.get(group) or []) if isinstance(row, dict)}
+    original, vietnamese = people(source), people(localized)
+    with INTERNATIONAL_TITLE_LOCK:
+        for person_id, name in original.items():
+            translated = vietnamese.get(person_id)
+            if (not re.fullmatch(r"\d{1,24}", person_id) or not isinstance(name, str) or len(name) > 80 or
+                    not re.search(r"[\u3400-\u9fff]", name) or not isinstance(translated, str) or
+                    not translated.strip() or len(translated) > 200 or
+                    re.search(r"[\u3400-\u9fff\x00-\x1f<>]", translated)):
+                continue
+            if len(INTERNATIONAL_ACTOR_CACHE) >= 512 and name not in INTERNATIONAL_ACTOR_CACHE:
+                oldest = min(INTERNATIONAL_ACTOR_CACHE, key=lambda key: INTERNATIONAL_ACTOR_CACHE[key][0])
+                INTERNATIONAL_ACTOR_CACHE.pop(oldest, None)
+            INTERNATIONAL_ACTOR_CACHE[name] = (time.monotonic() + 3600,
+                {"name": translated.strip(), "sourceName": name, "id": person_id})
+
+
+@singleflight
+def international_actor_name(name: str) -> dict:
+    """Use iq.com's localized person record, verified by source name and person ID."""
+    name = str(name or "").strip()
+    if (not name or len(name) > 80 or not re.search(r"[\u3400-\u9fff]", name) or
+            not re.fullmatch(r"[\w\s·・.（）()\-]+", name)):
+        raise ValueError("Tên diễn viên iQIYI không hợp lệ.")
+    with INTERNATIONAL_TITLE_LOCK:
+        cached = INTERNATIONAL_ACTOR_CACHE.get(name)
+        if cached and cached[0] > time.monotonic():
+            return dict(cached[1])
+    result = {"name": "", "sourceName": name, "id": ""}
+    retry_lifetime = 120
+    try:
+        params = {"key": name, "pn": 1, "ps": 1, "intentPn": 1, "intentPs": 0,
+                  "chnId": 0, "dataType": "4;should", "platformId": 3,
+                  "modeCode": "intl", "langCode": "vi_vn", "deviceId": "ew"}
+
+        def person() -> dict:
+            payload = public_iqiyi_json("https://pcw-api.iq.com/api/search2?" + urlencode(params))
+            data = payload.get("data")
+            if payload.get("code") in (0, "0") and isinstance(data, dict):
+                row = data.get("starsInfo")
+                if isinstance(row, dict):
+                    return row
+            return {}
+
+        localized = person()
+        person_id = str(localized.get("qipuId") or "")
+        translated = str(localized.get("name") or "").strip()
+        if (re.fullmatch(r"\d{1,24}", person_id) and translated and len(translated) <= 200 and
+                not re.search(r"[\u3400-\u9fff\x00-\x1f<>]", translated)):
+            # The localized person record often includes the exact original name already.
+            verified = localized.get("nationalityName") == name
+            if not verified:
+                params["langCode"] = "zh_cn"
+                source = person()
+                verified = source.get("name") == name and str(source.get("qipuId")) == person_id
+            if verified:
+                result.update(name=translated, id=person_id)
+    except OSError:
+        retry_lifetime = 10
+        result["retryAfterMs"] = 10000
+    except (ValueError, TypeError, AttributeError):
+        pass
+    with INTERNATIONAL_TITLE_LOCK:
+        cached = INTERNATIONAL_ACTOR_CACHE.get(name)
+        if not result["name"] and cached and cached[0] > time.monotonic() and cached[1].get("name"):
+            return dict(cached[1])
+        if len(INTERNATIONAL_ACTOR_CACHE) >= 512:
+            oldest = min(INTERNATIONAL_ACTOR_CACHE, key=lambda key: INTERNATIONAL_ACTOR_CACHE[key][0])
+            INTERNATIONAL_ACTOR_CACHE.pop(oldest, None)
+        INTERNATIONAL_ACTOR_CACHE[name] = (time.monotonic() + (3600 if result["name"] else retry_lifetime), dict(result))
+    return result
+
+
+@singleflight
 def public_iqcom_page(suffix: str) -> dict:
     url = urljoin("https://www.iq.com/play/", suffix)
     parsed = urlsplit(url)
     if parsed.scheme != "https" or parsed.netloc != "www.iq.com" or not parsed.path.startswith("/play/"):
         raise ValueError("Liên kết tập iq.com không hợp lệ.")
-    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.iq.com/"})
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.iq.com/",
+                                                 "Accept-Encoding": "gzip"})
     # Public iq.com requests never receive the domestic player's login cookies.
     with iqiyi_open(request, timeout=15, no_session_redirect=True) as response:
-        raw = response.read(4_000_001)
+        raw = read_public_metadata(response)
     if len(raw) > 4_000_000:
         raise ValueError("Metadata tập iq.com quá lớn.")
     match = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', raw.decode("utf-8"), re.S)
@@ -1191,6 +1313,7 @@ def public_iqcom_page(suffix: str) -> dict:
     return json.loads(match[1])
 
 
+@singleflight
 def iqcom_album_metadata(global_album: str, *, refresh: bool = False) -> tuple[dict, dict, dict | None]:
     """Cache public catalog metadata for five minutes, never signed playback URLs."""
     with IQCOM_ALBUM_LOCK:
@@ -1198,7 +1321,7 @@ def iqcom_album_metadata(global_album: str, *, refresh: bool = False) -> tuple[d
         if not refresh and cached and cached[0] > time.monotonic():
             return cached[1], cached[2], None
     params = urlencode({"platformId": 4, "langCode": "vi_vn", "modeCode": "intl", "deviceId": "ew"})
-    album = public_iqiyi_json(f"https://pcw-api.iq.com/api/epgInfo/{global_album}?{params}").get("data", {})
+    album = public_iqiyi_json(f"https://pcw-api.iq.com/api/epgInfo/{global_album}?{params}", refresh=refresh).get("data", {})
     if str(album.get("qipuId")) != global_album:
         raise ValueError("Metadata phim iq.com không khớp.")
     page = public_iqcom_page(str(album.get("playLocSuffix") or ""))
@@ -1322,8 +1445,12 @@ def official_subtitle_xml(raw: str, fmt: str, shift: int, duration: int) -> tupl
     return ET.tostring(output, encoding="utf-8", xml_declaration=True), len(output)
 
 
-def _load_official_subtitle(tvid: str) -> None:
-    session_version = IQCOM_SESSION.version
+def _load_official_subtitle(tvid: str, session_version: int) -> None:
+    if session_version != IQCOM_SESSION.version:
+        with OFFICIAL_SUBTITLE_LOCK:
+            if OFFICIAL_SUBTITLE_CACHE.get(tvid, {}).get("sessionVersion") == session_version:
+                OFFICIAL_SUBTITLE_CACHE.pop(tvid, None)
+        return
     lifetime = 120
     try:
         value = {**fetch_official_subtitle(tvid), "available": True, "loading": False, "error": ""}
@@ -1357,7 +1484,7 @@ def official_subtitle_status(tvid: str) -> dict:
             value = {"available": False, "loading": True, "error": "Đang tìm phụ đề Việt chính thức trên iq.com.",
                      "sessionVersion": IQCOM_SESSION.version}
             OFFICIAL_SUBTITLE_CACHE[tvid] = value
-            OFFICIAL_SUBTITLE_POOL.submit(_load_official_subtitle, tvid)
+            OFFICIAL_SUBTITLE_POOL.submit(_load_official_subtitle, tvid, value["sessionVersion"])
         return {key: value[key] for key in ("available", "loading", "error")}
 
 
@@ -1694,59 +1821,9 @@ def registered_episode_identity(tvid: str, data: dict, previous: dict, provider:
     return identity
 
 
-TITLE_TRANSLATIONS: dict[str, str] | None = None
-OFFICIAL_TITLES: dict[str, str] | None = None
-
-
-def official_titles() -> dict[str, str]:
-    """Tên Việt chính thức của phim, đọc từ titles-vi.json (không trộn từ điển UI)."""
-    global OFFICIAL_TITLES
-    if OFFICIAL_TITLES is None:
-        mapping: dict[str, str] = {}
-        for filename in ("titles-vi.json", str(ROOT / ".local" / "titles-vi.json")):
-            path = Path(filename) if Path(filename).is_absolute() else ROOT / filename
-            try:
-                payload = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                continue
-            rows = payload.get("titles") if isinstance(payload, dict) else None
-            if not isinstance(rows, dict):
-                continue
-            mapping.update({str(key).strip(): str(value).strip()
-                            for key, value in rows.items()
-                            if isinstance(value, str) and str(key).strip() and str(value).strip()})
-        OFFICIAL_TITLES = mapping
-    return OFFICIAL_TITLES
-
-
 def official_series_title(item: dict) -> str:
-    """Tên Việt chính thức nếu phim có trong bảng; rỗng nếu chưa xác nhận."""
-    raw = episode_series_title(item)
-    if not raw:
-        return ""
-    titles = official_titles()
-    if raw in titles:
-        return titles[raw]
-    # Tên hiển thị có thể kèm mùa/phần: ghép khóa dài nhất khớp làm tiền tố.
-    for key in sorted(titles, key=len, reverse=True):
-        if len(key) >= 2 and raw.startswith(key):
-            return titles[key]
-    return ""
-
-
-def title_translations() -> dict[str, str]:
-    global TITLE_TRANSLATIONS
-    if TITLE_TRANSLATIONS is None:
-        mapping = {}
-        for filename in ("web-vi.json", "vi-overrides.json"):
-            try:
-                values = json.loads((ROOT / filename).read_text(encoding="utf-8"))
-                mapping.update({str(key): str(value) for key, value in values.items()
-                                if isinstance(value, str)})
-            except (OSError, json.JSONDecodeError, AttributeError):
-                continue
-        TITLE_TRANSLATIONS = mapping
-    return TITLE_TRANSLATIONS
+    """Use iq.com metadata or the title already attached to a Youku item."""
+    return vietnamese_series_title(item)
 
 
 def _load_international_series_title(identifier: str) -> None:
@@ -1775,11 +1852,7 @@ def vietnamese_series_title(item: dict, translated: str = "") -> str:
         return translated.strip()
     if item.get("albumTitleVi"):
         return str(item["albumTitleVi"]).strip()
-    official = official_series_title(item)
-    if official:
-        return official
-    raw = episode_series_title(item)
-    return title_translations().get(raw, "")
+    return ""
 
 
 def source_fingerprint(source: list) -> str:
@@ -2616,8 +2689,8 @@ async function refresh(force){if(refreshBusy)return;refreshBusy=true;try{const r
 
 PLAYER_API_ROUTES = {
     "GET": frozenset(("/health", "/api/extension-token", "/subtitle.xml", "/api/file",
-                      "/api/translation-state", "/api/international-title")),
-    "POST": frozenset(("/api/session", "/api/register", "/api/album/register", "/api/capture")),
+                      "/api/translation-state", "/api/international-title", "/api/international-actor")),
+    "POST": frozenset(("/api/ui-translate", "/api/session", "/api/register", "/api/album/register", "/api/capture")),
 }
 
 
@@ -2794,6 +2867,9 @@ class Handler(BaseHTTPRequestHandler):
         elif request.path == "/api/international-title":
             identifier = parse_qs(request.query).get("id", [""])[0]
             self.send_json(200, international_movie_title(identifier))
+        elif request.path == "/api/international-actor":
+            name = parse_qs(request.query).get("name", [""])[0]
+            self.send_json(200, international_actor_name(name))
         elif request.path == "/api/search":
             keyword = parse_qs(request.query).get("q", [""])[0]
             self.send_json(200, {"results": search_iqiyi_albums(keyword)})
@@ -2911,6 +2987,9 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(data, dict):
                 raise ValueError("Request must be a JSON object")
             route = urlsplit(self.path).path
+            if route == "/api/ui-translate":
+                self.send_json(200, {"translations": translate_ui(data.get("texts"))})
+                return
             if route == "/api/browser-session":
                 self.send_json(200, IQCOM_SESSION.update(data.get("cookies"), data.get("sourceId"),
                                                        select=data.get("select", False)))

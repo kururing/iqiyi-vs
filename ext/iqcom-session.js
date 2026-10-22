@@ -1,5 +1,14 @@
 /* Cookies stay between the extension and localhost; web pages only receive safe status. */
 let iqcomSyncing = null;
+let iqcomSyncTimer = null;
+function scheduleIqcomSync() {
+  clearTimeout(iqcomSyncTimer);
+  iqcomSyncTimer = setTimeout(() => {
+    iqcomSyncTimer = null;
+    // If cookies change during a sync, read the latest batch after it completes.
+    (iqcomSyncing || Promise.resolve()).catch(() => {}).then(() => syncIqcomSession()).catch(() => {});
+  }, 300);
+}
 function syncIqcomSession(select = false) {
   if (iqcomSyncing) return select ? iqcomSyncing.catch(() => {}).then(() => syncIqcomSession(true)) : iqcomSyncing;
   iqcomSyncing = (async () => {
@@ -31,7 +40,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   return true;
 });
 chrome.cookies.onChanged.addListener(({cookie}) => {
-  if (["iq.com", "www.iq.com"].includes(cookie.domain.replace(/^\./, ""))) syncIqcomSession().catch(() => {});
+  if (["iq.com", "www.iq.com"].includes(cookie.domain.replace(/^\./, ""))) scheduleIqcomSync();
 });
 chrome.alarms.onAlarm.addListener(alarm => {
   if (alarm.name === "iqcom-session") syncIqcomSession().catch(() => {});
