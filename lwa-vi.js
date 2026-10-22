@@ -1,7 +1,6 @@
 /* iqiyi-vi */
 (function () {
-  var ENGINE_VERSION = 133;
-  var IS_PLAYER = /(^|\/)player(?:_mac)?\.html$/i.test(location.pathname);
+  var ENGINE_VERSION = 161;
   if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
     if (window.__iqiyiViReload) window.__iqiyiViReload();
     return;
@@ -9,9 +8,6 @@
   if (window.__iqiyiViStop) window.__iqiyiViStop();
   var oldStyle = document.getElementById("iqiyi-vi-css");
   if (oldStyle) oldStyle.remove();
-  // Remove globals left behind by bundles from older releases.
-  delete window.__iqiyiViDict;
-  delete window.__iqiyiViTitles;
   var IQCOM_METADATA_CACHE = new Map();
   var IQCOM_METADATA_WAITERS = new WeakMap();
   var IQCOM_METADATA_QUEUE = [];
@@ -20,13 +16,23 @@
   var IQCOM_METADATA_CONTROLLERS = new Set();
   var TEXT_CACHE = new Map();
   var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, CODE: 1 };
-  // Older caches can contain partial translations; fallback results stay in RAM.
-  try {
-    for (var cacheIndex = localStorage.length - 1; cacheIndex >= 0; cacheIndex--) {
-      var cacheName = localStorage.key(cacheIndex);
-      if (/^__iqiyiViAutoV/.test(cacheName)) localStorage.removeItem(cacheName);
-    }
-  } catch (e) {}
+  var FIXED_UI_TARGETS = [
+    "#btn_gameBtn", "#clientBtn", "#btn_msgBellBtn", "#btn_historyBtn", "#btn_uploadBtn",
+    "#btn_vipBtnB", "#btn_vipBtnS", "#pwaBtn", "#searchinput", "#userCenterSpan",
+    '[data-ai-entity="弹幕切换按钮,弹幕开关"]', '[data-ai-entity="弹幕设置按钮"]',
+    '[data-ai-entity="弹幕输入框文本输入框"]', '[class*="side_item"]',
+    '[class*="cardMemos_channelmark1__"]', '[class*="cardMemos_channelmark2__"]',
+    '[class*="cardMemos_channelmark3__"]', '[class*="cardMemos_channelmark4__"]',
+    'img[src*="9013485acf0c4e07a2500429869d44f4"]',
+    'img[src*="5a2c3f02c5b54771b1047a27cc1f0447"]',
+    'img[src*="0b3bd1c78a4b4368b4e2da2fb206b5c8"]',
+    'img[src*="ac0bbaca7ffb4528a3a210b4078afbdf"]',
+    'img[src*="308107f863864cd8b364bc428f50f4ec"]',
+    'img[src*="c4de74820c254b39ae0d692eef59f3a8"]',
+    'img[src*="0db0e14b9886439098aa3cadf1b817ab"]',
+    'img[src*="5205828ffa8f4fe3aef4e7b2c005148a"]',
+    'img[src*="f660fb9c2f57476fbe234f397fd21e37"]'
+  ].join(",");
   var FIXED_COPY = {
     "演员": "Diễn viên ",
     "正片": "Tập chính",
@@ -55,7 +61,18 @@
     "清晰度": "Chất lượng",
     "弹幕": "Bình luận chạy",
     "字幕": "Phụ đề",
+    "简体中文": "Tiếng Trung giản thể",
+    "字幕大小": "Cỡ chữ phụ đề",
+    "大": "Lớn",
+    "特大": "Rất lớn",
+    "字幕背景": "Nền phụ đề",
+    "开启后，字幕将增加深色背景，浅色画面下更加清晰": "Bật để thêm nền tối cho phụ đề, giúp dễ đọc hơn trên nền sáng.",
+    "使用字体：HarmonyOS_Sans_SC_Regular": "Phông chữ: HarmonyOS_Sans_SC_Regular",
     "设置": "Cài đặt",
+    "正在看：": "Đang xem:",
+    "刷新页面": "Làm mới trang",
+    "关注": "Theo dõi",
+    "互动": "Tương tác",
     "看影剧": "Xem phim",
     "花积分": "Dùng điểm",
     "换会员": "Đổi VIP",
@@ -161,9 +178,6 @@
     "工业题材": "Đề tài công nghiệp",
     "历史革命": "Lịch sử cách mạng",
     "领袖人物": "Nhân vật lãnh đạo",
-    "爆": "Bùng nổ",
-    "热": "Hot",
-    "预": "Sắp chiếu",
     "最新": "Mới nhất",
     "最热": "Đang hot",
     "推荐": "Đề xuất",
@@ -638,6 +652,7 @@
     "未能正常连接网络！": "Không thể kết nối mạng đúng cách!",
     "请检查网络连接是否正常，如果连接正常，请关闭重试": "Hãy kiểm tra kết nối mạng; nếu bình thường, hãy đóng rồi thử lại.",
     "关闭广告": "Đóng QC",
+    "关闭广告，放大暂停画面": "Đóng quảng cáo để phóng to khung hình khi tạm dừng",
     "主标题": "Tiêu đề",
     "观看至50": "Xem tới 50",
     "还没有观看历史哟~": "Chưa xem lịch sử~",
@@ -1250,6 +1265,8 @@
     "画面缩放": "Thu phóng hình ảnh",
     "铺满(保持比例)": "Lấp đầy (giữ tỷ lệ)",
     "铺满(拉伸画面)": "Lấp đầy (kéo giãn)",
+    "铺满（保持比例）": "Lấp đầy (giữ nguyên tỷ lệ)",
+    "铺满（拉伸画面）": "Lấp đầy (kéo giãn khung hình)",
     "原始尺寸": "Kích thước gốc",
     "截图分享": "Chụp & chia sẻ",
     "全屏模式 Alt + Enter": "Chế độ toàn màn hình Alt + Enter",
@@ -1270,19 +1287,19 @@
     "分享到QQ好友": "Chia sẻ với bạn bè QQ",
     "分享到新浪微博": "Chia sẻ lên Sina weibo",
     "分享到QQ空间": "Chia sẻ lên không gian QQ",
-    "弹幕显示设置": "Hiện danmaku",
-    "重置弹幕显示设置": "Đặt lại danmaku",
+    "弹幕显示设置": "Cài đặt hiển thị bình luận chạy",
+    "重置弹幕显示设置": "Đặt lại cài đặt hiển thị bình luận chạy",
     "不透明度": "Độ mờ",
     "标准": "Chuẩn",
     "速度": "Tốc độ",
     "智能防剧透": "Chống spoiler thông minh",
-    "屏蔽更多潜在剧透弹幕": "Chặn nhiều rào cản spoiler tiềm năng hơn",
+    "屏蔽更多潜在剧透弹幕": "Chặn thêm bình luận chạy có thể tiết lộ nội dung",
     "0级": "Cấp 0",
-    "默认开启弹幕": "Bật chặn theo mặc định",
+    "默认开启弹幕": "Mặc định bật bình luận chạy",
     "屏蔽设置": "Chặn",
-    "屏蔽后新出现的弹幕均为白色": "Các rào cản mới xuất hiện sau khi chặn đều có màu trắng.",
+    "屏蔽后新出现的弹幕均为白色": "Bình luận chạy mới sẽ có màu trắng sau khi chặn",
     "彩色": "Màu",
-    "开启后弹幕将不再遮挡人像区域": "Sau khi bật nó lên, rào chắn sẽ không còn chặn vùng chân dung nữa.",
+    "开启后弹幕将不再遮挡人像区域": "Bật để bình luận chạy không che khuôn mặt",
     "人像区域": "Vùng khuôn mặt",
     "设置屏蔽词": "Từ chặn",
     "没有更多了...": "Không còn nữa...",
@@ -1291,13 +1308,236 @@
     "提 交": "Gửi",
     "添加": "Thêm",
     "已有相同内容哦～": "Đã có nội dung tương tự rồi~",
-    "添加后将看不到含此词的弹幕哦～": "Sau khi thêm nó, bạn sẽ không thể nhìn thấy các rào cản có chứa từ này ~",
+    "添加后将看不到含此词的弹幕哦～": "Sau khi thêm, bạn sẽ không thấy bình luận chạy có chứa từ này.",
     "刷新重试": "Hãy làm mới và thử lại",
     "哈哈哈哈哈": "Hahahahaha",
-    "弹幕发送设置": "Cài đặt gửi danmaku",
+    "弹幕发送设置": "Cài đặt gửi bình luận chạy",
     "注册": "Đăng ký",
-    "发送弹幕": "Gửi danmaku",
-    "角色弹幕": "rào cản nhân vật",
+    "发送弹幕": "Gửi bình luận chạy",
+    "角色弹幕": "Bình luận chạy theo nhân vật",
+    "弹幕来一波…": "Gửi bình luận chạy thôi…",
+    "弹幕走一波...": "Gửi bình luận chạy thôi...",
+    "最多5个字符，回车可添加": "Tối đa 5 ký tự, nhấn Enter để thêm",
+    "爱奇艺,客户端下载,下载": "iQIYI, tải ứng dụng, tải xuống",
+    "爱奇艺客户端下载页面。": "Trang tải ứng dụng iQIYI.",
+    "爱奇艺-在线视频网站-海量正版高清视频在线观看": "iQIYI – Xem video trực tuyến, kho nội dung bản quyền chất lượng cao",
+    "爱奇艺-客户端下载": "Tải ứng dụng iQIYI",
+    "爱奇艺-sleep": "iQIYI – Đang tạm nghỉ",
+    "页面加载失败，请重新": "Trang không tải được, vui lòng",
+    "404错误页页": "Trang lỗi 404",
+    "Internet Explorer 无法显示该网页": "Internet Explorer không thể hiển thị trang này.",
+    "您可以尝试以下操作:": "Bạn có thể thử những cách sau:",
+    "您可能已经连接到 Internet，但您可能希望尝试重新连接到 Internet。": "Có thể bạn đã kết nối Internet, nhưng hãy thử kết nối lại.",
+    "最可能的原因是:": "Nguyên nhân có thể là:",
+    "未连接到 Internet。": "Chưa kết nối Internet.",
+    "该网站遇到了问题": "Trang web đang gặp sự cố.",
+    "重新刷新网页。": "Hãy tải lại trang.",
+    "若您已经连接到Internet，请重新": "Nếu bạn đã kết nối Internet, hãy",
+    "搜视频...": "Tìm video...",
+    "清空搜索内容": "Xóa nội dung tìm kiếm",
+    "已为您找到相关结果，问问AI快速总结重点": "Đã tìm thấy kết quả phù hợp. Hỏi AI để tóm tắt nhanh nội dung chính.",
+    "问一问AI": "Hỏi AI",
+    "综合": "Tổng hợp",
+    "用户": "Người dùng",
+    "立即播放": "Phát ngay",
+    "大家还爱看": "Mọi người cũng thích xem",
+    "相关短视频": "Video ngắn liên quan",
+    "卫视": "Kênh truyền hình vệ tinh",
+    "都市爱情": "Tình yêu đô thị",
+    "内地": "Trung Quốc đại lục",
+    "今日更新": "Cập nhật hôm nay",
+    "筛选": "Lọc",
+    "免费": "Miễn phí",
+    "中剧": "Phim thời lượng vừa",
+    "少儿": "Thiếu nhi",
+    "漫剧": "Phim hoạt họa truyện tranh",
+    "动画": "Hoạt hình",
+    "枪战": "Đấu súng",
+    "警匪": "Cảnh sát - tội phạm",
+    "灾难": "Thảm họa",
+    "传记": "Tiểu sử",
+    "伦理": "Tâm lý xã hội",
+    "运动": "Thể thao",
+    "魔幻": "Phép thuật",
+    "歌舞": "Ca vũ",
+    "戏曲": "Kịch hát truyền thống",
+    "玄幻": "Huyền huyễn",
+    "悲剧": "Bi kịch",
+    "西部": "Miền Tây",
+    "史诗": "Sử thi",
+    "英国": "Vương quốc Anh",
+    "时间": "Thời gian",
+    "资费": "Hình thức xem",
+    "近期转免": "Mới chuyển sang miễn phí",
+    "免费解锁VIP": "Mở khóa nội dung VIP miễn phí",
+    "竞技": "Tranh tài",
+    "谍战": "Tình báo",
+    "警匪罪案": "Tội phạm - hình sự",
+    "家庭伦理": "Tâm lý gia đình",
+    "女频": "Nội dung dành cho khán giả nữ",
+    "男频": "Nội dung dành cho khán giả nam",
+    "怀旧情感": "Tình cảm hoài niệm",
+    "年代": "Bối cảnh thời đại",
+    "女性成长": "Hành trình trưởng thành của phụ nữ",
+    "法制": "Đề tài pháp luật",
+    "都市": "Đô thị",
+    "生活": "Đời sống",
+    "军旅题材": "Đề tài quân ngũ",
+    "战友情": "Tình đồng đội",
+    "抗日战争": "Kháng chiến chống Nhật",
+    "当代谍战": "Tình báo hiện đại",
+    "竞演": "Tranh tài biểu diễn",
+    "飞天奖": "Giải Phi Thiên",
+    "反特谍战": "Phản gián - điệp chiến",
+    "悬疑推理": "Trinh thám, bí ẩn",
+    "情感悬疑": "Tình cảm, bí ẩn",
+    "战争传奇": "Huyền thoại chiến tranh",
+    "扫黑缉毒": "Trấn áp tội phạm và ma túy",
+    "家长里短": "Chuyện thường nhật trong gia đình",
+    "刑侦破案": "Điều tra hình sự",
+    "科幻末世": "Khoa học viễn tưởng hậu tận thế",
+    "都市日常": "Đời sống đô thị",
+    "青春校园": "Thanh xuân học đường",
+    "男性传奇": "Truyền kỳ nam giới",
+    "抗战谍战": "Điệp chiến thời kháng chiến",
+    "强强联合": "Kết hợp ngang tài",
+    "穿越": "Xuyên không",
+    "美食": "Ẩm thực",
+    "都市喜剧": "Hài đô thị",
+    "古风权谋": "Đấu trí quyền mưu cổ trang",
+    "总裁": "Tổng tài",
+    "战神归来": "Chiến thần trở lại",
+    "10年代": "Thập niên 2010",
+    "00年代": "Thập niên 2000",
+    "90年代": "Thập niên 1990",
+    "80年代": "Thập niên 1980",
+    "通知": "Thông báo",
+    "点赞": "Lượt thích",
+    "在追": "Đang theo dõi",
+    "钱包": "Ví tiền",
+    "关闭验证": "Đóng xác minh",
+    "刷新验证": "Làm mới xác minh",
+    "请输入您听到的内容": "Nhập nội dung bạn nghe được",
+    "试看已结束，继续观看请开通VIP会员": "Đã hết thời gian xem thử. Đăng ký VIP để xem tiếp.",
+    "未开通会员，不能观看海量VIP内容": "Bạn chưa đăng ký VIP nên chưa xem được kho nội dung VIP.",
+    "更多开通选择": "Xem thêm gói hội viên",
+    "黄金VIP": "VIP Vàng",
+    "白金VIP": "VIP Bạch Kim",
+    "星钻VIP": "VIP Kim Cương",
+    "广告特权+五端可用": "Không quảng cáo + dùng được trên 5 thiết bị",
+    "高清投屏+七端通(含电视)": "Chiếu màn hình chất lượng cao + dùng trên 7 thiết bị (gồm TV)",
+    "加更礼免费看+七端通": "Xem miễn phí nội dung tặng thêm + dùng trên 7 thiết bị",
+    "连续包年": "Gia hạn tự động hằng năm",
+    "大促红包": "Voucher khuyến mãi",
+    "连续包月": "Gia hạn tự động hằng tháng",
+    "双月卡": "Gói 2 tháng",
+    "惊喜半价特惠": "Ưu đãi bất ngờ giảm nửa giá",
+    "连续包季": "Gia hạn tự động theo quý",
+    "年卡": "Gói năm",
+    "双11大促": "Đại ưu đãi 11/11",
+    "季卡": "Gói quý",
+    "月卡": "Gói tháng",
+    "赠送以下权益": "Quyền lợi được tặng kèm",
+    "黄金VIP会员15天": "15 ngày VIP Vàng",
+    "会员特权对比": "So sánh quyền lợi VIP",
+    "个人标准": "Gói cá nhân",
+    "家庭标准": "Gói gia đình",
+    "家庭高端": "Gói gia đình cao cấp",
+    "热播内容": "Nội dung nổi bật",
+    "会员抢先看": "Xem trước nội dung VIP",
+    "适用终端": "Thiết bị hỗ trợ",
+    "同时播放": "Phát đồng thời",
+    "同时登录": "Đăng nhập đồng thời",
+    "会员积分": "Điểm VIP",
+    "本页展示的划线价为建议零售价": "Giá gạch ngang trên trang là giá bán lẻ đề xuất.",
+    "代金券": "Phiếu giảm giá",
+    "暂无可用": "Chưa có phiếu khả dụng",
+    "《会员协议》": "“Thỏa thuận hội viên”",
+    "新朋友，开通享精彩内容": "Đăng ký VIP để khám phá nhiều nội dung hấp dẫn",
+    "共减": "Tổng tiết kiệm",
+    "热搜": "Tìm kiếm nổi bật",
+    "热点": "Chủ đề nóng",
+    "搜索推荐": "Đề xuất tìm kiếm",
+    "选择不考虑观看的原因：": "Chọn lý do bạn không muốn xem:",
+    "选择不考虑观看的原因:": "Chọn lý do bạn không muốn xem:",
+    "已看过": "Đã xem",
+    "重复推荐": "Được đề xuất nhiều lần",
+    "就是不想看": "Tôi không muốn xem",
+    "甜宠": "Ngọt sủng",
+    "暗恋成真": "Thầm yêu thành đôi",
+    "打脸虐渣": "Vả mặt kẻ xấu",
+    "现代言情": "Ngôn tình hiện đại",
+    "闪婚": "Cưới chớp nhoáng",
+    "虐恋": "Tình yêu ngược",
+    "破镜重圆": "Gương vỡ lại lành",
+    "先婚后爱": "Cưới trước, yêu sau",
+    "东方玄幻": "Huyền huyễn phương Đông",
+    "恋爱": "Tình yêu",
+    "恋爱脑": "Lụy tình",
+    "百姓趣闻": "Chuyện đời thường thú vị",
+    "农村": "Nông thôn",
+    "御兽": "Ngự thú",
+    "废柴": "Phế vật",
+    "上传": "Tải lên",
+    "爆": "Bùng nổ",
+    "热": "Đang hot",
+    "预": "Sắp chiếu",
+    "迷雾剧场": "Rạp Sương Mù",
+    "大家剧场": "Rạp Phim Đại Chúng",
+    "恋恋剧场": "Rạp Phim Tình Cảm",
+    "小逗剧场": "Rạp Hài",
+    "查看全部内容": "Xem toàn bộ nội dung",
+    "风云榜总榜": "Bảng xếp hạng tổng hợp",
+    "查看完整风云榜": "Xem đầy đủ bảng xếp hạng",
+    "画质": "Chất lượng hình ảnh",
+    "黄金/白金/星钻VIP尊享": "Dành riêng cho VIP Vàng, Bạch Kim và Kim Cương",
+    "超高清4K": "Siêu nét 4K",
+    "准高清": "Gần HD",
+    "智能": "Thông minh",
+    "自动调节画质": "Tự động điều chỉnh chất lượng hình ảnh",
+    "音效": "Hiệu ứng âm thanh",
+    "（VIP音效限黄金/白金/星钻VIP）": "(Hiệu ứng âm thanh VIP chỉ dành cho VIP Vàng, Bạch Kim và Kim Cương)",
+    "分集视频标题": "Hiển thị tiêu đề tập phim",
+    "长按倍速": "Nhấn giữ để tăng tốc",
+    "天才医生跌落神坛，小城行医暖人心": "Bác sĩ thiên tài sa cơ, hành nghề ở thị trấn nhỏ, sưởi ấm lòng người",
+    "跳过广告": "Bỏ qua quảng cáo",
+    "免费集将看完": "Sắp hết số tập được xem miễn phí",
+    "开会员看全集": "Đăng ký VIP để xem trọn bộ",
+    "Truc Ngoc": "Trục Ngọc",
+    "沈诺蔓儿制定救人计划": "Thẩm Nặc và Liên Mạn Nhi lập kế hoạch cứu người",
+    "客户端4K播放": "Phát 4K trên ứng dụng",
+    "播单": "Danh sách phát",
+    "黄金关闭此广告": "VIP Vàng có thể tắt quảng cáo",
+    "关闭此广告": "Tắt quảng cáo này",
+    "新婚当晚被关柴房！她被养兄长骗嫁为妾": "Đêm tân hôn bị nhốt trong nhà củi! Nàng bị anh nuôi lừa gả làm thiếp",
+    "《田耕纪》腹黑大姐连花儿，嫁人了也不安...": "Chị cả Liên Hoa mưu mô trong “Điền Canh Kỷ”, lấy chồng rồi vẫn chưa yên...",
+    "种田电子榨菜大全": "Tuyển tập video giải trí đề tài làm ruộng",
+    "了解详情": "Xem chi tiết",
+    "点击一下，快速跳过广告": "Nhấn một lần để bỏ qua quảng cáo",
+    "▶ 跳过广告观看正片": "▶ Bỏ qua quảng cáo để xem phim",
+    "跳过广告观看正片": "Bỏ qua quảng cáo để xem phim",
+    "打开广告落地页": "Mở trang quảng cáo",
+    "已切换主字幕为": "Đã chuyển phụ đề chính sang ",
+    "分": "điểm",
+    "本剧全集免费看": "Xem miễn phí toàn bộ phim này",
+    "番外": "Ngoại truyện",
+    "为了更好处理您的反馈与建议，请填写QQ号/微信号": "Để hỗ trợ phản hồi của bạn tốt hơn, vui lòng nhập ID QQ hoặc WeChat.",
+    "请填写意见建议": "Vui lòng nhập ý kiến góp ý.",
+    "请输入": "Vui lòng nhập",
+    "请输入密码": "Nhập mật khẩu",
+    "请输入手机号": "Nhập số điện thoại",
+    "请输入手机号/邮箱": "Nhập số điện thoại/email",
+    "请输入验证码": "Nhập mã xác minh",
+    "返回主窗口": "Trở về cửa sổ chính",
+    "速看": "Xem nhanh",
+    "详情": "Chi tiết",
+    "加追": "Theo dõi",
+    "开会员立享": "Đăng ký VIP, hưởng ưu đãi ngay",
+    "长剧": "Phim dài tập",
+    "短剧": "Phim ngắn",
+    "精彩短视频": "Video ngắn nổi bật",
+    "讨论": "Thảo luận",
+    "二创": "Sáng tạo lại",
     "彩色文字": "Văn bản màu",
     "尊敬的用户": "Kính gửi người dùng",
     "由于运营商劫持，您的爱奇艺客户端暂时无法正常运行。": "Do nhà mạng can thiệp, app iQIYI tạm thời không chạy bình thường.",
@@ -1311,6 +1551,16 @@
     "循环播放": "Phát lặp",
     "隔空手势": "Điều khiển bằng cử chỉ",
     "常用快捷键": "Phím tắt thường dùng",
+    "老板键": "Phím ẩn nhanh",
+    "全屏/退出全屏": "Toàn màn hình/Thoát toàn màn hình",
+    "Alt + 回车": "Alt + Enter",
+    "播放/暂停": "Phát/Tạm dừng",
+    "空格": "Phím cách",
+    "快进（长按开启倍速）": "Tua nhanh (nhấn giữ để tăng tốc)",
+    "快退": "Tua lùi",
+    "增加音量": "Tăng âm lượng",
+    "降低音量": "Giảm âm lượng",
+    "全部快捷键": "Tất cả phím tắt",
     "播放问题诊断": "Chẩn đoán lỗi phát",
     "更多设置": "Cài đặt khác",
     "查看列表": "Xem danh sách",
@@ -1349,42 +1599,23 @@
     return m ? m.length : 0;
   }
 
-  function mostlyCjk(s) {
-    var t = String(s || "").replace(/\s/g, "");
-    if (!t) return false;
-    return cjkCount(t) >= Math.max(1, t.length * 0.6);
-  }
-
-  function wordChar(ch) {
-    return !!ch && /[A-Za-z0-9À-ỹĐđ\u3400-\u9fff]/.test(ch);
-  }
-
-  function replaceWithSpacing(source, find, replacement) {
-    var out = "";
-    var from = 0;
-    var index;
-    while ((index = source.indexOf(find, from)) !== -1) {
-      var before = source.charAt(index - 1);
-      var after = source.charAt(index + find.length);
-      var left = before && (wordChar(before) || before === "|");
-      var right = after && (wordChar(after) || after === "|");
-      out += source.slice(from, index);
-      if (left && !/\s$/.test(out) && !/^\s/.test(replacement)) out += " ";
-      out += replacement;
-      if (right && !/\s$/.test(replacement)) out += " ";
-      from = index + find.length;
-    }
-    return from ? out + source.slice(from) : source;
-  }
-
-  function canTranslateWhole(s) {
-    var text = String(s || "").replace(/\s/g, "");
-    return cjkCount(text) >= 2 && (mostlyCjk(text) || text.length <= 80);
-  }
-
   // Chuỗi giống tiêu đề phim/series: còn chữ Hán sau khi bỏ mùa, số tập và nhãn phụ.
   // Tên phim phải được dịch trọn tên, không ghép từng chữ (古偶榜 -> "Cổ ngẫu" là lỗi).
   var TITLE_NOISE = /最新|热播|独播|自制|完结|连载|更新至|全\d+集|共\d+集|第\d+[集季部]|预告|花絮|看点|预告片|抢先|限免|会员|VIP|豆瓣|榜|No\.?\d+|\d+\s*(?:万|亿|次|人|分钟|分|年|月|日|集|季)/gi;
+  // Verified against iq.com Vietnamese series records.
+  var VERIFIED_TITLE_COPY = {"魅影神捕":"Mị Ảnh Thần Bộ", "田耕纪":"Điền Canh Kỷ", "逐玉":"Trục Ngọc"};
+  var VERIFIED_ACTOR_COPY = {"曾舜晞":"Tăng Thuấn Hy", "田曦薇":"Điền Hi Vi"};
+  function localizeTitleValue(value) {
+    var raw = String(value || "");
+    var episode = raw.match(/^(.*?)\s*第(\d+)集(?:\s+(.+))?$/);
+    if (episode) {
+      var sourceTitle = episode[1].trim();
+      var result = (VERIFIED_TITLE_COPY[sourceTitle] || sourceTitle) + " · Tập " + episode[2];
+      var subtitle = episode[3] && FIXED_COPY[episode[3]];
+      return subtitle ? result + " · " + subtitle : result;
+    }
+    return FIXED_COPY[raw] || VERIFIED_TITLE_COPY[raw] || raw;
+  }
   function looksLikeTitle(s) {
     var text = String(s || "");
     if (!cjkCount(text)) return false;
@@ -1433,11 +1664,13 @@
     for (var depth = 0; el && depth < 3; depth++, el = el.parentElement) {
       if (el.nodeType !== 1) continue;
       var label = String(el.className || "");
+      // Search ranking badges share a parent with the title but are UI labels.
+      if (depth === 0 && /(?:^|\s)search-board-item_tag(?:\s|$)/i.test(label)) return false;
       var entity = el.getAttribute("data-ai-entity") || "";
       var path = (el.ownerDocument && el.ownerDocument.location && el.ownerDocument.location.pathname) || location.pathname;
       if (el.tagName === "H1" && /(?:^|\/)(?:[va]_[^/]+|player(?:_mac)?)\.html$/i.test(path)) return true;
-      if (/^(?:卡片|缩略图|影片|视频|专辑|剧集)标题$/.test(entity) ||
-          /filmFeed_title__|feedZaizhui_itemTitle__|thumbnailItemTitle|flexVideoList_title__|meta_title(?:TextBlock|NotCloud)|search-board-item_title|(?:album|movie|video|player|detail)[-_]?(?:name|title)(?:__|\b)/i.test(label)) return true;
+      if (/^(?:卡片|缩略图|影片|视频|专辑|剧集)标题$/.test(entity) || entity === "播放器标题栏视频标题" ||
+          /filmFeed_title__|feedZaizhui_itemTitle__|thumbnailItemTitle|flexVideoList_title__|tilesItem_title__|videoListItem_title__|title_title__|meta_title(?:TextBlock|NotCloud)|search-board-item_title|(?:album|movie|video|player|detail)[-_]?(?:name|title)(?:__|\b)/i.test(label)) return true;
     }
     return false;
   }
@@ -1508,7 +1741,7 @@
       if (el.nodeType !== 1) continue;
       var label = String(el.className || "");
       var entity = el.getAttribute("data-ai-entity") || "";
-      if (/(?:演员|主演|明星|人物)(?:姓名|名称|名字)$/.test(entity) ||
+      if (/(?:演员|主演|明星|人物)(?:姓名|名称|名字)$/.test(entity) || /TVG演员筛选标签/.test(entity) ||
           /(?:act|actor|star|cast)[-_]?name(?:Text(?:Wrap)?|__|[-_]|\b)|(?:albumMeta|reserveMeta)OpenCastItem|(?:actor|cast)[-_]item[-_]name/i.test(label)) return true;
       if (el.tagName === "A" && /\/lib\/s_\d+\.html(?:[?#]|$)|\/actor-info\//i.test(el.getAttribute("href") || "")) return true;
     }
@@ -1600,11 +1833,24 @@
     var original = actorSourceText(node, raw);
     var source = original.replace(/^(\s*(?:主演|演员|导演)[：:\s]*)/, "");
     var names = source.match(/[\u3400-\u9fff]+(?:[·・][\u3400-\u9fff]+)*/g) || [];
-    var token = window.__iqiyiViToken || "";
-    if (!names.length || !token || !window.fetch) return true;
     names = names.filter(function (name, index) { return names.indexOf(name) === index; });
+    if (!names.length) return true;
+    var token = window.__iqiyiViToken || "";
+    var namesToFetch = names.filter(function (name) { return !VERIFIED_ACTOR_COPY[name]; });
+    function applyVerifiedNames() {
+      var translated = source.replace(/[\u3400-\u9fff]+(?:[·・][\u3400-\u9fff]+)*/g,
+        function (name) { return VERIFIED_ACTOR_COPY[name] || name; });
+      var result = tr(original.slice(0, original.length - source.length)) + translated;
+      if (result === raw) return;
+      if (setter) setter(result);
+      else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
+    }
+    if (!namesToFetch.length || !token || !window.fetch) {
+      applyVerifiedNames();
+      return true;
+    }
     waitForIqcomMetadata(node, field, "actor:" + original + ":" + raw, function () {
-      return Promise.all(names.map(function (name) {
+      return Promise.all(namesToFetch.map(function (name) {
         return requestIqcomMetadata("international-actor?name=" + encodeURIComponent(name)).then(function (payload) {
           if (!payload || payload.sourceName !== name || typeof payload.name !== "string" || !payload.name.trim() || cjkCount(payload.name)) return null;
           return payload;
@@ -1615,7 +1861,7 @@
       // Replace complete names once, so a short name cannot corrupt another person's name.
       var result = source.replace(/[\u3400-\u9fff]+(?:[·・][\u3400-\u9fff]+)*/g, function (part) {
         var person = people.filter(function (person) { return person && person.sourceName === part; })[0];
-        return person ? person.name : part;
+        return person ? person.name : VERIFIED_ACTOR_COPY[part] || part;
       });
       // A profile heading can prefix the name with 演员 or 主演.
       var prefix = original.slice(0, original.length - source.length);
@@ -1628,195 +1874,47 @@
   }
 
   function requestInternationalTitle(node, value, setter, field) {
-    if (requestInternationalActor(node, value, setter, field)) return true;
     var raw = String(value || "");
+    if (requestInternationalActor(node, value, setter, field)) return true;
+    if (!/[\u3400-\u9fff]/.test(raw)) return false;
     var movieTitle = isMovieTitleNode(node);
     if (!looksLikeTitle(raw)) return movieTitle;
     var titleElement = node && node.nodeType === 3 ? node.parentElement : node;
     if (!movieTitle && (!titleElement || titleElement.tagName !== "TITLE")) return false;
+    var titleContext = movieTitle || titleElement.tagName === "TITLE";
     var id = findInternationalTitleId(node);
-    if (!id) return movieTitle;
-
-    function apply(payload) {
-      if (findInternationalTitleId(node) !== id || !payload.title) return;
-      var source = payload.sourceTitle || "";
-      // Only replace the verified Chinese album name; keep episode numbers and other text.
-      if (!source || raw.indexOf(source) === -1) return;
-      var result = raw.split(source).join(payload.title);
+    function setTitle(result) {
+      result = FIXED_COPY[result] || localizeTitleValue(result);
+      if (result === raw) return;
       if (setter) setter(result);
       else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
     }
+    if (!id) {
+      if (titleContext) setTitle(raw);
+      return titleContext;
+    }
+
+    function apply(payload) {
+      var result = raw;
+      if (findInternationalTitleId(node) === id && payload && payload.title && !cjkCount(payload.title)) {
+        var source = payload.sourceTitle || "";
+        var verifiedTitle = VERIFIED_TITLE_COPY[source];
+        // Only replace the verified Chinese album name; keep unverified names intact.
+        if (source && raw.indexOf(source) !== -1) result = raw.split(source).join(verifiedTitle || payload.title);
+      }
+      setTitle(result);
+    }
 
     var token = window.__iqiyiViToken || "";
-    if (!token || !window.fetch) return true;
+    if (!token || !window.fetch) {
+      apply({});
+      return true;
+    }
     waitForIqcomMetadata(node, field, "title:" + id + ":" + raw, function () {
       return requestIqcomMetadata("international-title?id=" + encodeURIComponent(id));
-    }, function (payload) {
-      if (typeof payload.title === "string" && !cjkCount(payload.title)) apply(payload);
-    });
+    }, apply);
     return true;
   }
-
-  // Các chuỗi gồm ≥2 chữ Hán liền nhau trong một chuỗi UI (tab, nhãn, tiêu đề card...).
-  function cjkRuns(s) {
-    return String(s || "").match(/[\u3400-\u4dbf\u4e00-\u9fff]{2,}/g) || [];
-  }
-
-  // Bản dịch theo từng từ là nguồn của các chuỗi lai vô nghĩa ("Cổ ngẫu BXH số 2",
-  // "Học đườnghoạt hình"). Bản dịch đúng phải là một cụm tiếng Việt đọc được: có dấu,
-  // hoặc là một từ/một chuỗi chữ Latin có khoảng trắng.
-  function gibberish(s) {
-    var t = String(s || "");
-    if (/[\u00C0-\u024F\u1EA0-\u1EF9]/.test(t)) return false;
-    if (/\s/.test(t)) return false;
-    var run = t.match(/[A-Za-z]+/g);
-    if (!run) return false;
-    return run.some(function (word) { return word.length >= 6; });
-  }
-
-  var AUTO_CACHE = new Map();
-  var AUTO_PENDING = new Map();
-  var AUTO_FAILURES = new Map();
-  var AUTO_QUEUE = [];
-  var AUTO_ACTIVE = false;
-  var AUTO_TIMER = null;
-  var AUTO_CONTROLLER = null;
-  var AUTO_LAST_ERROR = "";
-
-  function autoTranslateMixed(node, value, setter, field) {
-    if (requestInternationalTitle(node, value, setter, field)) return;
-    autoTranslate(node, value, setter, field);
-  }
-
-  function applyAuto(item, translated) {
-    var node = item.node;
-    if (IQCOM_METADATA_STOPPED || !node.isConnected || isFixedUI(node) ||
-        isMovieTitleNode(node) || isActorNameNode(node)) return;
-    // React may have reused the element for another card/episode while fetching.
-    if (node.nodeType === 3 && node.nodeValue !== item.source) return;
-    if (item.setter) item.setter(translated);
-    else if (node.nodeType === 3) node.nodeValue = translated;
-  }
-
-  function pumpAuto() {
-    AUTO_TIMER = null;
-    if (IQCOM_METADATA_STOPPED || AUTO_ACTIVE || !AUTO_QUEUE.length) return;
-    AUTO_ACTIVE = true;
-    var batch = [], encodedLength = 0;
-    while (AUTO_QUEUE.length && batch.length < 8) {
-      var size = encodeURIComponent(AUTO_QUEUE[0]).length + 3;
-      if (batch.length && encodedLength + size > 5000) break;
-      encodedLength += size;
-      batch.push(AUTO_QUEUE.shift());
-    }
-    var controller = new AbortController();
-    AUTO_CONTROLLER = controller;
-    var timeout = setTimeout(function () { controller.abort(); }, 8000);
-    var url = "https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=zh-CN&tl=vi";
-    batch.forEach(function (text) { url += "&q=" + encodeURIComponent(text); });
-    Promise.resolve().then(function () {
-      if (window.__iqiyiViTranslate) return window.__iqiyiViTranslate(batch);
-      // The app can use its authenticated local service when page CSP blocks Google.
-      if (window.__iqiyiViToken) return fetch("http://127.0.0.1:18766/api/ui-translate", {
-        method: "POST", headers: {"Content-Type":"application/json", "X-Iqiyi-Token":window.__iqiyiViToken},
-        body: JSON.stringify({texts:batch}), signal:controller.signal, credentials:"omit"
-      }).then(function (r) {
-        if (!r.ok) throw new Error("Local translation HTTP " + r.status);
-        return r.json();
-      }).then(function (payload) { return payload.translations; }).catch(function () {
-        return fetch(url, {signal:controller.signal, credentials:"omit"});
-      });
-      return fetch(url, { signal: controller.signal, credentials: "omit" });
-    }).then(function (response) {
-      if (Array.isArray(response)) return response;
-      if (!response.ok) throw new Error("Translation HTTP " + response.status);
-      return response.json();
-    }).then(function (data) {
-      if (IQCOM_METADATA_STOPPED) return;
-      if (!Array.isArray(data) || data.length !== batch.length) throw new Error("Invalid translation batch");
-      batch.forEach(function (text, index) {
-        var translated = data && data[index];
-        if (typeof translated !== "string" || !translated.trim() || cjkCount(translated)) return;
-        if (AUTO_CACHE.size >= 2000) AUTO_CACHE.delete(AUTO_CACHE.keys().next().value);
-        AUTO_CACHE.set(text, translated);
-        (AUTO_PENDING.get(text) || []).forEach(function (item) { applyAuto(item, translated); });
-      });
-    }).catch(function (error) {
-      AUTO_LAST_ERROR = String(error && error.message || error);
-      // A failed request leaves the original UI intact.
-    }).finally(function () {
-      clearTimeout(timeout);
-      batch.forEach(function (text) {
-        AUTO_PENDING.delete(text);
-        if (!AUTO_CACHE.has(text)) {
-          if (AUTO_FAILURES.size >= 500) AUTO_FAILURES.delete(AUTO_FAILURES.keys().next().value);
-          AUTO_FAILURES.set(text, Date.now() + 30000);
-        }
-      });
-      AUTO_ACTIVE = false;
-      AUTO_CONTROLLER = null;
-      if (!IQCOM_METADATA_STOPPED && AUTO_QUEUE.length) AUTO_TIMER = setTimeout(pumpAuto, 250);
-    });
-  }
-
-  function autoTranslate(node, value, setter, field) {
-    if (IQCOM_METADATA_STOPPED || !node || !node.isConnected || isFixedUI(node) ||
-        isMovieTitleNode(node) || isActorNameNode(node) || !window.fetch) return;
-    var el = node.nodeType === 3 ? node.parentElement : node;
-    // Never send typed input, passwords or editable user content to the translator.
-    if (el && (el.isContentEditable || (el.closest && el.closest('[contenteditable="true"]')) ||
-        ((el.tagName === "INPUT" || el.tagName === "TEXTAREA") &&
-         !/^(?:placeholder|title|aria-label|alt)$/.test((field || "").split(":")[0])))) return;
-    var text = String(value || "").trim();
-    if (!cjkCount(text) || text.length > 8000) return;
-    if (text.length > 500) {
-      var chunks = [], remaining = text;
-      while (remaining.length) {
-        var chunk = remaining.slice(0, 450);
-        if (remaining.length > 450) {
-          var boundary = Math.max(chunk.lastIndexOf("。"), chunk.lastIndexOf("！"), chunk.lastIndexOf("？"), chunk.lastIndexOf("\n"));
-          if (boundary > 200) chunk = chunk.slice(0, boundary + 1);
-        }
-        chunks.push(chunk);
-        remaining = remaining.slice(chunk.length);
-      }
-      var results = new Array(chunks.length);
-      var source = node.nodeType === 3 ? node.nodeValue : value;
-      function commitChunks() {
-        if (results.filter(function (value) { return value !== undefined; }).length === chunks.length) {
-          applyAuto({node:node, source:source, setter:setter}, results.join(" "));
-        }
-      }
-      chunks.forEach(function (chunk, index) {
-        if (!cjkCount(chunk)) { results[index] = chunk; return; }
-        autoTranslate(node, chunk, function (translated) {
-          results[index] = translated;
-          commitChunks();
-        }, (field || "text") + ":chunk:" + index);
-      });
-      commitChunks();
-      return;
-    }
-    var prepared = tr(text);
-    var item = { node: node, source: node.nodeType === 3 ? node.nodeValue : value, setter: setter, field: field || "text" };
-    if (!cjkCount(prepared)) { applyAuto(item, prepared); return; }
-    if (AUTO_CACHE.has(text)) { applyAuto(item, AUTO_CACHE.get(text)); return; }
-    if ((AUTO_FAILURES.get(text) || 0) > Date.now()) return;
-    var waiting = AUTO_PENDING.get(text);
-    if (waiting) {
-      if (!waiting.some(function (entry) { return entry.node === node && entry.field === item.field; })) waiting.push(item);
-      return;
-    }
-    if (AUTO_PENDING.size >= 300) return;
-    AUTO_PENDING.set(text, [item]);
-    AUTO_QUEUE.push(text);
-    if (!AUTO_ACTIVE && !AUTO_TIMER) AUTO_TIMER = setTimeout(pumpAuto, 50);
-  }
-
-  window.__iqiyiViAutoStatus = function () {
-    return { active: AUTO_ACTIVE, queued: AUTO_QUEUE.length, pending: AUTO_PENDING.size,
-      cached: AUTO_CACHE.size, failed: AUTO_FAILURES.size, lastError: AUTO_LAST_ERROR, enabled: true };
-  };
 
   function trPatterns(s) {
     var count = "([0-9]+(?:\\.[0-9]+)?[wW万]?)";
@@ -1825,13 +1923,24 @@
       [/^(\d+)积分\/年$/, "$1 điểm/năm"],
       [/^(\d+)积分换$/, "Đổi bằng $1 điểm"],
       [new RegExp("^已兑换" + count + "件$"), "Đã đổi $1 lượt"],
+      [/^用户(?=[@：:\s])(.*)$/, "Người dùng$1"],
       [/^年卡立省(\d+(?:\.\d+)?)元$/, "Gói năm tiết kiệm ngay $1 tệ"],
+      [/^首月(\d+(?:\.\d+)?)元起$/, "Tháng đầu từ ¥$1"],
       [/^最低(\d+(?:\.\d+)?)折起$/, "Giá từ $1/10 giá gốc"],
       [/^超值价(\d+(?:\.\d+)?)元\/天起$/, "Chỉ từ $1 tệ/ngày"],
       [/^每月低至(\d+(?:\.\d+)?)元$/, "Chỉ từ $1 tệ/tháng"],
+      [/^已优惠[¥￥](\d+(?:\.\d+)?)$/, "Đã tiết kiệm ¥$1"],
+      [/^限时加赠(\d+)天$/, "Tặng thêm $1 ngày trong thời gian có hạn"],
+      [/^次月续费(\d+(?:\.\d+)?)元$/, "Từ tháng sau gia hạn ¥$1"],
+      [/^次季续费(\d+(?:\.\d+)?)元$/, "Từ quý sau gia hạn ¥$1"],
+      [/^黄金会员首月低至(\d+(?:\.\d+)?)元$/, "VIP Vàng tháng đầu chỉ từ ¥$1"],
+      [/^共(\d+)项$/, "Tổng cộng $1 quyền lợi"],
       [/^最高可得(\d+)天$/, "Nhận tối đa $1 ngày"],
+      [/^花絮(\d+)$/, "Hậu trường $1"],
       [/^已失去(\d+)项特权$/, "Bạn đang bỏ lỡ $1 quyền lợi"],
       [/^开通会员享V(\d+)特权$/, "Đăng ký VIP để nhận quyền lợi V$1"],
+      [/^会员更新至(\d+)集$/, "VIP đã cập nhật tới tập $1"],
+      [/^查看全部[（(](\d+)[）)]$/, "Xem tất cả ($1)"],
       [/^(\d+)\s*部新片即将上映$/, "$1 phim mới sắp ra mắt"],
       [new RegExp("^" + count + "人已预约$"), "$1 người đã đặt nhắc"],
       [/^更新至(\d{2}-\d{2})期$/, "Cập nhật tới kỳ $1"],
@@ -1853,6 +1962,9 @@
       .replace(/展开\s*(\d+)\s*条/g, "$1")
       .replace(/(\d+)\s*条回复/g, "$1 trả lời")
       .replace(/更新至第(\d+)集/g, "Cập nhật tới tập $1")
+      .replace(/彩蛋(\d+)/g, "Cảnh đặc biệt $1")
+      .replace(/专访(\d+)/g, "Phỏng vấn $1")
+      .replace(/共(\d+)部/g, "Tổng cộng $1 phim")
       .replace(/更新至(\d+)集/g, "Cập nhật tới tập $1")
       .replace(/更新至第(\d+)/g, "Cập nhật tới tập $1")
       .replace(/全(\d+)集/g, "$1 tập")
@@ -1868,6 +1980,7 @@
       .replace(/明日(\d{1,2}:\d{2})上线/g, "Phát hành ngày mai lúc $1")
       .replace(/近(\d+)月上新/g, "Mới trong $1 tháng qua")
       .replace(/近(\d+)月转免/g, "Miễn phí trong $1 tháng qua")
+      .replace(/近(\d+)周转免/g, "Miễn phí trong $1 tuần qua")
       .replace(/近(\d+)周上新/g, "Mới trong $1 tuần qua")
       .replace(/弹幕破(\d+(?:\.\d+)?)万/g, function (_, n) {
         var total = Number(n) * 10000;
@@ -1927,12 +2040,23 @@
     var t = orig.slice(lead.length, orig.length - tail.length);
     if (!t) return orig;
     if (FIXED_COPY[t]) return lead + FIXED_COPY[t] + tail;
+    if (VERIFIED_TITLE_COPY[t]) return lead + VERIFIED_TITLE_COPY[t] + tail;
     var wrapped = t.match(/^（(.+)）$/);
     if (wrapped && FIXED_COPY[wrapped[1]]) return lead + "(" + FIXED_COPY[wrapped[1]] + ")" + tail;
     var excluded = t.match(/^(?:不看[：:]|Không xem:)\s*(.+)$/);
     if (excluded && FIXED_COPY[excluded[1]]) return lead + "Không xem: " + FIXED_COPY[excluded[1]] + tail;
     var ranking = t.match(/^(.+?)(?:总榜|剧榜|榜)No\.(\d+)$/);
     if (ranking && FIXED_COPY[ranking[1]]) return lead + FIXED_COPY[ranking[1]] + " · BXH số " + ranking[2] + tail;
+    var adSkipCountdown = t.match(/^(\d+)\s*秒后可跳过广告$/);
+    if (adSkipCountdown) return lead + "Có thể bỏ qua quảng cáo sau " + adSkipCountdown[1] + " giây" + tail;
+    var adCountdown = t.match(/^(\d+)\s*(?:s|秒)后可继续看正片$/i);
+    if (adCountdown) return lead + "Sau " + adCountdown[1] + " giây có thể xem tiếp phim" + tail;
+    var subtitleSwitch = t.match(/^已切换主字幕为\s*(.+)$/);
+    if (subtitleSwitch) return lead + "Đã chuyển phụ đề chính sang " + subtitleSwitch[1] + tail;
+    var adPrefix = t.match(/^广告\s+(.+)$/);
+    if (adPrefix) return lead + "Quảng cáo " + adPrefix[1] + tail;
+    // Most page text is already Vietnamese or English. Skip the dynamic Chinese templates for it.
+    if (!/[\u3400-\u9fff]/.test(t)) return orig;
 
     var p = trPatterns(t);
     if (p !== t && !/[\u4e00-\u9fff]/.test(p)) return lead + p + tail;
@@ -1989,13 +2113,6 @@
     (document.head || document.documentElement).appendChild(s);
   }
 
-  function setDirectText(el, next) {
-    // React owns the DOM structure; replacing text nodes breaks its next commit.
-    if (el.childNodes.length === 1 && el.firstChild.nodeType === 3) {
-      el.firstChild.nodeValue = next;
-    }
-  }
-
   function setUiAttribute(el, name, value) {
     if (el.getAttribute(name) !== value) el.setAttribute(name, value);
   }
@@ -2005,8 +2122,22 @@
     return !!(el && el.closest && el.closest("[data-iqiyi-vi-fixed]"));
   }
 
-  function replaceFixedLabel(selector, label) {
-    document.querySelectorAll(selector).forEach(function (el) {
+  function queryFixed(scope, selector) {
+    scope = scope || document;
+    var elements = [];
+    if (scope.nodeType === 1 && scope.matches && scope.matches(selector)) elements.push(scope);
+    if (scope.querySelectorAll) Array.prototype.push.apply(elements, scope.querySelectorAll(selector));
+    return elements;
+  }
+
+  function hasFixedUI(scope) {
+    if (!scope || !scope.querySelector) return false;
+    if (scope.nodeType === 1 && scope.matches && scope.matches(FIXED_UI_TARGETS)) return true;
+    return !!scope.querySelector(FIXED_UI_TARGETS);
+  }
+
+  function replaceFixedLabel(selector, label, scope) {
+    queryFixed(scope, selector).forEach(function (el) {
       // Keep React's text node and all event handlers in place.
       if (el.childNodes.length !== 1 || el.firstChild.nodeType !== 3) return;
       if (el.firstChild.nodeValue !== label) el.firstChild.nodeValue = label;
@@ -2016,9 +2147,9 @@
     });
   }
 
-  function replaceFixedBadge(imageId, label, width, background, color, height) {
+  function replaceFixedBadge(imageId, label, width, background, color, height, scope) {
     height = height || 22;
-    document.querySelectorAll('img[src*="' + imageId + '"]').forEach(function (img) {
+    queryFixed(scope, 'img[src*="' + imageId + '"]').forEach(function (img) {
       var bounds = img.getBoundingClientRect ? img.getBoundingClientRect() : null;
       var badgeWidth = bounds && bounds.width > 0 ? bounds.width : width;
       var badgeHeight = bounds && bounds.height > 0 ? bounds.height : height;
@@ -2036,25 +2167,38 @@
     });
   }
 
-  function localizeFixedUI() {
+  function localizeFixedUI(scope) {
+    scope = scope || document;
     // Prewritten Vietnamese labels are assigned by UI identity, never by text/dictionary lookup.
-    replaceFixedLabel("#btn_gameBtn #text", "Game");
-    replaceFixedLabel("#clientBtn #text", "Ứng dụng");
-    replaceFixedLabel("#btn_msgBellBtn #text", "Tin nhắn");
-    replaceFixedLabel("#btn_historyBtn #text", "Lịch sử");
-    replaceFixedLabel("#btn_uploadBtn #text", "Tải lên");
-    replaceFixedLabel("#btn_vipBtnB #text", "Ưu đãi VIP");
-    replaceFixedLabel("#btn_vipBtnS #text", "VIP");
-    replaceFixedLabel("#pwaBtn .pwaguide-entry-box-text", "Truy cập nhanh");
-    replaceFixedLabel("#searchinput .search-button-filter-text", "Lọc");
-    replaceFixedLabel("#searchinput .search-button-text", "Tìm");
-    replaceFixedLabel("#userCenterSpan", "Trung tâm VIP");
-    document.querySelectorAll('#searchinput input[type="text"]').forEach(function (input) {
+    replaceFixedLabel("#btn_gameBtn #text", "Game", scope);
+    replaceFixedLabel("#clientBtn #text", "Ứng dụng", scope);
+    replaceFixedLabel("#btn_msgBellBtn #text", "Tin nhắn", scope);
+    replaceFixedLabel("#btn_historyBtn #text", "Lịch sử", scope);
+    replaceFixedLabel("#btn_uploadBtn #text", "Tải lên", scope);
+    replaceFixedLabel("#btn_vipBtnB #text", "Ưu đãi VIP", scope);
+    replaceFixedLabel("#btn_vipBtnS #text", "VIP", scope);
+    replaceFixedLabel("#pwaBtn .pwaguide-entry-box-text", "Truy cập nhanh", scope);
+    replaceFixedLabel("#searchinput .search-button-filter-text", "Lọc", scope);
+    replaceFixedLabel("#searchinput .search-button-text", "Tìm", scope);
+    replaceFixedLabel("#userCenterSpan", "Trung tâm VIP", scope);
+    queryFixed(scope, '#searchinput input[type="text"]').forEach(function (input) {
       setUiAttribute(input, "placeholder", "Tìm phim, diễn viên…");
       setUiAttribute(input, "aria-label", "Tìm phim, diễn viên");
     });
+    queryFixed(scope, '[data-ai-entity="弹幕切换按钮,弹幕开关"]').forEach(function (button) {
+      setUiAttribute(button, "aria-label", "Bật/tắt bình luận chạy");
+      setUiAttribute(button, "title", "Bật/tắt bình luận chạy");
+    });
+    queryFixed(scope, '[data-ai-entity="弹幕设置按钮"]').forEach(function (button) {
+      setUiAttribute(button, "aria-label", "Cài đặt bình luận chạy");
+      setUiAttribute(button, "title", "Cài đặt bình luận chạy");
+    });
+    queryFixed(scope, '[data-ai-entity="弹幕输入框文本输入框"]').forEach(function (input) {
+      setUiAttribute(input, "placeholder", "Gửi bình luận chạy thôi…");
+      setUiAttribute(input, "aria-label", "Nội dung bình luận chạy");
+    });
     function side(icon, label) {
-      replaceFixedLabel('[class*="side_item"]:has(i[style*="' + icon + '"]) [class*="side_sideText"]', label);
+      replaceFixedLabel('[class*="side_item"]:has(i[style*="' + icon + '"]) [class*="side_sideText"]', label, scope);
     }
     side("0fca556e9ff44373b9cc3def70478f7c", "Trang chủ");
     side("e97866bd36e543e3bbc879498c381492", "Theo dõi");
@@ -2078,19 +2222,19 @@
     side("6651083568b44fc2b5e6525a4974bad6", "Cộng đồng");
     side("5ef3c7a727d1429f97d48ac45a95dbae", "Tiểu thuyết");
     side("all_ch.svg", "Mọi kênh");
-    replaceFixedBadge("9013485acf0c4e07a2500429869d44f4", "Đang theo dõi", 82, "#b9ffe0", "#123d2c");
-    replaceFixedBadge("5a2c3f02c5b54771b1047a27cc1f0447", "Miễn phí có hạn", 104, "#44cf98", "#123d2c");
-    replaceFixedBadge("0b3bd1c78a4b4368b4e2da2fb206b5c8", "Miễn phí", 104, "#44cf98", "#123d2c");
-    replaceFixedBadge("ac0bbaca7ffb4528a3a210b4078afbdf", "Miễn phí", 104, "#44cf98", "#123d2c");
-    replaceFixedBadge("308107f863864cd8b364bc428f50f4ec", "VIP", 104, "#e5bd5f", "#453313");
-    replaceFixedBadge("c4de74820c254b39ae0d692eef59f3a8", "VIP", 104, "#e5bd5f", "#453313");
-    replaceFixedBadge("0db0e14b9886439098aa3cadf1b817ab", "Sắp chiếu", 104, "#4acbe7", "#123b4a");
-    replaceFixedBadge("5205828ffa8f4fe3aef4e7b2c005148a", "Quảng cáo", 70, "#333333", "#ffffff");
-    replaceFixedBadge("f660fb9c2f57476fbe234f397fd21e37", "Miễn phí", 48, "transparent", "#44cf98", 16);
+    replaceFixedBadge("9013485acf0c4e07a2500429869d44f4", "Đang theo dõi", 82, "#b9ffe0", "#123d2c", 22, scope);
+    replaceFixedBadge("5a2c3f02c5b54771b1047a27cc1f0447", "Miễn phí có hạn", 104, "#44cf98", "#123d2c", 22, scope);
+    replaceFixedBadge("0b3bd1c78a4b4368b4e2da2fb206b5c8", "Miễn phí", 104, "#44cf98", "#123d2c", 22, scope);
+    replaceFixedBadge("ac0bbaca7ffb4528a3a210b4078afbdf", "Miễn phí", 104, "#44cf98", "#123d2c", 22, scope);
+    replaceFixedBadge("308107f863864cd8b364bc428f50f4ec", "VIP", 104, "#e5bd5f", "#453313", 22, scope);
+    replaceFixedBadge("c4de74820c254b39ae0d692eef59f3a8", "VIP", 104, "#e5bd5f", "#453313", 22, scope);
+    replaceFixedBadge("0db0e14b9886439098aa3cadf1b817ab", "Sắp chiếu", 104, "#4acbe7", "#123b4a", 22, scope);
+    replaceFixedBadge("5205828ffa8f4fe3aef4e7b2c005148a", "Quảng cáo", 70, "#333333", "#ffffff", 22, scope);
+    replaceFixedBadge("f660fb9c2f57476fbe234f397fd21e37", "Miễn phí", 48, "transparent", "#44cf98", 16, scope);
     // Channel IDs are part of the component class, not the film's title or synopsis.
     function channel(id, label) {
       var selector = '[class*="cardMemos_channelmark' + id + '__"]';
-      document.querySelectorAll(selector).forEach(function (el) {
+      queryFixed(scope, selector).forEach(function (el) {
         el.style.backgroundImage = "none";
         el.style.width = "auto";
         el.style.padding = "0 5px";
@@ -2099,42 +2243,13 @@
         el.style.font = "11px/22px Arial,Helvetica,sans-serif";
         if (!el.firstChild) el.appendChild(document.createTextNode(label));
       });
-      replaceFixedLabel(selector, label);
+      replaceFixedLabel(selector, label, scope);
     }
     channel(1, "Phim điện ảnh");
     channel(2, "Phim bộ");
     channel(3, "Giải trí");
     channel(4, "Anime");
   }
-
-  function compactTranslate(el) {
-    if (!el || el.nodeType !== 1 || el.id === "pcaSubtitleContainer") return false;
-    if (isMovieTitleNode(el) || isActorNameNode(el)) return false;
-    if (el.childNodes.length !== 1 || el.firstChild.nodeType !== 3) return false;
-    var all = (el.textContent || "").replace(/\s+/g, " ").trim();
-    if (!all || all.length > 36) return false;
-    if (!/[\u3400-\u9fff]/.test(all)) return false;
-    var next = tr(all);
-    if (next === all) return false;
-    // Ghép từng từ chỉ để lại chuỗi lai ("Cổ ngẫu BXH số 2"): để engine dịch cả cụm.
-    if (gibberish(next)) {
-      autoTranslate(el.firstChild, all);
-      return false;
-    }
-    setDirectText(el, next);
-    fitCompact(el);
-    return true;
-  }
-
-  // Sau khi từ điển để lại chữ Hán trong một chuỗi ngắn, giao lại cho engine dịch cả chuỗi
-  // thay vì để giao diện hiện câu nửa Việt nửa Trung.
-  function rescueMixed(node, source) {
-    if (!node || node.nodeType !== 3) return;
-    var text = String(source || node.nodeValue || "").trim();
-    if (!text || text.length > 180 || !cjkCount(text)) return;
-    autoTranslate(node, text);
-  }
-
 
   function translateDocumentTitle() {
     var title = document.querySelector("title");
@@ -2145,11 +2260,6 @@
     })) return;
     var next = tr(raw);
     if (next !== raw && title.firstChild && title.firstChild.nodeType === 3) title.firstChild.nodeValue = next;
-    if (cjkCount(next) && title.firstChild) {
-      autoTranslateMixed(title.firstChild, next, function (translated) {
-        if ((title.textContent || "") === next && title.firstChild && title.firstChild.nodeType === 3) title.firstChild.nodeValue = translated;
-      });
-    }
   }
 
   function fitCompact(node) {
@@ -2196,12 +2306,14 @@
         if (node.isConnected && node.nodeValue === raw) node.nodeValue = translated;
       })) return;
       var next = tr(raw);
-      if (next !== raw) node.nodeValue = next;
-      if (cjkCount(next)) autoTranslateMixed(node, canTranslateWhole(raw) ? raw : next);
-      else fitCompact(node);
+      if (next !== raw) {
+        node.nodeValue = next;
+        if (!cjkCount(next)) fitCompact(node);
+      }
       return;
-    }    if (node.nodeType !== 1 || SKIP[node.tagName] || node.id === "pcaSubtitleContainer" || /subtitleContainer|caption-main|caption-sub/i.test(String(node.className || "") + " " + node.id)) return;
-    if (node.isContentEditable || (node.closest && node.closest('[contenteditable="true"]'))) return;
+    }
+    if (node.nodeType !== 1 || SKIP[node.tagName] || node.id === "pcaSubtitleContainer" || /subtitleContainer|caption-main|caption-sub/i.test(String(node.className || "") + " " + node.id)) return;
+    if (node.isContentEditable) return;
     if (node.shadowRoot) walk(node.shadowRoot);
     if (node.tagName === "IFRAME") {
       try {
@@ -2210,13 +2322,6 @@
       } catch (e) {} // Cross-origin frames run their own extension content script.
     }
     if (node.tagName === "HTML" && /^zh(?:[-_]|$)/i.test(node.getAttribute("lang") || "")) setUiAttribute(node, "lang", "vi");
-    var cls = String(node.className || "");
-    var joined = (node.textContent || "").replace(/\s+/g, "");
-    var chipLike = node.childElementCount > 0 && node.childElementCount <= 6 &&
-      ((node.clientHeight > 0 && node.clientHeight <= 48) ||
-        /tabName|tagName|tagHeader|chip|sort|filter|reply|hot/i.test(cls) ||
-        /展开\d+条|条回复|最热|最新|明星在追|二次创作/.test(joined));
-    if (chipLike && compactTranslate(node)) return;
     ["title", "placeholder", "aria-label", "alt", "value"].forEach(function (a) {
       if (a === "value" && node.tagName !== "BUTTON" &&
           !(node.tagName === "INPUT" && /^(button|submit|reset)$/i.test(node.type || ""))) return;
@@ -2233,13 +2338,6 @@
       if (n !== v) {
         if (a === "value" && "value" in node) node.value = n;
         else setUiAttribute(node, a, n);
-      } else if (cjkCount(v)) {
-        autoTranslateMixed(node, v, function (translated) {
-          if (node.getAttribute(a) === v) {
-            if (a === "value" && "value" in node) node.value = translated;
-            else setUiAttribute(node, a, translated);
-          }
-        }, a);
       }
     });
     if (node.tagName === "META" && /^(description|keywords)$/i.test(node.getAttribute("name") || "")) {
@@ -2263,13 +2361,9 @@
         }
       })) return;
       var t = tr(all);
-      if (t !== all) kids[0].nodeValue = t;
-      if (cjkCount(t) && node.firstChild && node.firstChild.nodeType === 3) {
-        // Ghép từng từ không ra cụm đọc được thì dịch trọn chuỗi.
-        if (gibberish(t)) rescueMixed(node.firstChild, all);
-        else autoTranslateMixed(node.firstChild, canTranslateWhole(all) ? all : t);
-      } else {
-        fitCompact(node);
+      if (t !== all) {
+        kids[0].nodeValue = t;
+        if (!cjkCount(t)) fitCompact(node);
       }
       return;
     }
@@ -2278,19 +2372,57 @@
 
   var OBSERVED_ROOTS = new WeakSet();
   var ROOT_OBSERVERS = [];
-  function scheduleRun() {
-    if (!IQCOM_METADATA_STOPPED && !run._t) run._t = requestAnimationFrame(function () {
-      run._t = null;
-      run();
+  var FIXED_UI_FRAME = 0;
+  var FIXED_UI_SCOPES = new Set();
+  function scheduleFixedUI(scope) {
+    if (IQCOM_METADATA_STOPPED) return;
+    if (scope) FIXED_UI_SCOPES.add(scope);
+    if (FIXED_UI_FRAME) return;
+    FIXED_UI_FRAME = requestAnimationFrame(function () {
+      FIXED_UI_FRAME = 0;
+      var scopes = Array.from(FIXED_UI_SCOPES);
+      FIXED_UI_SCOPES.clear();
+      scopes.forEach(localizeFixedUI);
     });
   }
   function observeRoot(root) {
     if (!root || OBSERVED_ROOTS.has(root) || typeof MutationObserver === "undefined") return;
     OBSERVED_ROOTS.add(root);
-    var observer = new MutationObserver(scheduleRun);
+    var observer = new MutationObserver(handleMutations);
     observer.observe(root, { childList:true, subtree:true, characterData:true, attributes:true,
       attributeFilter:["title","placeholder","aria-label","alt","value","src"] });
     ROOT_OBSERVERS.push(observer);
+  }
+
+  function handleMutations(records) {
+    if (IQCOM_METADATA_STOPPED) return;
+    var changedNodes = new Set();
+    var fixedScopes = new Set();
+    (records || []).forEach(function (record) {
+      if (record.type === "characterData") changedNodes.add(record.target);
+      else if (record.type === "childList") {
+        Array.prototype.forEach.call(record.addedNodes || [], function (node) {
+          changedNodes.add(node);
+          if (node.nodeType === 1 && hasFixedUI(node)) fixedScopes.add(node);
+        });
+      } else if (record.type === "attributes") {
+        changedNodes.add(record.target);
+        if (record.attributeName === "src" && hasFixedUI(record.target)) fixedScopes.add(record.target);
+      }
+    });
+    // MutationObserver runs before paint, so changed labels can be localized in place.
+    changedNodes.forEach(walk);
+    fixedScopes.forEach(scheduleFixedUI);
+  }
+
+  function scanLateShadowRoots() {
+    var hosts = document.querySelectorAll("*");
+    for (var i = 0; i < hosts.length; i++) {
+      var root = hosts[i].shadowRoot;
+      if (!root || OBSERVED_ROOTS.has(root)) continue;
+      localizeFixedUI(root);
+      walk(root);
+    }
   }
 
   function run() {
@@ -2319,18 +2451,18 @@
 
   if (document.body) run();
   else document.addEventListener("DOMContentLoaded", run);
-  var runTimer = setInterval(run, 1500);
+  // Mutations cover normal UI changes. Check for late attached shadow roots only once a
+  // minute instead of rescanning and retranslating the full page every few seconds.
+  var runTimer = setInterval(function () {
+    if (!document.hidden) scanLateShadowRoots();
+  }, 60000);
   observeRoot(document.documentElement);
   window.__iqiyiViStop = function () {
     IQCOM_METADATA_STOPPED = true;
-    clearTimeout(AUTO_TIMER);
-    if (AUTO_CONTROLLER) AUTO_CONTROLLER.abort();
-    AUTO_QUEUE.length = 0;
-    AUTO_PENDING.clear();
     IQCOM_METADATA_CONTROLLERS.forEach(function (controller) { controller.abort(); });
     while (IQCOM_METADATA_QUEUE.length) IQCOM_METADATA_QUEUE.shift().resolve({});
     clearInterval(runTimer);
     ROOT_OBSERVERS.forEach(function (observer) { observer.disconnect(); });
-    if (run._t) cancelAnimationFrame(run._t);
+    if (FIXED_UI_FRAME) cancelAnimationFrame(FIXED_UI_FRAME);
   };
 })();

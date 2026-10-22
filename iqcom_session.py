@@ -265,9 +265,6 @@ class IqcomSession:
                 self.last_poll = time.monotonic()
                 self.poll_pending = False
 
-    def _login(self):
-        return self.status()
-
     def _dash(self, url: str, tvid: str) -> dict:
         page = None
         try:

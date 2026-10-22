@@ -381,13 +381,6 @@
         scheduleSubtitleMenuScan();
       });
     }
-    function clearActiveViTrack(tvid) {
-      if (activeViTvid !== String(tvid)) return;
-      activeViTvid = "";
-      activeViDisabled = false;
-      activeOfficialAvailable = false;
-      scheduleSubtitleMenuScan();
-    }
     function installSubtitleMenuGuard() {
       var doc = root && root.document;
       if (!doc || !doc.addEventListener || doc.__iqiyiViMenuGuard) return;

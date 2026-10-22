@@ -29,7 +29,8 @@ if hasattr(sys.stdout, "reconfigure"):
 ROOT = Path(__file__).resolve().parent
 BACKUP = ROOT / "backup-skin"
 BACKUP_LWA = ROOT / "backup-lwa"
-ATTRS = ("text", "tooltip", "hint", "placeholder", "disabledtext", "title", "aria-label", "alt")
+# Some native QyClient resources misspell `tooltip` as `tooptip`.
+ATTRS = ("text", "tooltip", "tooptip", "tip", "hint", "placeholder", "disabledtext", "title", "aria-label", "alt")
 ATTR_RE = re.compile(
     r'(?<![\w:-])(?P<attr>' + "|".join(ATTRS) + r')\s*=\s*(?P<q>["\'])(?P<val>.*?)(?P=q)',
     re.DOTALL,

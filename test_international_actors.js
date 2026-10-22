@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 let calls = [];
-let replies = {"许凯":"Hứa Khải", "白鹿":"Bạch Lộc"};
+let replies = {"许凯":"Hứa Khải", "白鹿":"Bạch Lộc", "罗云熙":"La Vân Hi"};
 const context = {
   window: {__iqiyiViToken:"test-token", fetch:true, __iqiyiViDict:{"许凯":"Wrong", "演员":"Diễn viên "}},
   location: {pathname:"/index.html", href:"https://localwebapp.iqiyi.com/index.html"},
@@ -34,6 +34,12 @@ function actor(text, className = "metaAlbumSideLayer_actorNameText__0Wp6w") {
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
 (async () => {
+  const verifiedCast = actor("曾舜晞 / 田曦薇");
+  context.walk(verifiedCast.el);
+  await settle();
+  assert.equal(verifiedCast.node.nodeValue, "Tăng Thuấn Hy / Điền Hi Vi");
+  assert.deepEqual(calls, [], "Use verified Vietnamese cast names without metadata requests");
+
   const first = actor("许凯"), duplicate = actor("许凯");
   context.walk(first.el);
   context.walk(duplicate.el);
@@ -89,6 +95,12 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
   recycled.el.__reactFiber$test.memoizedProps.children = "白鹿";
   await settle();
   assert.equal(recycled.node.nodeValue, "Old machine name");
+  const nativePlayerActor = actor("罗云熙", "meta_tag__XjB9X meta_tagBtn__ImyT4");
+  nativePlayerActor.el.getAttribute = name => name === "data-ai-entity" ? "TVG演员筛选标签,TVG主演标签二级页入口" : null;
+  context.walk(nativePlayerActor.el);
+  await settle();
+  assert.equal(nativePlayerActor.node.nodeValue, "La Vân Hi");
+  assert.deepEqual(calls.slice(-1), ["罗云熙"]);
   const noToken = actor("白鹿");
   context.window.__iqiyiViToken = "";
   context.walk(noToken.el);

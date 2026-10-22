@@ -190,7 +190,7 @@ def launch_iqiyi() -> int:
 
 
 def apply_running_iqiyi_proxy(proxy: str) -> dict:
-    """Reconnect only the running player; keep the manager and translation workers alive."""
+    """Reconnect only the running player; keep the manager and subtitle workers alive."""
     processes = list_processes()
     client = next((Path(process.path) for process in processes
                    if process.name.lower() == "qyclient.exe" and process.path), None)

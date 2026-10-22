@@ -51,23 +51,23 @@ tra phiên web, bật tiện ích `ext/` rồi mở trang iQIYI; không cần ph
 Khi cập nhật tiện ích, tải lại tiện ích và trang iQIYI để nạp hook mới.
 
 Nhãn điều hướng, nút chính, ô tìm kiếm và nhãn trạng thái/loại phim dùng sẵn
-bản Việt theo đúng thành phần giao diện, không tra từ điển hay dịch máy.
+bản dịch thủ công theo đúng thành phần giao diện, không gọi dịch máy.
 Nhãn nằm trong ảnh được thay trực tiếp bằng SVG tiếng Việt, giữ kích thước của thành phần gốc (kể cả ô tập nhỏ).
 Giao diện ưu tiên bản Việt nguyên câu và mẫu soạn sẵn, không ghép nghĩa từng từ.
-Từ bản 1.2.26, nội dung còn thiếu được dịch máy sang tiếng Việt qua Google Translate,
-gộp tối đa 8 chuỗi mỗi yêu cầu và dùng cache trong RAM. Cache dịch máy cũ được xóa.
-Tên phim và diễn viên vẫn đi qua iq.com. Không gửi nội dung ô nhập liệu để dịch.
+Từ bản 1.2.33, giao diện không tự dịch nội dung còn thiếu. Nhãn đã có bản Việt
+soạn sẵn được áp dụng; chuỗi UI chưa có bản dịch giữ nguyên nguồn và không gọi
+Google Translate. Dịch phụ đề là luồng riêng, vẫn dùng provider/model đã cấu hình
+và chỉ chạy khi người dùng chọn dịch tập hoặc phim.
 Bản 1.2.25 bổ sung nhãn VIP, đổi điểm, ưu đãi, menu tài khoản, thể loại,
 bộ lọc và cài đặt phát; các mẫu số điểm, giá, lịch phát và bảng xếp hạng
 chỉ thay khi khớp cả câu, tránh tạo chuỗi nửa Trung nửa Việt.
 
 Bản 1.2.28 mở rộng quét sang shadow DOM, iframe cùng miền và thuộc tính của popup
-khi chúng thay đổi; nội dung nhập và phụ đề không đi qua bộ dịch giao diện.
-Web gọi dịch qua service worker của extension; app có thêm `/api/ui-translate`
-được bảo vệ bằng token của trình phát, và có thể dùng đường trực tiếp khi dịch vụ cũ
-chưa có endpoint. Mô tả dài được chia nhỏ rồi thay cả đoạn khi dịch xong.
-Sau khi cập nhật code, tải lại extension/trang và khởi động lại app quản lý/watcher
-để nạp phần backend mới; không khởi động lại giữa lúc đang dịch phụ đề.
+khi chúng thay đổi. Phụ đề và nội dung nhập không được đưa vào bộ dịch giao diện.
+Fallback Google Translate, worker dịch giao diện và endpoint `/api/ui-translate`
+đã bị gỡ hoàn toàn. Các API `/api/translate` và `/api/translate-all`
+cho dịch phụ đề theo yêu cầu vẫn hoạt động. Sau khi cập nhật, tải lại extension/trang
+và khởi động lại app quản lý để nạp mã mới; không khởi động lại giữa lúc đang dịch.
 
 Các ô tên diễn viên lấy tên bản địa hóa từ API iq.com (`vi_vn`), đối chiếu tên
 gốc và mã người trước khi thay. Nếu iq.com chưa có tên phù hợp, giữ tên gốc;
@@ -158,10 +158,10 @@ Những đường dẫn sau **không** được commit:
 `backup-skin/` và `backup-lwa/` là thứ `launcher.py restore` dựa vào — đừng xoá nếu
 còn muốn khôi phục giao diện gốc.
 
-Từ bản 1.2.27, các từ điển cũ và bảng tên phim tĩnh đã được gỡ khỏi bộ cài,
-bundle và watcher. iQIYI và Youku dùng nhãn Việt soạn sẵn trong engine;
-phần còn thiếu đi qua dịch máy. Tên phim/diễn viên iQIYI lấy từ API iq.com.
-Bộ cài chỉ dùng nhãn soạn sẵn để thay nội dung tài nguyên native.
+Từ bản 1.2.27, các từ điển legacy và bảng tên phim tĩnh đã được gỡ khỏi bộ cài,
+bundle và watcher. iQIYI và Youku dùng nhãn Việt soạn sẵn trong engine; UI còn
+thiếu bản dịch giữ nguyên nguồn. Tên phim/diễn viên iQIYI lấy từ API iq.com.
+Dịch phụ đề tiếp tục chạy riêng khi người dùng chủ động yêu cầu.
 
 ## Prompt và hồ sơ phim
 

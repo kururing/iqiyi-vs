@@ -5,7 +5,6 @@ an explicit decision procedure, concrete examples and a literal output example. 
 must satisfy the profile contract; legacy storage may omit fields, but Vietnamese content is
 never repaired by deleting source characters.
 """
-import csv
 import hashlib
 import json
 import re
@@ -141,39 +140,6 @@ Chữ Hán CHỈ được phép xuất hiện trong characters.name và glossary
 VÍ DỤ CẤU TRÚC (chỉ minh họa định dạng, nội dung không phải dữ liệu thật)
 {"memory":{"setting":"historical","summary":"Phim cổ trang cung đình; cảnh nghị sự trang trọng xen với cảnh riêng.","characters":[{"name":"蔓儿","translation":"Mạn Nhi","role":"chưa rõ quan hệ thân tộc với Thanh Lan","address":"Mạn Nhi → Thanh Lan: gọi là tỷ, tự xưng muội; Thanh Lan → Mạn Nhi: chưa rõ","evidence":"tập 1, #12: Mạn Nhi gọi Thanh Lan là tỷ; #15: Mạn Nhi tự xưng muội"}],"glossary":[{"source":"夏侯","translation":"Hạ Hầu"}],"uncertainties":[]},"episode_context":{"summary":"Mạn Nhi gặp Thanh Lan sau buổi nghị sự; hai người bàn về chuyến đi.","characters":[],"glossary":[],"uncertainties":[]}}
 """ + ADDRESS_RULES + CHARACTER_NAME_RULES + WORK_NAME_RULES + PROFILE_NAME_RULES
-
-
-
-def international_reference(item, source, ids=None):
-    """Retrieve a verified track for offline comparison; never pass it to generation prompts."""
-    if item.get('provider', 'iqiyi') != 'iqiyi':
-        return {}
-    root = Path(__file__).resolve().parent / 'subtitles' / 'international'
-    try:
-        entry = json.loads((root / 'manifest.json').read_text(encoding='utf-8')).get(str(item.get('tvid', '')))
-        if not entry or str(item.get('albumId', '')) != entry['album_id']:
-            return {}
-        path = (root / entry['comparison']).resolve()
-        if not path.is_relative_to(root.resolve()):
-            return {}
-        with path.open(encoding='utf-8-sig', newline='') as handle:
-            rows = list(csv.DictReader(handle))
-        paired = {int(r['app_cue_id']): r for r in rows if r['app_cue_id']}
-        if len(paired) != sum(bool(r['app_cue_id']) for r in rows) or set(paired) != set(range(1, len(source) + 1)) or any(
-                paired[i]['source_zh'] != cue[2] or int(paired[i]['app_start_ms']) != cue[0]
-                for i, cue in enumerate(source, 1)):
-            return {}
-        selected = set(ids if ids is not None else paired)
-        cues = [{'id': i, 'international_id': 'IQ:' + r['international_cue_id'] if r['international_cue_id'] else '',
-                 'start_offset_ms': r['start_offset_ms'], 'translation': r['international_vi'],
-                 'source_group_ids': json.loads(r.get('source_group_ids') or f'[{i}]'),
-                 'group_translation': r.get('reference_group_vi', '')}
-                for i, r in paired.items() if i in selected]
-        return {'page_url': entry['page_url'], 'language': 'vi', 'lid': 23,
-                'policy': 'Bản Vietsub quốc tế là tham chiếu cách diễn đạt sau khi ghép đúng câu; không dùng đại từ của nó làm bằng chứng duy nhất về giới tính, quan hệ, chức vế hoặc danh tính người nói/nghe. Chỉ áp dụng đại từ cụ thể khi tiếng Trung và ngữ cảnh cũng hỗ trợ; nếu không đủ căn cứ thì để chưa phân xử. Cặp ID chỉ ghép theo thời gian; đọc các cue kề bên khi khác ranh giới câu. Source Trung quyết định nghĩa. Bỏ qua chú thích [...] không có nội dung tương ứng trong source; không tính đó là lời thoại thiếu và không tự thêm vào bản dịch.',
-                'cues': cues}
-    except (OSError, ValueError, KeyError, TypeError, AttributeError):
-        return {}
 
 # Re-analyze unchanged subtitles when the interpretation rules change.
 PROFILE_VERSION = hashlib.sha256((PROFILE_SYSTEM + "\ncontinuity-editor-v14-preserve-memory").encode()).hexdigest()

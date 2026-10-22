@@ -1,5 +1,8 @@
 # Rà chuỗi Trung tĩnh — 22/10/2026
 
+> Tài liệu snapshot/ứng viên cũ, được giữ làm phụ lục tra cứu. Báo cáo hiện hành
+> nằm tại [vietnamization-audit.md](../vietnamization-audit.md).
+
 Đã chạy `apply-vi.py --restore`: khôi phục 25 file, tạo cờ `watch-iqiyi-vi.disabled`. Chưa khởi động lại iQIYI; cửa sổ đang mở có thể còn giữ hook và tài nguyên cũ trong bộ nhớ.
 
 ## Đối chiếu ảnh
@@ -22,7 +25,7 @@
 - Bản 14.9.5.10287 còn 937 giá trị duy nhất chưa có trong FIXED_COPY. Đây là ứng viên từ tài nguyên bản cũ: có thể gồm nhãn cũ, chuỗi mẫu, tên nội dung hoặc chuỗi đã được dịch bằng cơ chế khác. Chưa khẳng định chúng đều xuất hiện trên bản hiện tại.
 - Đã tìm thấy 画面缩放 và 原始尺寸 trong player/menu/right_menu.xml bản cũ; 定时关机 trong ConfigRes/TimeSetDlg.xml. Chưa xác định nguồn đầy đủ của popup trong ảnh ở bản đang chạy.
 - Không chỉnh DLL hoặc bật lại Việt hóa trong đợt rà này. Chưa kiểm tra trực tiếp từng popup bằng thao tác UI.
-- Danh sách máy đọc được, kèm tất cả đường dẫn tương đối: STATIC-UI-CANDIDATES.json.
+- Tệp ứng viên máy `STATIC-UI-CANDIDATES.json` được nhắc trong ghi chú ban đầu hiện không có trong repository; bảng 14.9 bên dưới là phần chi tiết còn lưu.
 
 ## Nhóm nên ưu tiên
 
