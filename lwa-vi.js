@@ -1,6 +1,6 @@
 /* iqiyi-vi */
 (function () {
-  var ENGINE_VERSION = 162;
+  var ENGINE_VERSION = 163;
   if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
     if (window.__iqiyiViReload) window.__iqiyiViReload();
     return;
@@ -1612,7 +1612,7 @@
     if (episode) {
       var sourceTitle = episode[1].trim();
       var result = (VERIFIED_TITLE_COPY[sourceTitle] || sourceTitle) + " · Tập " + episode[2];
-      var subtitle = episode[3] && FIXED_COPY[episode[3]];
+      var subtitle = episode[3] && (FIXED_COPY[episode[3]] || episode[3]);
       return subtitle ? result + " · " + subtitle : result;
     }
     return FIXED_COPY[raw] || VERIFIED_TITLE_COPY[raw] || raw;
@@ -1910,7 +1910,8 @@
       else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
     }
     var prepared = localizeTitleValue(raw);
-    if (prepared !== raw && !cjkCount(prepared)) {
+    var episodeTitle = raw.match(/^(.*?)\s*第\d+集/);
+    if (prepared !== raw && (!cjkCount(prepared) || (episodeTitle && VERIFIED_TITLE_COPY[episodeTitle[1].trim()]))) {
       setTitle(prepared);
       return true;
     }
@@ -1943,6 +1944,13 @@
   }
 
   function trPatterns(s) {
+    // Match the complete count before generic unit replacements consume 万/亿.
+    s = s.replace(/(\d+(?:\.\d+)?)(万|亿)?(人正在看|次播放)/g, function (_, n, unit, kind) {
+      var total = Number(n) * ({万:10000, 亿:100000000}[unit] || 1);
+      var label = total >= 1000000 ? Number((total / 1000000).toFixed(2)) + " triệu" :
+        total >= 1000 ? Number((total / 1000).toFixed(2)) + " nghìn" : String(total);
+      return label + (kind === "人正在看" ? " người đang xem" : " lượt xem");
+    });
     var count = "([0-9]+(?:\\.[0-9]+)?[wW万]?)";
     var templates = [
       [/^同时播放(\d+)台$/, "Phát đồng thời trên $1 thiết bị"],
@@ -2036,9 +2044,6 @@
       .replace(/最高热度破万/g, "Độ hot cao nhất vượt 10 nghìn")
       .replace(/不看：/g, "Không xem: ")
       .replace(/(\d+)人正在看/g, "$1 người đang xem")
-      .replace(/(\d+\.?\d*)万人正在看/g, "$10k người đang xem")
-      .replace(/(\d+)万次播放/g, "$10k lượt xem")
-      .replace(/(\d+)亿次播放/g, "$100 triệu lượt xem")
       .replace(/(\d+)次播放/g, "$1 lượt xem")
       .replace(/(\d+)分钟前/g, "$1 phút trước")
       .replace(/(\d+)小时前/g, "$1 giờ trước")
@@ -2078,7 +2083,7 @@
     var adCountdown = t.match(/^(\d+)\s*(?:s|秒)后可继续看正片$/i);
     if (adCountdown) return lead + "Sau " + adCountdown[1] + " giây có thể xem tiếp phim" + tail;
     var subtitleSwitch = t.match(/^已切换主字幕为\s*(.+)$/);
-    if (subtitleSwitch) return lead + "Đã chuyển phụ đề chính sang " + subtitleSwitch[1] + tail;
+    if (subtitleSwitch) return lead + "Đã chuyển phụ đề chính sang " + tr(subtitleSwitch[1]) + tail;
     var adPrefix = t.match(/^广告\s+(.+)$/);
     if (adPrefix) return lead + "Quảng cáo " + adPrefix[1] + tail;
     // Most page text is already Vietnamese or English. Skip the dynamic Chinese templates for it.

@@ -901,7 +901,7 @@
       if (!style.isConnected) parent.appendChild(style);
     }
     installLayout();
-    var VERSION = 3;
+    var VERSION = 4;
     if (root.__youkuViSubtitleVersion === VERSION) {
       if (root.__youkuViSubtitleRefresh) root.__youkuViSubtitleRefresh();
       return;
@@ -997,23 +997,27 @@
     function flushCapture() {
       if (captureTimer) { clearTimeout(captureTimer); captureTimer = 0; }
       if (!captureBuffer.length || !captureContext) return;
-      var context = captureContext, batch = captureBuffer.splice(0, 200);
+      // Detach every batch before the player can replace the episode context.
+      var context = captureContext;
+      while (captureBuffer.length) enqueueCapture(context, captureBuffer.splice(0, 200));
+    }
+    function enqueueCapture(context, batch) {
       var payload = {tvid: context.tvid, format: "srt", raw: toSrt(batch), append: true};
-      captureUpload = captureUpload.then(function () { return ensureRegistered(context); }).then(function (ready) {
-        if (!ready) throw new Error("manager unavailable");
-        return managerPost("/api/capture", payload);
-      }).catch(function () {
-        if (captureContext && captureContext.tvid === context.tvid) {
-          batch.forEach(function (cue) { CAPTURED[cue.start + ":" + cue.end + ":" + cue.text] = false; });
-          captureBuffer = batch.concat(captureBuffer);
-          if (!captureTimer) captureTimer = setTimeout(function () { captureTimer = 0; flushCapture(); }, 5000);
-        }
-      });
-      if (captureBuffer.length && !captureTimer) captureTimer = setTimeout(function () { captureTimer = 0; flushCapture(); }, 250);
+      function send() {
+        return ensureRegistered(context).then(function (ready) {
+          if (!ready) throw new Error("manager unavailable");
+          return managerPost("/api/capture", payload);
+        }).catch(function () {
+          if (!stopped) return new Promise(function (resolve) { setTimeout(resolve, 5000); }).then(send);
+        });
+      }
+      captureUpload = captureUpload.then(send);
     }
     function queueCapture(context, cues) {
       if (!TOKEN || !context || !cues || !cues.length) return;
-      if (captureContext && captureContext.tvid !== context.tvid) flushCapture();
+      if (captureContext && captureContext.tvid !== context.tvid) {
+        flushCapture(); CAPTURED = {};
+      }
       captureContext = context;
       cues.slice(0, 20000).forEach(function (rawCue) {
         var cue = normalizeCue(rawCue);

@@ -1,8 +1,47 @@
 """Bounded public-metadata cache and in-flight request sharing; never persist credentials."""
+import atexit
 from concurrent.futures import Future
+from contextlib import contextmanager
 from functools import wraps
 import threading
 import time
+import urllib.error
+import urllib.request
+
+import urllib3
+
+
+# No cookie jar or system proxy: each request supplies only its own credentials.
+HTTP_POOL = urllib3.PoolManager(num_pools=8, maxsize=6, block=True)
+atexit.register(HTTP_POOL.clear)
+
+
+@contextmanager
+def pooled_open(request, timeout=15):
+    """Stream raw bytes over reusable connections, without redirects or retries."""
+    if isinstance(request, str):
+        request = urllib.request.Request(request)
+    response = None
+    try:
+        response = HTTP_POOL.request(
+            request.get_method(), request.full_url, body=request.data,
+            headers=dict(request.header_items()), preload_content=False,
+            decode_content=False, redirect=False, retries=False,
+            timeout=urllib3.Timeout(connect=timeout, read=timeout), pool_timeout=timeout)
+        if response.status in (301, 302, 303, 307, 308) and response.headers.get("Location"):
+            raise ValueError("Session metadata redirects are not allowed")
+        if not 200 <= response.status < 300:
+            raise urllib.error.HTTPError(request.full_url, response.status,
+                                         response.reason, response.headers, None)
+        yield response
+    except urllib3.exceptions.HTTPError as exc:
+        raise urllib.error.URLError(exc) from exc
+    finally:
+        if response is not None:
+            # A fully read response already returned its connection to the pool;
+            # an unread/oversized response must close before releasing the slot.
+            response.close()
+            response.release_conn()
 
 
 class RequestCache:

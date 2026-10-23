@@ -30,7 +30,7 @@ from windows_runtime import run_elevated
 from iqcom_session import IqcomSession, has_vietnamese_track
 from proxy_support import DesktopProxyRelay
 from launcher import apply_running_iqiyi_proxy
-from iqcom_requests import PUBLIC_METADATA, singleflight
+from iqcom_requests import PUBLIC_METADATA, pooled_open, singleflight
 import subtitle_agent as agent
 
 ROOT = Path(__file__).resolve().parent
@@ -381,13 +381,12 @@ def retry_translation_call(tvid: str, callback, *args, **kwargs):
             wait_for_translation_cancel(tvid, delay)
 def library_keys(item: dict) -> list[str]:
     provider = item.get("provider", "iqiyi")
-    keys = []
     if item.get("albumId") and str(item["albumId"]) != "0":
-        keys.append(f"{provider}:album:{item['albumId']}")
+        return [f"{provider}:album:{item['albumId']}"]
     title = episode_series_title(item).casefold().strip()
     if title:
-        keys.append(f"{provider}:title:{title}")
-    return keys or [f"{provider}:episode:{item.get('tvid', '')}"]
+        return [f"{provider}:title:{title}"]
+    return [f"{provider}:episode:{item.get('tvid', '')}"]
 
 
 def library_status(item: dict) -> str:
@@ -426,7 +425,7 @@ def pending_movies() -> list[dict]:
             continue
         provider = item.get("provider", "iqiyi")
         title = episode_series_title(item)
-        key = (provider, title.casefold() or str(item.get("albumId") or tvid))
+        key = tuple(library_keys(item))
         group = groups.setdefault(key, {"tvid": tvid, "provider": provider,
             "title": vietnamese_series_title(item) or title or tvid,
             "originalTitle": title, "episodes": 0, "discoveredAt": item.get("discoveredAt", 0)})
@@ -583,9 +582,13 @@ def migrate_ai_settings(saved: dict) -> dict:
         return saved
     provider = _default_provider()
     if saved:
+        base_url = _normalize_base_url(saved.get("baseUrl") or provider["baseUrl"])
+        env_name = _provider_env_key(base_url)
+        fallback_key = provider["apiKey"] if base_url == provider["baseUrl"] else (
+            _env_value(env_name).strip() if env_name else "")
         provider = {"id": "default", "name": "Mặc định",
-                    "baseUrl": _normalize_base_url(saved.get("baseUrl") or provider["baseUrl"]),
-                    "apiKey": str(saved.get("apiKey") or provider["apiKey"]).strip()}
+                    "baseUrl": base_url,
+                    "apiKey": str(saved.get("apiKey") or fallback_key).strip()}
     model = str(saved.get("model") or _env_value("AI_MODEL") or DEFAULT_AI_MODEL).strip()
     profile_model = str(saved.get("profileModel") or _env_value("AI_PROFILE_MODEL")
                         or DEFAULT_AI_PROFILE_MODEL).strip() or model
@@ -695,6 +698,20 @@ class ApiError(RuntimeError):
     def __init__(self, message: str, code: int = 0, detail: str = "", transient: bool = False):
         super().__init__(message)
         self.code, self.detail, self.transient = code, detail, transient
+
+
+class SameOriginRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        def origin(url):
+            parsed = urlsplit(url)
+            return parsed.scheme, parsed.hostname, parsed.port or (443 if parsed.scheme == "https" else 80)
+
+        if origin(req.full_url) != origin(newurl):
+            raise urllib.error.HTTPError(req.full_url, code,
+                "Không cho phép chuyển hướng API sang địa chỉ khác nguồn.", headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def compatible_api_request(base_url: str, key: str, route: str, method: str = "GET",
                            payload: dict | None = None, timeout: int = 60) -> dict:
     url = base_url.rstrip("/") + "/" + route.lstrip("/")
@@ -712,7 +729,7 @@ def compatible_api_request(base_url: str, key: str, route: str, method: str = "G
     request = urllib.request.Request(url, data=data, headers=headers, method=method)
     hide = (lambda value: value.replace(key, "[đã ẩn API key]")) if key else (lambda value: value)
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.build_opener(SameOriginRedirect()).open(request, timeout=timeout) as response:
             raw = response.read()
         return json.loads(raw.decode("utf-8"))
     except urllib.error.HTTPError as exc:
@@ -967,11 +984,6 @@ class SubtitleAccessRequired(ValueError):
     pass
 
 
-class NoSessionRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        raise ValueError("Session metadata redirects are not allowed")
-
-
 def validate_iqiyi_proxy_url(value: str) -> str:
     if not isinstance(value, str) or len(value) > 4096:
         raise ValueError("Địa chỉ proxy không hợp lệ hoặc quá dài.")
@@ -993,10 +1005,9 @@ def validate_iqiyi_proxy_url(value: str) -> str:
 
 def iqiyi_open(request, timeout: int = 15, no_session_redirect: bool = False):
     # Metadata, film titles and subtitle files always bypass player/system proxies.
-    handlers = [urllib.request.ProxyHandler({})]
     if no_session_redirect:
-        handlers.append(NoSessionRedirect())
-    return urllib.request.build_opener(*handlers).open(request, timeout=timeout)
+        return pooled_open(request, timeout=timeout)
+    return urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request, timeout=timeout)
 
 
 def public_iqiyi_json(url: str, *, refresh: bool = False) -> dict:
@@ -1305,7 +1316,13 @@ def fetch_official_subtitle(tvid: str) -> dict:
     if len(candidates) != 1:
         raise ValueError("Chưa tìm được duy nhất một tập chính thức khớp số tập trên iq.com.")
     global_tvid, episode = next(iter(candidates.items()))
-    international = public_iqiyi_json(f"https://pcw-api.iqiyi.com/video/video/baseinfo/{global_tvid}").get("data", {})
+    # Once the episode is resolved, its duration and public page are independent.
+    with ThreadPoolExecutor(max_workers=1, thread_name_prefix="iqcom-metadata") as pool:
+        metadata = pool.submit(public_iqiyi_json,
+                               f"https://pcw-api.iqiyi.com/video/video/baseinfo/{global_tvid}")
+        if page is None or global_tvid != str(album.get("defaultTvId")):
+            page = public_iqcom_page(str(episode.get("playLocSuffix") or album.get("playLocSuffix") or ""))
+        international = metadata.result().get("data", {})
     if (str(international.get("tvId")) != global_tvid or str(international.get("albumId")) != global_album or
             str(international.get("order")) != str(order)):
         raise ValueError("Tập iq.com không khớp phim hoặc số tập.")
@@ -1313,8 +1330,6 @@ def fetch_official_subtitle(tvid: str) -> dict:
     global_duration = int(international.get("durationSec") or 0)
     if not (0 < domestic_duration <= 86400 and 0 < global_duration <= 86400):
         raise ValueError("Chưa lấy được thời lượng hai video để căn theo cuối.")
-    if page is None or global_tvid != str(album.get("defaultTvId")):
-        page = public_iqcom_page(str(episode.get("playLocSuffix") or album.get("playLocSuffix") or ""))
     data = page.get("props", {}).get("initialProps", {}).get("pageProps", {}).get("prePlayerData", {}).get("dash", {}).get("data", {})
     public_track = has_vietnamese_track(data, global_tvid)
     if not public_track and IQCOM_SESSION.saved:
@@ -1717,14 +1732,12 @@ def episode_order(item: dict) -> int:
 def album_episode_ids(album_id: str, provider: str, title: str = "") -> list[str]:
     rows = [(key, item) for key, item in list(EPISODES.items())
             if item.get("provider", "iqiyi") == provider]
-    if not title:
-        names = {episode_series_title(item).casefold() for _, item in rows
-                 if str(item.get("albumId", "")) == album_id and episode_series_title(item)}
-        title = next(iter(names)) if len(names) == 1 else ""
+    if album_id and album_id != "0":
+        return sorted(key for key, item in rows if str(item.get("albumId", "")) == album_id)
     title = title.casefold().strip()
     return sorted(key for key, item in rows if
-                  (title and episode_series_title(item).casefold() == title) or
-                  (not title and album_id and album_id != "0" and str(item.get("albumId", "")) == album_id))
+                  title and episode_series_title(item).casefold() == title and
+                  str(item.get("albumId") or "0") == "0")
 
 
 def registered_episode_identity(tvid: str, data: dict, previous: dict, provider: str) -> dict:
@@ -1829,6 +1842,14 @@ def save_translation_state(folder: Path, state: dict) -> None:
     atomic_write(folder / "translations.json", json.dumps(state, ensure_ascii=False, indent=2))
 
 
+def episode_view_summary(folder: Path) -> dict:
+    source_path = folder / "source.srt"
+    source = parse_source(source_path.read_text(encoding="utf-8-sig"), "srt") if source_path.exists() else []
+    state = load_translation_state(folder, source)
+    return {"downloaded": bool(source), "completed": len(state["translations"]), "total": len(source),
+            "albumTitleVi": state["albumTitleVi"], "lastError": state["lastError"]}
+
+
 def capture_source(tvid: str, cues: list, append: bool = False) -> None:
     lock = episode_lock(tvid)
     if not lock.acquire(blocking=False):
@@ -1851,21 +1872,23 @@ def capture_source(tvid: str, cues: list, append: bool = False) -> None:
                     prior = folder / name
                     if prior.exists():
                         atomic_write(archive / name, prior.read_bytes())
+            # Capture may arrive after seeking backwards; cue IDs shift, content does not.
+            translated_by_cue = {cue: state["translations"][str(index)]
+                                 for index, cue in enumerate(previous, 1)
+                                 if str(index) in state["translations"]}
+            state["translations"] = {str(index): translated_by_cue[cue]
+                                     for index, cue in enumerate(merged, 1) if cue in translated_by_cue}
             atomic_write(path, to_srt(merged))
-            if prefix:
-                state["sourceHash"] = source_fingerprint(merged)
-                state["lastError"] = (f"Đã lưu {len(state['translations'])}/{len(merged)} câu; còn "
-                                      f"{len(merged) - len(state['translations'])} câu chưa dịch.") if state["translations"] else ""
-                save_translation_state(folder, state)
-                if len(state["translations"]) == len(merged):
-                    atomic_write(folder / "translated.srt", to_srt([
-                        (start, end, state["translations"][str(index)])
-                        for index, (start, end, _) in enumerate(merged, 1)]))
-                else:
-                    (folder / "translated.srt").unlink(missing_ok=True)
+            state["sourceHash"] = source_fingerprint(merged)
+            state["lastError"] = (f"Đã lưu {len(state['translations'])}/{len(merged)} câu; còn "
+                                  f"{len(merged) - len(state['translations'])} câu chưa dịch.") if state["translations"] else ""
+            save_translation_state(folder, state)
+            if len(state["translations"]) == len(merged):
+                atomic_write(folder / "translated.srt", to_srt([
+                    (start, end, state["translations"][str(index)])
+                    for index, (start, end, _) in enumerate(merged, 1)]))
             else:
-                for name in ("translations.json", "translated.srt"):
-                    (folder / name).unlink(missing_ok=True)
+                (folder / "translated.srt").unlink(missing_ok=True)
             return
         updated = to_srt(cues)
         if current == updated:
@@ -2191,9 +2214,7 @@ def _run_batch_group(tvid: str, runnable: dict[int, list[int]], source: list, tr
             added, han_ids = _translate_one_batch(tvid, batch_start, runnable[batch_start], source,
                                                   snapshot, item, settings, key, memory_prefix)
             return batch_start, added, han_ids, None
-        except TranslationCancelled:
-            raise
-        except (ValueError, RuntimeError) as exc:
+        except (TranslationCancelled, ValueError, RuntimeError) as exc:
             return batch_start, {}, [], exc
 
     if len(runnable) == 1:
@@ -2268,10 +2289,13 @@ def _translate_episode(tvid: str) -> dict:
             # Sorted so progress and diagnostics stay deterministic; a batch's own retries still win
             # because a failed batch is retried in the next pass over `pending`.
             results = _run_batch_group(tvid, runnable, source, translations, item, settings, key, memory_prefix)
-            # Preserve every completed sibling before an API error can abort the group.
+            # Preserve every completed sibling before an API error or cancellation aborts the group.
             for _, added, _, _ in results:
                 translations.update(added)
             state["translations"] = translations
+            if any(isinstance(error, TranslationCancelled) for _, _, _, error in results):
+                save_translation_state(folder, state)
+                raise TranslationCancelled()
             han_slipped: list[int] = []
             batch_errors: list[str] = []
             for batch_start, added, han_ids, error in results:
@@ -2465,7 +2489,7 @@ async function addSearchMovie(index){
  finally{addingAlbums.delete(movie.albumId);renderMovieSearchResults()}
 }
 function seriesName(x){return String(x.albumTitle||x.title||"").replace(/\s*第\s*\d+\s*集.*$|\s*(?:episode|ep)\s*\d+.*$/i,"").trim().replace(/^[《「『【\s]+|[》」』】\s]+$/g,"").trim()}
-function albumKey(x){const provider=x.provider||"iqiyi",id=String(x.albumId||"").trim(),title=seriesName(x).toLowerCase();return provider+":"+(title?"title:"+encodeURIComponent(title).replace(/'/g,"%27"):id&&id!=="0"?"id:"+encodeURIComponent(id):"episode:"+x.tvid)}
+function albumKey(x){const provider=x.provider||"iqiyi",id=String(x.albumId||"").trim(),title=seriesName(x).toLowerCase();return provider+":"+(id&&id!=="0"?"id:"+encodeURIComponent(id):title?"title:"+encodeURIComponent(title).replace(/'/g,"%27"):"episode:"+x.tvid)}
 function orderOf(x){if(Number(x.order)>0)return Number(x.order);const m=String(x.title||"").match(/第\s*(\d+)\s*集|(?:episode|ep)\s*(\d+)/i);return m?Number(m[1]||m[2]):0}
 function episodeLabel(x){return "Tập "+(orderOf(x)||"?")}
 function albumIsOpen(key){return providerAlbumsOpen[activeProvider]?!collapsedAlbums.has(key):expandedAlbums.has(key)}
@@ -2483,7 +2507,7 @@ function providerFormData(){return [...document.querySelectorAll("#providersList
 function providerRow(p){const row=document.createElement("div");row.className="providerRow";row.dataset.id=p.id||"";row.dataset.models=JSON.stringify(p.models||[]);
  row.innerHTML="<input class='pName' placeholder='Tên (vd: Gemini)' value='"+esc(p.name||"")+"'><input class='pUrl' placeholder='Địa chỉ API' value='"+esc(p.baseUrl||"")+"'><input class='pKey' type='password' autocomplete='new-password' placeholder='"+(p.keyConfigured?"Key đã lưu (để trống giữ)":"API key")+"'><button class='secondary loadModels' onclick='loadProviderModels(this.parentElement)' title='Nạp danh sách model từ API'>Nạp model<span class='mCount'></span></button><button class='removeProvider' onclick='removeProvider(this)'>Xóa</button>";
  updateModelCount(row);return row}
-function rebuildModelOptions(){const rows=[...document.querySelectorAll("#providersList .providerRow")];for(const tier of ["translate","profile"]){const psel=document.getElementById(tier+"Provider"),msel=document.getElementById(tier+"Model");const row=rows.find(r=>(r.dataset.id||"")===psel.value);const models=row?rowModels(row):[];const prev=msel.value;msel.replaceChildren(...models.map(m=>{const o=document.createElement("option");o.value=m.id;o.textContent=m.name||m.id;return o}));if(prev&&[...msel.options].some(o=>o.value===prev))msel.value=prev;if(!msel.value&&models.length)msel.value=models[0].id}}
+function rebuildModelOptions(){const rows=[...document.querySelectorAll("#providersList .providerRow")];for(const tier of ["translate","profile"]){const psel=document.getElementById(tier+"Provider"),msel=document.getElementById(tier+"Model");const row=rows.find(r=>(r.dataset.id||"")===psel.value);const models=row?rowModels(row):[];const prev=msel.dataset.providerId===psel.value?msel.value:"";msel.replaceChildren(...models.map(m=>{const o=document.createElement("option");o.value=m.id;o.textContent=m.name||m.id;return o}));if(row&&prev)setSelectValue(msel,prev);msel.dataset.providerId=psel.value;if(!msel.value&&models.length)msel.value=models[0].id}}
 function rebuildProviderOptions(){const rows=[...document.querySelectorAll("#providersList .providerRow")];const opts=rows.map((row,i)=>({id:row.dataset.id||("p"+(i+1)),name:(row.querySelector(".pName").value.trim()||row.querySelector(".pUrl").value.trim()||("Nhà cung cấp "+(i+1)))}));for(const tier of ["translate","profile"]){const sel=document.getElementById(tier+"Provider"),cur=sel.value;sel.replaceChildren(...opts.map(o=>{const opt=document.createElement("option");opt.value=o.id;opt.textContent=o.name;return opt}));if(cur&&[...sel.options].some(o=>o.value===cur))sel.value=cur;}rebuildModelOptions()}
 function removeProvider(btn){btn.parentElement.remove();rebuildProviderOptions()}
 function renderProviders(){const list=document.getElementById("providersList");list.replaceChildren(...aiProviders.map(providerRow));rebuildProviderOptions()}
@@ -2810,7 +2834,7 @@ class Handler(BaseHTTPRequestHandler):
                 if library_status(item) != "accepted":
                     continue
                 folder = episode_dir(tvid)
-                summary = episode_view_summary(tvid, folder)
+                summary = episode_view_summary(folder)
                 downloaded = summary["downloaded"]
                 completed = summary["completed"]
                 total = summary["total"]
@@ -3001,7 +3025,9 @@ class Handler(BaseHTTPRequestHandler):
                     current["translateProviderId"], current["translateModel"], "dịch")
                 profile_pid, profile_model = pick(
                     data.get("profileProviderId"), data.get("profileModel"),
-                    translate_pid, translate_model, "hồ sơ")
+                    current["profileProviderId"],
+                    current["profileModel"] if str(data.get("profileProviderId") or current["profileProviderId"]) ==
+                    current["profileProviderId"] else translate_model, "hồ sơ")
 
                 atomic_write(AI_SETTINGS_PATH, json.dumps({
                     "providers": providers,
