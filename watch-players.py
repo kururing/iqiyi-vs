@@ -39,6 +39,7 @@ PPSTREAM_INI = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "LStyle" / 
 WATCH_LOCK_FILE = None
 MANAGER_PROCESS = None
 LAST_MANAGER_CHECK = 0.0
+RUNTIME_SESSIONS: dict[str, CDP.ScriptSession] = {}
 
 
 def python_exe() -> str:
@@ -174,31 +175,43 @@ def inject_runtime() -> None:
         with opener.open("http://127.0.0.1:9223/json/list", timeout=1) as response:
             targets = json.load(response)
     except OSError:
+        for session in RUNTIME_SESSIONS.values():
+            session.close()
+        RUNTIME_SESSIONS.clear()
         return  # The native app is closed or still starting.
     if not isinstance(targets, list):
         return
     errors = []
+    active = set()
     for target in targets:
         if not isinstance(target, dict) or target.get("type") not in {"page", "iframe", "webview"}:
             continue
         page = urlsplit(target.get("url", ""))
         host = (page.hostname or "").lower()
-        if page.scheme != "https" or not (host == "iqiyi.com" or host.endswith(".iqiyi.com")):
+        if not ((page.scheme == "https" and (host == "iqiyi.com" or host.endswith(".iqiyi.com"))) or
+                (page.scheme == "about" and page.path == "blank")):
             continue
         websocket = urlsplit(target.get("webSocketDebuggerUrl", ""))
         if websocket.scheme != "ws" or websocket.hostname != "127.0.0.1" or websocket.port != 9223:
             continue
+        key = target["webSocketDebuggerUrl"]
+        active.add(key)
         script = ("window.__iqiyiViTokenPending = true;\n" + LWA_JS.read_text(encoding="utf-8")
                   + "\n" + subtitle_hook(ROOT).decode("utf-8"))
         revision = revision_of(script)
         try:
-            if runtime_current(target, "!!window.__iqiyiVi && window.__iqiyiRuntimeVi", revision):
-                continue
             script += "\nwindow.__iqiyiRuntimeVi = " + json.dumps(revision) + ";"
             script = "if (/(^|\\.)iqiyi\\.com$/i.test(location.hostname)) {\n" + script + "\n}"
-            CDP.inject(target, [script])
+            if key not in RUNTIME_SESSIONS:
+                RUNTIME_SESSIONS[key] = CDP.ScriptSession(target)
+            RUNTIME_SESSIONS[key].install([script])
         except (OSError, ValueError, RuntimeError) as exc:
+            session = RUNTIME_SESSIONS.pop(key, None)
+            if session:
+                session.close()
             errors.append(str(exc))
+    for key in set(RUNTIME_SESSIONS) - active:
+        RUNTIME_SESSIONS.pop(key).close()
     if errors:
         raise RuntimeError(f"{len(errors)} app target(s): " + errors[0])
 
@@ -210,19 +223,26 @@ def run_iqiyi() -> int:
     if not handle:
         return 0
     WATCH_LOCK_FILE = handle
+    next_maintenance = 0.0
     while True:
         try:
             if not (ROOT / "watch-iqiyi-vi.disabled").exists():
-                start_manager()
-                with installation_lock(ROOT):
-                    patch_lwa()
-                    sync_wrapper_hook()
-                    persist_ini()
                 inject_runtime()
+                if time.monotonic() >= next_maintenance:
+                    start_manager()
+                    with installation_lock(ROOT):
+                        patch_lwa()
+                        sync_wrapper_hook()
+                        persist_ini()
+                    next_maintenance = time.monotonic() + 2
+            else:
+                for session in RUNTIME_SESSIONS.values():
+                    session.close()
+                RUNTIME_SESSIONS.clear()
         except (OSError, ValueError, RuntimeError) as exc:
             with (ROOT / "watch-iqiyi.runtime.log").open("a", encoding="utf-8") as errors:
                 errors.write(time.strftime("%H:%M:%S ") + str(exc) + "\n")
-        time.sleep(2)
+        time.sleep(0.2)
 
 PORT = int(os.environ.get("YOUKU_CDP_PORT", "9224"))
 LOG = ROOT / "youku-vi.log"

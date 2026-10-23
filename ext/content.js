@@ -1,6 +1,6 @@
 /* iqiyi-vi */
 (function () {
-  var ENGINE_VERSION = 161;
+  var ENGINE_VERSION = 162;
   if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
     if (window.__iqiyiViReload) window.__iqiyiViReload();
     return;
@@ -14,6 +14,7 @@
   var IQCOM_METADATA_ACTIVE = 0;
   var IQCOM_METADATA_STOPPED = false;
   var IQCOM_METADATA_CONTROLLERS = new Set();
+  var IQCOM_PENDING_LABELS = new Set();
   var TEXT_CACHE = new Map();
   var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, CODE: 1 };
   var FIXED_UI_TARGETS = [
@@ -1813,17 +1814,34 @@
     return entry.promise;
   }
 
+  function setMetadataPending(node, field, pending) {
+    var el = node && node.nodeType === 3 ? node.parentElement : node;
+    // Keep cards and their controls visible; only mask the text label awaiting metadata.
+    if (field || !el || el.nodeType !== 1 || el.tagName === "TITLE" || el.childElementCount) return;
+    if (pending) {
+      setUiAttribute(el, "data-iqiyi-vi-pending", "1");
+      IQCOM_PENDING_LABELS.add(el);
+    } else {
+      el.removeAttribute("data-iqiyi-vi-pending");
+      IQCOM_PENDING_LABELS.delete(el);
+    }
+  }
+
   function waitForIqcomMetadata(node, field, key, load, apply) {
     var slots = IQCOM_METADATA_WAITERS.get(node);
     if (!slots) { slots = {}; IQCOM_METADATA_WAITERS.set(node, slots); }
     field = field || "text";
+    setMetadataPending(node, field === "text" ? "" : field, true);
     if (slots[field] && slots[field].key === key) return;
     var waiter = {key:key};
     slots[field] = waiter;
     Promise.resolve().then(load).then(function (payload) {
       if (!IQCOM_METADATA_STOPPED && node.isConnected !== false && slots[field] === waiter) apply(payload);
     }).finally(function () {
-      if (slots[field] === waiter) delete slots[field];
+      if (slots[field] === waiter) {
+        delete slots[field];
+        setMetadataPending(node, field === "text" ? "" : field, false);
+      }
     });
   }
 
@@ -1846,6 +1864,7 @@
       else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
     }
     if (!namesToFetch.length || !token || !window.fetch) {
+      setMetadataPending(node, field, !!(namesToFetch.length && window.__iqiyiViTokenPending));
       applyVerifiedNames();
       return true;
     }
@@ -1875,6 +1894,7 @@
 
   function requestInternationalTitle(node, value, setter, field) {
     var raw = String(value || "");
+    setMetadataPending(node, field, false);
     if (requestInternationalActor(node, value, setter, field)) return true;
     if (!/[\u3400-\u9fff]/.test(raw)) return false;
     var movieTitle = isMovieTitleNode(node);
@@ -1888,6 +1908,11 @@
       if (result === raw) return;
       if (setter) setter(result);
       else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
+    }
+    var prepared = localizeTitleValue(raw);
+    if (prepared !== raw && !cjkCount(prepared)) {
+      setTitle(prepared);
+      return true;
     }
     if (!id) {
       if (titleContext) setTitle(raw);
@@ -1907,6 +1932,7 @@
 
     var token = window.__iqiyiViToken || "";
     if (!token || !window.fetch) {
+      setMetadataPending(node, field, !!window.__iqiyiViTokenPending);
       apply({});
       return true;
     }
@@ -2072,6 +2098,7 @@
     var s = document.createElement("style");
     s.id = "iqiyi-vi-css";
     s.textContent =
+      '[data-iqiyi-vi-pending="1"]{visibility:hidden!important;}' +
       "#searchinput .search-placeholder{display:none!important}" +
       'img[src*="/watermark_rightTop"],img[src*="/watermark_rightBottom"]{display:none!important;}' +
       'html[lang="vi"] { overflow-wrap:normal; }' +
@@ -2295,6 +2322,12 @@
 
   function walk(node) {
     if (!node || isFixedUI(node)) return;
+    var parent = node.parentElement;
+    for (; parent; parent = parent.parentElement) {
+      if (SKIP[parent.tagName] || parent.tagName === "INPUT" || parent.tagName === "TEXTAREA" ||
+          parent.isContentEditable || parent.id === "pcaSubtitleContainer" ||
+          /subtitleContainer|caption-main|caption-sub/i.test(String(parent.className || "") + " " + parent.id)) return;
+    }
     if (node.nodeType === 9 || node.nodeType === 11) {
       observeRoot(node);
       for (var childIndex = 0; childIndex < node.childNodes.length; childIndex++) walk(node.childNodes[childIndex]);
@@ -2372,19 +2405,6 @@
 
   var OBSERVED_ROOTS = new WeakSet();
   var ROOT_OBSERVERS = [];
-  var FIXED_UI_FRAME = 0;
-  var FIXED_UI_SCOPES = new Set();
-  function scheduleFixedUI(scope) {
-    if (IQCOM_METADATA_STOPPED) return;
-    if (scope) FIXED_UI_SCOPES.add(scope);
-    if (FIXED_UI_FRAME) return;
-    FIXED_UI_FRAME = requestAnimationFrame(function () {
-      FIXED_UI_FRAME = 0;
-      var scopes = Array.from(FIXED_UI_SCOPES);
-      FIXED_UI_SCOPES.clear();
-      scopes.forEach(localizeFixedUI);
-    });
-  }
   function observeRoot(root) {
     if (!root || OBSERVED_ROOTS.has(root) || typeof MutationObserver === "undefined") return;
     OBSERVED_ROOTS.add(root);
@@ -2398,21 +2418,33 @@
     if (IQCOM_METADATA_STOPPED) return;
     var changedNodes = new Set();
     var fixedScopes = new Set();
+    function addFixedScope(node) {
+      var el = node && node.nodeType === 3 ? node.parentElement : node;
+      if (!el || el.nodeType !== 1) return;
+      var target = el.closest(FIXED_UI_TARGETS);
+      if (target) fixedScopes.add(target);
+      else if (hasFixedUI(el)) fixedScopes.add(el);
+    }
     (records || []).forEach(function (record) {
-      if (record.type === "characterData") changedNodes.add(record.target);
+      if (record.type === "characterData") {
+        changedNodes.add(record.target);
+        addFixedScope(record.target);
+      }
       else if (record.type === "childList") {
+        addFixedScope(record.target);
         Array.prototype.forEach.call(record.addedNodes || [], function (node) {
           changedNodes.add(node);
-          if (node.nodeType === 1 && hasFixedUI(node)) fixedScopes.add(node);
+          addFixedScope(node);
         });
       } else if (record.type === "attributes") {
         changedNodes.add(record.target);
-        if (record.attributeName === "src" && hasFixedUI(record.target)) fixedScopes.add(record.target);
+        addFixedScope(record.target);
       }
     });
     // MutationObserver runs before paint, so changed labels can be localized in place.
+    if (!document.getElementById("iqiyi-vi-css")) injectCSS();
+    fixedScopes.forEach(localizeFixedUI);
     changedNodes.forEach(walk);
-    fixedScopes.forEach(scheduleFixedUI);
   }
 
   function scanLateShadowRoots() {
@@ -2449,20 +2481,23 @@
     run();
   };
 
-  if (document.body) run();
-  else document.addEventListener("DOMContentLoaded", run);
+  // Observe the document itself: documentElement may not exist at document_start.
+  observeRoot(document);
+  run();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run, {once:true});
   // Mutations cover normal UI changes. Check for late attached shadow roots only once a
   // minute instead of rescanning and retranslating the full page every few seconds.
   var runTimer = setInterval(function () {
     if (!document.hidden) scanLateShadowRoots();
   }, 60000);
-  observeRoot(document.documentElement);
   window.__iqiyiViStop = function () {
     IQCOM_METADATA_STOPPED = true;
+    IQCOM_PENDING_LABELS.forEach(function (el) { el.removeAttribute("data-iqiyi-vi-pending"); });
+    IQCOM_PENDING_LABELS.clear();
     IQCOM_METADATA_CONTROLLERS.forEach(function (controller) { controller.abort(); });
     while (IQCOM_METADATA_QUEUE.length) IQCOM_METADATA_QUEUE.shift().resolve({});
     clearInterval(runTimer);
+    document.removeEventListener("DOMContentLoaded", run);
     ROOT_OBSERVERS.forEach(function (observer) { observer.disconnect(); });
-    if (FIXED_UI_FRAME) cancelAnimationFrame(FIXED_UI_FRAME);
   };
 })();

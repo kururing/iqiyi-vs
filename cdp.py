@@ -89,17 +89,50 @@ def evaluate(target: dict, expression: str) -> dict:
         sock.close()
 
 
-def inject(target: dict, scripts: list[str]) -> None:
-    sock = ws_connect(target["webSocketDebuggerUrl"])
-    try:
-        call(sock, "Page.enable", {}, 1)
-        for index, script in enumerate(scripts):
-            call(sock, "Page.addScriptToEvaluateOnNewDocument", {"source": script}, index + 2)
-        result = call(sock, "Runtime.evaluate", {
+class ScriptSession:
+    """Keep init scripts registered across navigation by keeping their CDP session open."""
+
+    def __init__(self, target: dict):
+        self.sock = ws_connect(target["webSocketDebuggerUrl"])
+        self.command_id = 0
+        self.script_ids: list[str] = []
+        self.scripts: list[str] = []
+        try:
+            self.command("Page.enable", {})
+        except (OSError, ValueError, RuntimeError):
+            self.close()
+            raise
+
+    def command(self, method: str, params: dict) -> dict:
+        self.command_id += 1
+        return call(self.sock, method, params, self.command_id)
+
+    def install(self, scripts: list[str]) -> None:
+        if self.scripts == scripts:
+            # A cheap command also detects a closed/replaced target connection.
+            self.command("Runtime.evaluate", {"expression": "0"})
+            return
+        for identifier in self.script_ids:
+            self.command("Page.removeScriptToEvaluateOnNewDocument", {"identifier": identifier})
+        self.script_ids.clear()
+        for script in scripts:
+            result = self.command("Page.addScriptToEvaluateOnNewDocument", {"source": script})
+            self.script_ids.append(result["identifier"])
+        result = self.command("Runtime.evaluate", {
             "expression": "\n".join(scripts), "awaitPromise": True, "returnByValue": False,
-        }, len(scripts) + 2)
+        })
         if result.get("exceptionDetails"):
             details = result["exceptionDetails"]
             raise RuntimeError(details.get("exception", {}).get("description") or details.get("text", "Script injection failed"))
+        self.scripts = list(scripts)
+
+    def close(self) -> None:
+        self.sock.close()
+
+
+def inject(target: dict, scripts: list[str]) -> None:
+    session = ScriptSession(target)
+    try:
+        session.install(scripts)
     finally:
-        sock.close()
+        session.close()

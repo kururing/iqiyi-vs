@@ -6,20 +6,20 @@
   if (!/(^|\.)iqiyi\.com$/i.test(host)) return;
   window.__iqiyiViTokenPending = true;
   var finished = false;
-  var reloaded = false;
   var timer = setTimeout(function () { finish(); }, 4000);
   function finish(token) {
+    var changed = false;
     if (token && token !== window.__iqiyiViToken) {
       window.__iqiyiViToken = token;
-      if (!reloaded && window.__iqiyiViReload) {
-        reloaded = true;
-        window.__iqiyiViReload();
-      }
+      changed = true;
     }
-    if (finished) return;
-    finished = true;
-    clearTimeout(timer);
-    window.__iqiyiViTokenPending = false;
+    if (!finished) {
+      finished = true;
+      clearTimeout(timer);
+      window.__iqiyiViTokenPending = false;
+      changed = true;
+    }
+    if (changed && window.__iqiyiViReload) window.__iqiyiViReload();
   }
   fetch("http://127.0.0.1:18766/api/extension-token", {cache:"no-store", credentials:"omit"})
     .then(function (r) { return r.ok ? r.json() : null; })
