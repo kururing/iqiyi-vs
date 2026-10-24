@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "iQIYI Vietnamese",
-  "version": "1.2.36",
+  "version": "1.2.37",
   "minimum_chrome_version": "120",
   "description": "Dịch giao diện và phụ đề iQIYI sang tiếng Việt",
   "host_permissions": [
@@ -59,6 +59,7 @@
         "https://*.iqiyi.com/*"
       ],
       "js": [
+        "local-api.js",
         "sub-hook.js"
       ],
       "run_at": "document_start",

@@ -138,15 +138,16 @@ def browser_session_token(token: str) -> str:
 
 
 def python_executable(root: Path, background: bool = False) -> Path:
-    """Interpreter for helper processes: the checkout's .venv first, then the running Python.
+    """Interpreter for helpers: bundled runtime, checkout's .venv, then the running Python.
 
     background=True prefers pythonw.exe so autostart/watchers never open a console window.
     """
     names = ("pythonw.exe", "python.exe") if background else ("python.exe", "pythonw.exe")
-    for name in names:
-        candidate = root / ".venv" / "Scripts" / name
-        if candidate.is_file():
-            return candidate
+    for folder in (root / "runtime", root / ".venv" / "Scripts"):
+        for name in names:
+            candidate = folder / name
+            if candidate.is_file():
+                return candidate
     current = Path(sys.executable)
     if not background and current.name.lower() == "pythonw.exe":
         console = current.with_name("python.exe")

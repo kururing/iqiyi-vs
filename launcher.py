@@ -162,7 +162,7 @@ def iqiyi_player_proxy() -> str:
     return f"http://{host}:{proxy['port']}"
 
 
-def launch_iqiyi() -> int:
+def launch_iqiyi(open_ui: bool = True) -> int:
     proxy = iqiyi_player_proxy()
     if not stop_previous_run("iqiyi", {"watch-iqiyi-vi.py", "inject-cdp.py"}, keep_manager=True):
         return 1
@@ -186,7 +186,7 @@ def launch_iqiyi() -> int:
         return 1
 
     start_iqiyi_client(client, proxy)
-    return open_manager_when_ready("iQIYI")
+    return open_manager_when_ready("iQIYI", open_ui=open_ui)
 
 
 def apply_running_iqiyi_proxy(proxy: str) -> dict:
@@ -253,7 +253,7 @@ def find_youku() -> Path | None:
     return None
 
 
-def launch_youku() -> int:
+def launch_youku(open_ui: bool = True) -> int:
     client = find_youku()
     if not client:
         print("Không tìm thấy YOUKU.exe trong Program Files.")
@@ -269,16 +269,17 @@ def launch_youku() -> int:
     except OSError as exc:
         print(f"Không mở được Youku: {exc}")
         return 1
-    return open_manager_when_ready("Youku")
+    return open_manager_when_ready("Youku", open_ui=open_ui)
 
 
-def open_manager_when_ready(player: str) -> int:
+def open_manager_when_ready(player: str, open_ui: bool = True) -> int:
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     for _ in range(20):
         try:
             with opener.open(MANAGER_URL, timeout=1):
-                webbrowser.open(MANAGER_URL)
-                print(f"Xong. {player} đã mở; app quản lý phụ đề đang chạy trong trình duyệt.")
+                if open_ui:
+                    webbrowser.open(MANAGER_URL)
+                print(f"Xong. {player} đã mở; app quản lý phụ đề đã sẵn sàng.")
                 return 0
         except (OSError, urllib.error.URLError):
             time.sleep(0.5)

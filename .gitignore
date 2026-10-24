@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+dist/
 
 # --- Runtime data & local state ---
 # The subtitle library is created at runtime from the user's own account;

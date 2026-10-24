@@ -6,6 +6,48 @@ Việt hóa giao diện và hỗ trợ phụ đề tiếng Việt cho iQIYI / Yo
 - Lấy phụ đề Việt từ iq.com hoặc dịch phụ đề bằng AI khi bạn chọn.
 - Quản lý phim, tập và phụ đề tại [trang quản lý](http://127.0.0.1:18766/).
 
+## Bản desktop webapp cho Windows
+
+Giải nén toàn bộ gói `IQIYI-VI-Windows-x64.zip` vào thư mục có quyền ghi, rồi
+mở **IQIYI-VI.exe**. Bản này kèm Python và các thư viện cần thiết; không cần
+cài Python hay chạy terminal. Cần Windows 10/11 x64 và Edge hoặc Chrome.
+Giao diện mở trong cửa sổ app riêng; nếu không tìm thấy Edge/Chrome, app dùng
+trình duyệt mặc định. Extension cần được cài trong cùng hồ sơ trình duyệt mở webapp.
+
+Phụ đề, cài đặt, token và bản sao lưu được lưu cạnh file `.exe`. Gói tải về
+không chứa thư viện phim, khóa API hay phiên đăng nhập của người tạo bản build.
+Không đặt app trong `Program Files` hoặc chạy trực tiếp từ trong file ZIP.
+
+Đóng cửa sổ vẫn giữ dịch vụ phụ đề chạy để phục vụ player và các lượt dịch.
+Các lệnh tùy chọn khi cần mở player hoặc dừng dịch vụ:
+
+```powershell
+.\IQIYI-VI.exe iqiyi    # Mở iQIYI cùng webapp
+.\IQIYI-VI.exe youku    # Mở Youku cùng webapp
+.\IQIYI-VI.exe restore  # Khôi phục giao diện gốc
+.\IQIYI-VI.exe stop     # Dừng dịch vụ khi không còn xử lý phụ đề
+```
+
+Chỉ chạy một bản quản lý tại một thời điểm vì player dùng cổng `18766`.
+Nếu đang dùng bản mã nguồn, chờ các lượt dịch xong và dừng dịch vụ cũ trước
+khi chuyển sang bản portable. Dữ liệu cũ không được tự động di chuyển.
+Muốn giữ thư viện/cài đặt, sao lưu rồi chép `subtitles/library/`, `.ai-settings.json`,
+`.env`, `.local/`, `backup-skin/`, `backup-lwa/`, `backup-ppstream.ini` và
+`.iqiyi-install-location` từ bản cũ sang bản mới khi cả hai dịch vụ đã dừng.
+Giữ bản sao lưu giao diện để thao tác khôi phục tiếp tục hoạt động.
+
+Để tự build trên Windows bằng CPython x64 đã có pip:
+
+```powershell
+python build-desktop.py
+```
+
+Kết quả nằm trong `dist/IQIYI-VI-Windows-x64/` và file ZIP cạnh thư mục này.
+Script từ chối ghi đè thư mục đã có để bảo vệ dữ liệu; dùng `--output` để chọn
+tên khác. Chạy `IQIYI-VI.exe --check` để kiểm tra gói mà không mở player hoặc
+thư viện. Build dùng compiler .NET Framework có sẵn trên Windows và chỉ lấy
+các file nguồn được liệt kê rõ ràng, không gom dữ liệu cá nhân của workspace.
+
 ## Yêu cầu
 
 - Windows 10/11, Python 3.10 trở lên.
@@ -53,6 +95,20 @@ vào thư viện. Chọn tập hoặc phim cần dịch, rồi chọn phụ đ�
 Để lấy phụ đề từ iq.com, đăng nhập iq.com trên trình duyệt đã cài tiện ích,
 rồi bấm **Kiểm tra iq.com** trong app quản lý. Tài khoản cần có quyền xem tập đó;
 không phải tập nào cũng có phụ đề Việt.
+
+Khi chuyển sang máy khác, dùng phiên đăng nhập iq.com của máy đó và tải tiện ích
+từ thư mục `ext/` cạnh app đang chạy. Mở app quản lý trước để tạo cấu hình kết nối,
+rồi tải lại tiện ích và bấm **Kiểm tra iq.com** trong cùng hồ sơ trình duyệt.
+Tên phim công khai không cần đăng nhập; phụ đề phụ thuộc quyền xem tập và khu vực.
+Nếu iq.com trả trạng thái 110 mà không có phụ đề Việt, kiểm tra đăng nhập và quyền
+xem tập trên iq.com. Xóa cache không thay thế bước đăng nhập.
+
+Chrome/Edge mới: dùng tiện ích từ bản 1.2.37 trở lên. Các yêu cầu tên phim và
+phụ đề được gửi qua service worker của tiện ích bằng quyền host có sẵn.
+Sau khi cập nhật, mở lại app quản lý, bấm **Tải lại** tiện ích trong trang
+quản lý tiện ích của Chrome/Edge, rồi tải lại trang iQIYI. Khi đổi trình duyệt,
+mở trang quản lý phụ đề trong trình duyệt mới và bấm **Kiểm tra iq.com** để chọn
+đúng phiên đăng nhập của trình duyệt đó.
 
 ## Lưu ý
 

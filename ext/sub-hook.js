@@ -7,6 +7,9 @@
   function iqiyiSubtitleHook() {
     var SIDE = "http://127.0.0.1:18766";
     var nativeFetch = root && root.fetch ? root.fetch.bind(root) : null;
+    function localFetch(input, options) {
+      return (root.__iqiyiViLocalFetch || nativeFetch)(input, options);
+    }
     var TOKEN = root && root.__iqiyiViToken || "";
     var tokenPromise = null;
     var tokenRetryAt = 0;
@@ -14,7 +17,7 @@
       if (TOKEN) return Promise.resolve(TOKEN);
       if (!nativeFetch || Date.now() < tokenRetryAt) return Promise.resolve("");
       if (tokenPromise) return tokenPromise;
-      tokenPromise = nativeFetch(SIDE + "/api/extension-token", {cache:"no-store", credentials:"omit"})
+      tokenPromise = localFetch(SIDE + "/api/extension-token", {cache:"no-store", credentials:"omit"})
         .then(function (response) { if (!response.ok) throw new Error("Subtitle manager unavailable"); return response.json(); })
         .then(function (config) { TOKEN = String(config.token || ""); return TOKEN; })
         .catch(function () { return ""; })
@@ -101,7 +104,7 @@
       if (!nativeFetch) return Promise.reject(new Error("Subtitle manager is unavailable"));
       return ensureToken().then(function (token) {
         if (!token) throw new Error("Subtitle manager token is unavailable");
-        return nativeFetch(SIDE + route, {method:"POST",
+        return localFetch(SIDE + route, {method:"POST",
           headers:{"Content-Type":"application/json", "X-Iqiyi-Token":token}, body:JSON.stringify(data)});
       }).then(function (response) { if (!response.ok) throw new Error("Subtitle manager HTTP " + response.status); });
     }
@@ -113,7 +116,7 @@
       var url = SIDE + "/api/translation-state?tvid=" + encodeURIComponent(tvid);
       var job = ensureToken().then(function (token) {
         if (!token) throw new Error("Subtitle manager token is unavailable");
-        return nativeFetch(url + "&token=" + encodeURIComponent(token));
+        return localFetch(url + "&token=" + encodeURIComponent(token));
       }).then(function (response) {
         if (!response.ok) throw new Error("Translation status unavailable");
         return response.json();
@@ -799,7 +802,7 @@
     }
     if (root.fetch) {
       root.fetch = function (input, init) {
-        if (requestUrl(input).indexOf(SIDE + "/") === 0) return nativeFetch(input, init);
+        if (requestUrl(input).indexOf(SIDE + "/") === 0) return localFetch(input, init);
         return nativeFetch(input, init).then(function (response) {
           var sourceUrl = requestUrl(input) || response.url;
           if (sourceByUrl.has(sourceUrl)) {
@@ -826,9 +829,16 @@
       var cache = new WeakMap();
       if (proto.open && proto.send && proto.addEventListener) {
         var nativeOpen = proto.open, nativeSend = proto.send;
+        var nativeAbort = proto.abort;
         proto.open = function () {
+          this.__iqiyiSubtitleRequest = (this.__iqiyiSubtitleRequest || 0) + 1;
+          this.__iqiyiSubtitleAsync = arguments[2] !== false;
           this.__iqiyiSubtitleSourceUrl = requestUrl(arguments[1]);
           return nativeOpen.apply(this, arguments);
+        };
+        if (nativeAbort) proto.abort = function () {
+          this.__iqiyiSubtitleRequest = (this.__iqiyiSubtitleRequest || 0) + 1;
+          return nativeAbort.apply(this, arguments);
         };
         proto.send = function () {
           var xhr = this;
@@ -843,6 +853,38 @@
           }, {once:true});
           var localUrl = xhr.__iqiyiSubtitleSourceUrl;
           if (localUrl === SIDE + "/subtitle.xml" || localUrl.indexOf(SIDE + "/subtitle.xml?") === 0) {
+            if (root.__iqiyiViLocalFetch && xhr.__iqiyiSubtitleAsync) {
+              var generation = xhr.__iqiyiSubtitleRequest;
+              var responseType = xhr.responseType, timeout = xhr.timeout;
+              function fail(event) {
+                if (generation !== xhr.__iqiyiSubtitleRequest) return;
+                xhr.abort();
+                xhr.dispatchEvent(new Event(event));
+                xhr.dispatchEvent(new Event("loadend"));
+              }
+              var relayTimer = timeout ? setTimeout(function () { fail("timeout"); }, timeout) : null;
+              localFetch(localUrl).then(function (response) {
+                if (!response.ok) throw new Error("Subtitle manager HTTP " + response.status);
+                return response.blob();
+              }).then(function (blob) {
+                if (relayTimer) clearTimeout(relayTimer);
+                if (generation !== xhr.__iqiyiSubtitleRequest) return;
+                // Keep the player's native XHR/XML parsing, using bytes supplied by the worker.
+                var blobUrl = root.URL.createObjectURL(blob);
+                xhr.addEventListener("loadend", function () { root.URL.revokeObjectURL(blobUrl); }, {once:true});
+                try {
+                  nativeOpen.call(xhr, "GET", blobUrl, true);
+                  xhr.responseType = responseType;
+                  xhr.timeout = timeout;
+                  nativeSend.call(xhr);
+                } catch (error) { root.URL.revokeObjectURL(blobUrl); throw error; }
+              }).catch(function (error) {
+                if (relayTimer) clearTimeout(relayTimer);
+                console.warn("[iQIYI Việt hóa]", error.message);
+                fail("error");
+              });
+              return;
+            }
             var args = arguments;
             function sendLocal(token) {
               // Native XHR may omit Origin. Authenticate only the exact loopback route;

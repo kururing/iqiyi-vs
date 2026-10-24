@@ -7,6 +7,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urljoin, urlsplit
 
 import urllib3
 
@@ -17,21 +18,40 @@ atexit.register(HTTP_POOL.clear)
 
 
 @contextmanager
-def pooled_open(request, timeout=15):
-    """Stream raw bytes over reusable connections, without redirects or retries."""
+def pooled_open(request, timeout=15, *, public_iqcom_page=False):
+    """Stream bytes; only anonymous iq.com catalog pages may follow redirects."""
     if isinstance(request, str):
         request = urllib.request.Request(request)
+    if public_iqcom_page and (request.get_method() != "GET" or request.data is not None or
+                            any(key.lower() in ("cookie", "authorization", "proxy-authorization")
+                                for key, _ in request.header_items())):
+        raise ValueError("Only anonymous iq.com pages may follow redirects")
     response = None
     try:
-        response = HTTP_POOL.request(
-            request.get_method(), request.full_url, body=request.data,
-            headers=dict(request.header_items()), preload_content=False,
-            decode_content=False, redirect=False, retries=False,
-            timeout=urllib3.Timeout(connect=timeout, read=timeout), pool_timeout=timeout)
-        if response.status in (301, 302, 303, 307, 308) and response.headers.get("Location"):
-            raise ValueError("Session metadata redirects are not allowed")
+        url = request.full_url
+        for attempt in range(4):
+            if public_iqcom_page:
+                parsed = urlsplit(url)
+                if (parsed.scheme != "https" or parsed.netloc != "www.iq.com" or
+                        not parsed.path.startswith(("/play/", "/album/"))):
+                    raise ValueError("iq.com page redirect is not allowed")
+            response = HTTP_POOL.request(
+                request.get_method(), url, body=request.data,
+                headers=dict(request.header_items()), preload_content=False,
+                decode_content=False, redirect=False, retries=False,
+                timeout=urllib3.Timeout(connect=timeout, read=timeout), pool_timeout=timeout)
+            if response.status not in (301, 302, 303, 307, 308) or not response.headers.get("Location"):
+                break
+            if not public_iqcom_page:
+                raise ValueError("Session metadata redirects are not allowed")
+            if attempt == 3:
+                raise ValueError("Too many iq.com page redirects")
+            url = urljoin(url, response.headers["Location"])
+            response.close()
+            response.release_conn()
+            response = None
         if not 200 <= response.status < 300:
-            raise urllib.error.HTTPError(request.full_url, response.status,
+            raise urllib.error.HTTPError(url, response.status,
                                          response.reason, response.headers, None)
         yield response
     except urllib3.exceptions.HTTPError as exc:

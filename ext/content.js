@@ -1774,7 +1774,7 @@
         var options = {headers:{"X-Iqiyi-Token":window.__iqiyiViToken || ""}, cache:"no-store"};
         if (controller) options.signal = controller.signal;
         Promise.resolve().then(function () {
-          return fetch("http://127.0.0.1:18766/api/" + job.path, options);
+          return (window.__iqiyiViLocalFetch || fetch)("http://127.0.0.1:18766/api/" + job.path, options);
         }).then(function (response) {
           return response.ok ? response.json() : Promise.reject(new Error("HTTP " + response.status));
         }).then(function (payload) {

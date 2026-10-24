@@ -25,7 +25,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, parse_qsl, unquote, urlencode, urljoin, urlsplit
 
-from iqiyi_common import api_token, atomic_write, browser_proxy_token, browser_session_token, player_token
+from iqiyi_common import api_token, atomic_write, browser_proxy_token, browser_session_token, player_token, python_executable
 from windows_runtime import run_elevated
 from iqcom_session import IqcomSession, has_vietnamese_track
 from proxy_support import DesktopProxyRelay
@@ -93,13 +93,7 @@ def app_localization_status() -> dict:
 def _localization_command(action: str, elevated: bool = False) -> subprocess.CompletedProcess:
     script = ROOT / "apply-vi.py"
     args = [str(script)] + (["--restore"] if action == "restore" else [])
-    python = ROOT / ".venv" / "Scripts" / "python.exe"
-    if not python.is_file():
-        python = Path(sys.executable)
-        if python.name.lower() == "pythonw.exe":
-            console_python = python.with_name("python.exe")
-            if console_python.is_file():
-                python = console_python
+    python = python_executable(ROOT)
     if not elevated:
         return subprocess.run([str(python), *args], cwd=ROOT, capture_output=True,
                               text=True, encoding="utf-8", errors="replace", timeout=1800,
@@ -1246,7 +1240,7 @@ def public_iqcom_page(suffix: str) -> dict:
     request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.iq.com/",
                                                  "Accept-Encoding": "gzip"})
     # Public iq.com requests never receive the domestic player's login cookies.
-    with iqiyi_open(request, timeout=15, no_session_redirect=True) as response:
+    with pooled_open(request, timeout=15, public_iqcom_page=True) as response:
         raw = read_public_metadata(response)
     if len(raw) > 4_000_000:
         raise ValueError("Metadata tập iq.com quá lớn.")
@@ -1340,7 +1334,8 @@ def fetch_official_subtitle(tvid: str) -> dict:
     track = next((row for row in tracks if isinstance(row, dict) and str(row.get("lid")) == "23"), None)
     if not track:
         raise ValueError(f"iq.com chưa trả phụ đề Việt cho tập này (trạng thái {data.get('st', 'không rõ')}). "
-                         "Mở Đăng nhập iq.com để kiểm tra phiên VIP và quyền xem tập.")
+                         "Đăng nhập iq.com trong trình duyệt đã cài tiện ích, rồi bấm Kiểm tra iq.com "
+                         "trong app quản lý. Tài khoản cần có quyền xem tập này.")
     fmt = next((key for key in ("xml", "webvtt", "vtt", "srt") if track.get(key)), None)
     if not fmt:
         raise ValueError("iq.com chưa cung cấp tệp phụ đề Việt.")
@@ -2658,6 +2653,8 @@ class Handler(BaseHTTPRequestHandler):
             methods = ("GET", "POST") if self.command == "OPTIONS" else (self.command,)
             if not any(urlsplit(self.path).path in PLAYER_API_ROUTES.get(method, ()) for method in methods):
                 return False
+            if re.fullmatch(r"chrome-extension://[a-p]{32}", origin):
+                return True  # Player-only token is still required; admin routes stay local.
         if origin is None or origin in (*local, "null", "https://localwebapp.iqiyi.com",
                                         "https://iqiyi.com", "https://www.iqiyi.com"):
             return True
@@ -2771,7 +2768,8 @@ class Handler(BaseHTTPRequestHandler):
         elif request.path == "/health":
             with LOCK_GUARD:
                 busy = any(lock.locked() for lock in EPISODE_LOCKS.values())
-            self.send_json(200, {"ok": True, "app": "subtitle-manager", "version": 24, "busy": busy})
+            self.send_json(200, {"ok": True, "app": "subtitle-manager", "version": 25, "busy": busy,
+                                 "rootId": hashlib.sha256(str(ROOT.resolve()).casefold().encode()).hexdigest()[:16]})
         elif request.path == "/api/extension-token":
             self.send_json(200, {"token": player_token(self.server.api_token)})
         elif request.path == "/api/app-localization":
@@ -3316,7 +3314,7 @@ def serve():
         load_library()
         server.api_token = api_token(ROOT)
         atomic_write(ROOT / "ext" / "proxy-token.json", json.dumps({"token": browser_proxy_token(server.api_token),
-                     "sessionToken": browser_session_token(server.api_token)}))
+                     "sessionToken": browser_session_token(server.api_token), "playerToken": player_token(server.api_token)}))
         try:
             server.serve_forever()
         finally:
