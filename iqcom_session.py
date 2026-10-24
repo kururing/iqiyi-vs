@@ -13,6 +13,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import parse_qs, urljoin, urlsplit
 
+from iqiyi_common import atomic_write
+
 
 def login_cookie(cookies: list[dict]) -> str:
     active = {row["name"]: row["value"] for row in cookies
@@ -75,6 +77,7 @@ class IqcomSession:
         self.applied_signature = None
         self.cookie_store_pending = False
         self.dash_pending = {}
+        self.closed = False
         try:
             self.source = (self.profile / "browser-source").read_text(encoding="utf-8").strip()
         except (OSError, UnicodeError):
@@ -139,9 +142,10 @@ class IqcomSession:
         connected = bool(auth)
         auth_signature = hashlib.sha256(auth.encode()).hexdigest()
         with self.lock:
+            if self.closed:
+                raise ValueError("Phiên iq.com đang đóng.")
             if select and source != self.source:
-                self.profile.mkdir(parents=True, exist_ok=True)
-                (self.profile / "browser-source").write_text(source, encoding="utf-8")
+                atomic_write(self.profile / "browser-source", source)
                 self.source = source
             if source != self.source:
                 return {**self.state, "saved": self.saved}
@@ -155,20 +159,19 @@ class IqcomSession:
                 message=("Đã nhận phiên iq.com của trình duyệt hiện tại. Quyền VIP được kiểm tra khi lấy phụ đề." if connected else
                          "Chưa đăng nhập iq.com trong trình duyệt hiện tại."))
         with self.lock:
-            schedule = signature != self.applied_signature and not self.cookie_store_pending
+            schedule = not self.closed and signature != self.applied_signature and not self.cookie_store_pending
             if schedule:
                 self.cookie_store_pending = True
-        if schedule:
-            self.pool.submit(self._store_browser_cookies_job)
+                self.pool.submit(self._store_browser_cookies_job)
         return self.status()
 
     def _store_browser_cookies_job(self):
         success = self._store_browser_cookies()
         with self.lock:
-            again = success and self.cookie_signature != self.applied_signature
+            again = success and not self.closed and self.cookie_signature != self.applied_signature
             self.cookie_store_pending = again
-        if again:
-            self.pool.submit(self._store_browser_cookies_job)
+            if again:
+                self.pool.submit(self._store_browser_cookies_job)
 
     def _store_browser_cookies(self):
         try:
@@ -190,6 +193,8 @@ class IqcomSession:
         if not re.fullmatch(r"\d{8,24}", tvid):
             raise ValueError("Mã tập iq.com không hợp lệ.")
         with self.lock:
+            if self.closed:
+                raise ValueError("Phiên iq.com đang đóng.")
             key = (self.state["version"], tvid)
             future = self.dash_pending.get(key)
             owner = future is None
@@ -214,6 +219,8 @@ class IqcomSession:
         self._set(browserOpen=False)
 
     def _browser(self, headed: bool = False):
+        if self.closed:
+            raise ValueError("Phiên iq.com đang đóng.")
         if self.context is not None:
             return self.context
         try:
@@ -304,6 +311,8 @@ class IqcomSession:
                 return data
             deadline = time.monotonic() + 20
             while time.monotonic() < deadline:
+                if self.closed:
+                    raise ValueError("Phiên iq.com đang đóng.")
                 ready = next((row for row in reversed(captured) if has_vietnamese_track(row, tvid)), None)
                 if ready is not None:
                     self._poll()
@@ -325,15 +334,37 @@ class IqcomSession:
                     pass
 
     def _close(self):
-        if self.context is not None:
-            self.context.close()
-        if self.playwright is not None:
-            self.playwright.stop()
-            self.playwright = None
+        try:
+            if self.context is not None:
+                self.context.close()
+        finally:
+            self.context = None
+            self.applied_signature = None
+            self._set(browserOpen=False)
+            if self.playwright is not None:
+                try:
+                    self.playwright.stop()
+                finally:
+                    self.playwright = None
 
     def close(self):
+        with self.lock:
+            if self.closed:
+                return
+            self.closed = True
+            pending = list(self.dash_pending.values())
+        # Cancel only queued lookups: shutdown(cancel_futures=True) could cancel
+        # the cleanup itself while the browser is still serving an active lookup.
+        for future in pending:
+            future.cancel()
         try:
-            self.pool.submit(self._close).result(timeout=5)
+            cleanup = self.pool.submit(self._close)
+        except RuntimeError:
+            # An import-only process can reach atexit after executor shutdown.
+            self.pool.shutdown(wait=False)
+            return
+        self.pool.shutdown(wait=False)
+        try:
+            cleanup.result(timeout=5)
         except Exception:
             pass
-        self.pool.shutdown(wait=False, cancel_futures=True)

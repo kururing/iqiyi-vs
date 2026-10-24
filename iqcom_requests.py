@@ -87,11 +87,11 @@ class RequestCache:
             value = load()
             lifetime = ttl(value) if callable(ttl) else ttl
         except BaseException as exc:
-            self._finish(key, future, error_ttl if isinstance(exc, Exception) else 0)
             future.set_exception(exc)
+            self._finish(key, future, error_ttl if isinstance(exc, Exception) else 0)
             raise
-        self._finish(key, future, lifetime)
         future.set_result(value)
+        self._finish(key, future, lifetime)
         return value
 
     def _finish(self, key, future, lifetime):

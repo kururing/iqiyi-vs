@@ -30,7 +30,7 @@ from windows_runtime import run_elevated
 from iqcom_session import IqcomSession, has_vietnamese_track
 from proxy_support import DesktopProxyRelay
 from launcher import apply_running_iqiyi_proxy
-from iqcom_requests import PUBLIC_METADATA, pooled_open, singleflight
+from iqcom_requests import PUBLIC_METADATA, RequestCache, pooled_open, singleflight
 import subtitle_agent as agent
 
 ROOT = Path(__file__).resolve().parent
@@ -47,6 +47,9 @@ LIBRARY_ADMISSIONS: dict[str, str] = {}
 LIBRARY_ADMISSIONS_LOCK = threading.RLock()
 TRANSLATION_PROGRESS: dict[str, dict] = {}
 TRANSLATION_CANCEL_EVENTS: dict[str, threading.Event] = {}
+TRANSLATION_API_CALLS: dict[str, int] = {}
+TRANSLATION_GROUPS = 0
+SUMMARY_CACHE = RequestCache(capacity=512)
 AGENT_PROFILE_LOCKS: dict[str, threading.Lock] = {}
 EPISODE_LOCKS: dict[str, threading.Lock] = {}
 LOCK_GUARD = threading.Lock()
@@ -341,14 +344,35 @@ def wait_for_translation_cancel(tvid: str, seconds: float) -> None:
 def cancellable_translation_call(tvid: str, callback, *args, **kwargs):
     """Stop waiting promptly; an already-running provider HTTP request may finish in its daemon thread."""
     result = queue.Queue(maxsize=1)
+    with LOCK_GUARD:
+        event = TRANSLATION_CANCEL_EVENTS.get(tvid)
+        if event and event.is_set():
+            raise TranslationCancelled()
+        TRANSLATION_API_CALLS[tvid] = TRANSLATION_API_CALLS.get(tvid, 0) + 1
 
     def run():
         try:
             result.put((True, callback(*args, **kwargs)))
         except Exception as exc:
             result.put((False, exc))
+        finally:
+            with LOCK_GUARD:
+                remaining = TRANSLATION_API_CALLS[tvid] - 1
+                if remaining:
+                    TRANSLATION_API_CALLS[tvid] = remaining
+                else:
+                    TRANSLATION_API_CALLS.pop(tvid, None)
 
-    threading.Thread(target=run, daemon=True, name="subtitle-api-request").start()
+    try:
+        threading.Thread(target=run, daemon=True, name="subtitle-api-request").start()
+    except Exception:
+        with LOCK_GUARD:
+            remaining = TRANSLATION_API_CALLS[tvid] - 1
+            if remaining:
+                TRANSLATION_API_CALLS[tvid] = remaining
+            else:
+                TRANSLATION_API_CALLS.pop(tvid, None)
+        raise
     while True:
         check_translation_cancelled(tvid)
         try:
@@ -1806,12 +1830,16 @@ def load_translation_state(folder: Path, source: list) -> dict:
     path = folder / "translations.json"
     try:
         state = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except FileNotFoundError:
         pass
+    except (json.JSONDecodeError, UnicodeError) as exc:
+        raise ValueError("Bản dịch đã lưu bị hỏng; hãy kiểm tra hoặc khôi phục translations.json trước khi dịch tiếp.") from exc
     if not isinstance(state, dict):
-        state = {}
+        raise ValueError("Bản dịch đã lưu phải là đối tượng JSON; dữ liệu được giữ nguyên để khôi phục.")
     matches = state.get("sourceHash", fingerprint) == fingerprint
     raw_translations = state.get("translations", {}) if matches else {}
+    if not isinstance(raw_translations, dict):
+        raise ValueError("Danh sách câu đã dịch không hợp lệ; dữ liệu được giữ nguyên để khôi phục.")
     translations = {}
     if isinstance(raw_translations, dict):
         for cue_id, text in raw_translations.items():
@@ -1838,6 +1866,17 @@ def save_translation_state(folder: Path, state: dict) -> None:
 
 
 def episode_view_summary(folder: Path) -> dict:
+    signature = []
+    for name in ("source.srt", "translations.json", "translated.srt"):
+        try:
+            stat = (folder / name).stat()
+            signature.append((stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size, stat.st_ino))
+        except FileNotFoundError:
+            signature.append(None)
+    return SUMMARY_CACHE.run((folder, tuple(signature)), lambda: _read_episode_summary(folder), ttl=300)
+
+
+def _read_episode_summary(folder: Path) -> dict:
     source_path = folder / "source.srt"
     source = parse_source(source_path.read_text(encoding="utf-8-sig"), "srt") if source_path.exists() else []
     state = load_translation_state(folder, source)
@@ -1934,10 +1973,12 @@ def mark_translation_error(tvid: str, message: str) -> None:
                                   "batch": 1, "batches": 1}
 def translate_episode(tvid: str) -> dict:
     lock = episode_lock(tvid)
-    if not lock.acquire(blocking=False):
-        raise EpisodeBusy("Tập này đang được dịch trong một yêu cầu khác.")
     cancel_event = threading.Event()
     with LOCK_GUARD:
+        if TRANSLATION_API_CALLS.get(tvid):
+            raise EpisodeBusy("Yêu cầu AI trước vẫn đang kết thúc; hãy đợi trước khi dịch tiếp để tránh gọi API trùng.")
+        if not lock.acquire(blocking=False):
+            raise EpisodeBusy("Tập này đang được dịch trong một yêu cầu khác.")
         TRANSLATION_CANCEL_EVENTS[tvid] = cancel_event
     try:
         return _translate_episode(tvid)
@@ -2209,7 +2250,7 @@ def _run_batch_group(tvid: str, runnable: dict[int, list[int]], source: list, tr
             added, han_ids = _translate_one_batch(tvid, batch_start, runnable[batch_start], source,
                                                   snapshot, item, settings, key, memory_prefix)
             return batch_start, added, han_ids, None
-        except (TranslationCancelled, ValueError, RuntimeError) as exc:
+        except Exception as exc:
             return batch_start, {}, [], exc
 
     if len(runnable) == 1:
@@ -2345,7 +2386,7 @@ def _translate_episode(tvid: str) -> dict:
                                   "completed": completed, "total": len(source), "batch": 3, "batches": 3}
     return {"tvid": tvid, "status": "partial", "cues": completed - initial_completed,
             "completed": completed, "total": len(source)}
-PAGE = r'''<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+PAGE = r'''<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>Quản lý phụ đề</title>
 <style>
 *{box-sizing:border-box}
@@ -2425,7 +2466,7 @@ dialog{width:min(560px,calc(100vw - 28px));max-height:calc(100vh - 32px);overflo
 <dialog id="agentProfileDialog" aria-labelledby="agentProfileTitle"><div class="settingsHead"><h2 id="agentProfileTitle">Hồ sơ phim</h2><button class="secondary" onclick="document.getElementById('agentProfileDialog').close()">Đóng</button></div><div id="agentProfileContent" role="status" aria-live="polite"></div></dialog>
 <script>
 const API_TOKEN=__IQIYI_TOKEN__;
-function apiFetch(url,options={}){return fetch(url,{...options,headers:{...options.headers,"X-Iqiyi-Token":API_TOKEN}})}
+function apiFetch(url,options={}){const signal=options.signal||((options.method||"GET")==="GET"?AbortSignal.timeout(20000):undefined);return fetch(url,{...options,signal,headers:{...options.headers,"X-Iqiyi-Token":API_TOKEN}}).catch(error=>{if(error.name==="TimeoutError")throw Error("Kết nối quá thời gian chờ. Hãy kiểm tra app quản lý và thử lại.");throw error})}
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 function safeStatusText(value,fallback="Thông báo chưa có bản tiếng Việt."){const valueText=String(value??"").trim();return valueText&&!/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(valueText)?valueText:fallback}
 const jsArg=value=>esc(JSON.stringify(String(value)));
@@ -2434,7 +2475,8 @@ const iqiyiProxyDialog=document.getElementById("iqiyiProxyDialog");
 const settingsDialog=document.getElementById("settingsDialog");
 let aiProviders=[];
 const expandedAlbums=new Set(),collapsedAlbums=new Set(),providerAlbumsOpen={iqiyi:false,youku:false},expandedCues=new Set(),detailCache=new Map(),selectedEpisodes=new Map(),episodeMessages=new Map();
-let albumLists={},episodeData=[],lastRenderSignature="",refreshBusy=false;
+let albumLists={},episodeData=[],lastRenderSignature="",refreshBusy=false,refreshPending=false,refreshError="";
+const pendingActions=new Set(),detailPending=new Set();
 let activeProvider=location.hash.toLowerCase()==="#youku"?"youku":"iqiyi",iqiyiSynced=false,iqiyiSources={};
 let iqcomChecking=false;
 let discoveries=[],discoveriesSignature="";
@@ -2492,7 +2534,7 @@ function toggleAlbum(key){if(providerAlbumsOpen[activeProvider]){if(collapsedAlb
 function toggleAllAlbums(){const prefix=activeProvider+":";providerAlbumsOpen[activeProvider]=!providerAlbumsOpen[activeProvider];for(const key of [...collapsedAlbums])if(key.startsWith(prefix))collapsedAlbums.delete(key);for(const key of [...expandedAlbums])if(key.startsWith(prefix))expandedAlbums.delete(key);render(episodeData)}
 function selectEpisode(key,id){selectedEpisodes.set(key,id);render(episodeData);document.getElementById("episode-"+id)?.focus?.({preventScroll:true})}
 function retryDownload(id){return post("/api/download",{tvid:id})}
-async function post(url,data,button){if(button)button.disabled=true;const localId=["/api/translate","/api/stop-translation","/api/download","/api/delete-subtitle"].includes(url)?String(data.tvid||""):"";statusNode.textContent=localId?"":"Đang xử lý…";if(localId){episodeMessages.set(localId,url==="/api/translate"?"Đang dịch phụ đề…":url==="/api/stop-translation"?"Đang gửi yêu cầu dừng…":"Đang xử lý phụ đề…");render(episodeData)}try{const r=await apiFetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});const x=await r.json();if(!r.ok)throw Error(x.error||"Thao tác thất bại");if(localId&&url==="/api/translate"&&expandedCues.has(localId)){expandedCues.delete(localId);detailCache.delete(localId);await detail(localId)}if(localId){if(url==="/api/stop-translation")episodeMessages.delete(localId);else episodeMessages.set(localId,safeStatusText(x.message,"Đã xong."));render(episodeData)}else statusNode.textContent=safeStatusText(x.message,"Đã xong.");await refresh(true)}catch(e){if(localId){episodeMessages.set(localId,safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt."));render(episodeData)}else statusNode.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.");await refresh(true)}finally{if(button)button.disabled=false}}
+async function post(url,data,button){const actionKey=url+JSON.stringify(data);if(pendingActions.has(actionKey))return;pendingActions.add(actionKey);if(button)button.disabled=true;const localId=["/api/translate","/api/stop-translation","/api/download","/api/delete-subtitle"].includes(url)?String(data.tvid||""):"";statusNode.textContent=localId?"":"Đang xử lý…";if(localId){episodeMessages.set(localId,url==="/api/translate"?"Đang dịch phụ đề…":url==="/api/stop-translation"?"Đang gửi yêu cầu dừng…":"Đang xử lý phụ đề…");render(episodeData)}try{const r=await apiFetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});const x=await r.json();if(!r.ok)throw Error(x.error||"Thao tác thất bại");if(localId&&url==="/api/translate"&&expandedCues.has(localId)){expandedCues.delete(localId);detailCache.delete(localId);await detail(localId)}if(localId){if(url==="/api/stop-translation")episodeMessages.delete(localId);else episodeMessages.set(localId,safeStatusText(x.message,"Đã xong."));render(episodeData)}else statusNode.textContent=safeStatusText(x.message,"Đã xong.");await refresh(true)}catch(e){if(localId){episodeMessages.set(localId,safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt."));render(episodeData)}else statusNode.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.");await refresh(true)}finally{pendingActions.delete(actionKey);if(button)button.disabled=false}}
 function deleteSubtitle(id){const x=episodeData.find(item=>item.tvid===id);if(!x||!confirm("Xóa phụ đề gốc và bản dịch đã lưu của "+episodeLabel(x)+"? Có thể tải lại phụ đề sau."))return;detailCache.delete(id);expandedCues.delete(id);post("/api/delete-subtitle",{tvid:id})}
 function deleteAlbum(tvid){const first=episodeData.find(item=>item.tvid===tvid);if(!first)return;const rows=episodeData.filter(item=>albumKey(item)===albumKey(first)),title=rows.map(item=>item.albumTitleVi).find(Boolean)||seriesName(first);if(!confirm("Xóa phim “"+title+"” cùng toàn bộ "+rows.length+" tập, phụ đề gốc, bản dịch và lịch sử đã lưu? Thao tác này không thể hoàn tác."))return;post("/api/delete-album",{provider:first.provider||"iqiyi",albumId:first.albumId||"",seriesTitle:seriesName(first)})}
 function addProvider(){const preset=document.getElementById("providerPreset").value;const presetUrls={openai:{name:"OpenAI",baseUrl:"https://api.openai.com/v1"},gemini:{name:"Gemini",baseUrl:"https://generativelanguage.googleapis.com/v1beta/openai"},deepseek:{name:"DeepSeek",baseUrl:"https://api.deepseek.com"},openrouter:{name:"OpenRouter",baseUrl:"https://openrouter.ai/api/v1"}};const pick=presetUrls[preset]||{name:"",baseUrl:""};const list=document.getElementById("providersList");const tempId="p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);const row=providerRow({id:tempId,name:pick.name,baseUrl:pick.baseUrl,keyConfigured:false,models:[]});list.appendChild(row);rebuildProviderOptions();document.getElementById("providerPreset").value=""}
@@ -2523,7 +2565,15 @@ function updateModelCount(row){const n=rowModels(row).length,el=row.querySelecto
 async function openIqiyiProxySettings(){iqiyiProxyDialog.showModal();const message=document.getElementById("iqiyiProxyStatus");message.textContent="Đang kiểm tra…";try{const r=await apiFetch("/api/iqiyi-proxy"),x=await r.json();if(!r.ok)throw Error(x.error||"Không kiểm tra được proxy");message.textContent=x.configured?"Proxy đang bật trong phiên chạy này; nhập URL mới để thay thế.":"Đang kết nối trực tiếp."}catch(e){message.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}}
 async function saveIqiyiProxy(button){if(button)button.disabled=true;const message=document.getElementById("iqiyiProxyStatus");message.textContent="Đang áp dụng và kết nối lại iQIYI…";try{const r=await apiFetch("/api/iqiyi-proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:document.getElementById("iqiyiProxyUrl").value})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không lưu được proxy");document.getElementById("iqiyiProxyUrl").value="";message.textContent=(x.configured?"Đã bật proxy. ":"Đã tắt proxy. ")+(safeStatusText(x.desktop?.message,""))+" Tiện ích web đồng bộ trong khoảng 30 giây."}catch(e){message.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}finally{if(button)button.disabled=false}}
 async function clearIqiyiProxy(button){document.getElementById("iqiyiProxyUrl").value="";return saveIqiyiProxy(button)}
-async function detail(id){if(expandedCues.has(id)){expandedCues.delete(id);render(episodeData);return}try{const r=await apiFetch("/api/detail?tvid="+encodeURIComponent(id));const x=await r.json();detailCache.set(id,x.cues.length?"<table><thead><tr><th># / thời gian</th><th>Phụ đề gốc</th><th>Tiếng Việt</th></tr></thead><tbody>"+x.cues.map(c=>"<tr><td>"+c.n+"<br>"+esc(c.time)+"</td><td class='source'>"+esc(c.source)+"</td><td class='"+(c.translated?"vi":"pending")+"'>"+esc(c.translated||"Chưa dịch")+"</td></tr>").join("")+"</tbody></table>":"<div class='episodeMeta'>"+esc(safeStatusText(x.message,"Chưa có dữ liệu phụ đề."))+"</div>");expandedCues.add(id);render(episodeData)}catch(e){statusNode.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}}
+async function detail(id){
+ if(expandedCues.has(id)){expandedCues.delete(id);render(episodeData);return}
+ expandedCues.add(id);
+ if(detailPending.has(id)){render(episodeData);return}
+ detailPending.add(id);detailCache.set(id,"<p role='status'>Đang tải câu phụ đề…</p>");render(episodeData);
+ try{const r=await apiFetch("/api/detail?tvid="+encodeURIComponent(id)),x=await r.json();if(!r.ok)throw Error(x.error||"Không đọc được phụ đề.");detailCache.set(id,x.cues.length?"<table><thead><tr><th># / thời gian</th><th>Phụ đề gốc</th><th>Tiếng Việt</th></tr></thead><tbody>"+x.cues.map(c=>"<tr><td>"+c.n+"<br>"+esc(c.time)+"</td><td class='source'>"+esc(c.source)+"</td><td class='"+(c.translated?"vi":"pending")+"'>"+esc(c.translated||"Chưa dịch")+"</td></tr>").join("")+"</tbody></table>":"<div class='episodeMeta'>"+esc(safeStatusText(x.message,"Chưa có dữ liệu phụ đề."))+"</div>")}
+ catch(e){detailCache.set(id,"<p class='errorText' role='alert'>"+esc(safeStatusText(e.message,"Không đọc được phụ đề."))+" Đóng rồi mở lại Câu để thử lại.</p>")}
+ finally{detailPending.delete(id);render(episodeData)}
+}
 function episodeState(x){
  const dl=x.downloadProgress||{},busy=x.progress&&x.progress.stage==="translating";
  if(busy){const label=x.progress.phase==="context"?"Đang nhận diện ngữ cảnh":"Đang dịch";return {label,short:label,style:"active"}}
@@ -2603,13 +2653,15 @@ function render(data){
   if(!visibleAlbums)html+="<div class='platformEmpty'>Không có tập nào trong thư viện.</div>";
  }
  html+="</section>";
- const scrollY=window.scrollY,focusedId=document.activeElement?.id,openMenus=new Set(Array.from(itemsNode.querySelectorAll(".menu[open]")).map(node=>node.dataset.menuKey)),scrollPositions=Array.from(itemsNode.querySelectorAll(".detail")||[]).map(node=>[node.id,node.scrollTop,node.scrollLeft]);
+ const scrollY=window.scrollY,focusedId=document.activeElement?.id,focusedControl=itemsNode.contains(document.activeElement)?{tag:document.activeElement.tagName,action:document.activeElement.getAttribute("onclick"),menu:document.activeElement.closest(".menu")?.dataset.menuKey}:null,openMenus=new Set(Array.from(itemsNode.querySelectorAll(".menu[open]")).map(node=>node.dataset.menuKey)),scrollPositions=Array.from(itemsNode.querySelectorAll(".detail")||[]).map(node=>[node.id,node.scrollTop,node.scrollLeft]);
  itemsNode.innerHTML=html;
  itemsNode.querySelectorAll(".menu[data-menu-key]").forEach(node=>{if(openMenus.has(node.dataset.menuKey))node.open=true});
  scrollPositions.forEach(([id,top,left])=>{const node=document.getElementById(id);if(node){node.scrollTop=top;node.scrollLeft=left}});
- if(focusedId)document.getElementById(focusedId)?.focus({preventScroll:true});window.scrollTo(0,scrollY);
+ if(focusedId)document.getElementById(focusedId)?.focus({preventScroll:true});
+ else if(focusedControl)Array.from(itemsNode.querySelectorAll("button,summary,a")).find(node=>node.tagName===focusedControl.tag&&node.getAttribute("onclick")===focusedControl.action&&node.closest(".menu")?.dataset.menuKey===focusedControl.menu)?.focus({preventScroll:true});
+ window.scrollTo(0,scrollY);
 }
-async function refresh(force){if(refreshBusy)return;refreshBusy=true;try{const r=await apiFetch("/api/episodes");const payload=await r.json(),data=payload.episodes||[];albumLists=payload.albums||{};discoveries=payload.discoveries||[];renderDiscoveries();iqiyiSynced=!!(payload.session&&payload.session.synced);iqiyiSources=payload.session?.sources||{};updateIqcomStatus(payload.iqcomSession||{});episodeData=data;updateProviderChrome(data);const signature=JSON.stringify([albumLists,data.map(x=>[x.tvid,x.provider,x.title,x.albumTitle,x.albumTitleVi,x.albumId,x.albumTotal,x.translated,x.partial,x.translatedCount,x.cues,x.progress,x.downloadAvailable,x.downloadProgress])]);if(force||signature!==lastRenderSignature){lastRenderSignature=signature;render(data);renderMovieSearchResults()}}catch(e){statusNode.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}finally{refreshBusy=false}}
+async function refresh(force){if(refreshBusy){refreshPending=refreshPending||!!force;return}refreshBusy=true;try{const r=await apiFetch("/api/episodes");const payload=await r.json();if(!r.ok)throw Error(payload.error||"Không tải được thư viện.");const data=payload.episodes||[];if(refreshError&&statusNode.textContent===refreshError)statusNode.textContent="";refreshError="";albumLists=payload.albums||{};discoveries=payload.discoveries||[];renderDiscoveries();iqiyiSynced=!!(payload.session&&payload.session.synced);iqiyiSources=payload.session?.sources||{};updateIqcomStatus(payload.iqcomSession||{});episodeData=data;updateProviderChrome(data);const signature=JSON.stringify([albumLists,data.map(x=>[x.tvid,x.provider,x.title,x.albumTitle,x.albumTitleVi,x.albumId,x.albumTotal,x.translated,x.partial,x.translatedCount,x.cues,x.progress,x.downloadAvailable,x.downloadProgress])]);if(force||signature!==lastRenderSignature){lastRenderSignature=signature;render(data);renderMovieSearchResults()}}catch(e){refreshError=safeStatusText(e.message,"Không kết nối được app quản lý.");statusNode.textContent=refreshError}finally{refreshBusy=false;if(refreshPending){refreshPending=false;queueMicrotask(()=>refresh(true))}}}
 function refreshVisible(){if(!document.hidden)refresh(false)}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh(false)});
 refreshAppLocalization();refresh(true);setInterval(refreshVisible,5000);
@@ -2767,7 +2819,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send_body(200, "text/html; charset=utf-8", body)
         elif request.path == "/health":
             with LOCK_GUARD:
-                busy = any(lock.locked() for lock in EPISODE_LOCKS.values())
+                busy = (any(lock.locked() for lock in EPISODE_LOCKS.values()) or
+                        bool(TRANSLATION_API_CALLS) or TRANSLATION_GROUPS > 0 or
+                        any(state.get("stage") in ("queued", "downloading") for state in list(DOWNLOAD_PROGRESS.values())) or
+                        any(state.get("stage") == "loading" for state in list(ALBUM_LISTS.values())) or
+                        app_localization_status().get("status") == "running")
             self.send_json(200, {"ok": True, "app": "subtitle-manager", "version": 25, "busy": busy,
                                  "rootId": hashlib.sha256(str(ROOT.resolve()).casefold().encode()).hexdigest()[:16]})
         elif request.path == "/api/extension-token":
@@ -2832,7 +2888,11 @@ class Handler(BaseHTTPRequestHandler):
                 if library_status(item) != "accepted":
                     continue
                 folder = episode_dir(tvid)
-                summary = episode_view_summary(folder)
+                try:
+                    summary = episode_view_summary(folder)
+                except (OSError, ValueError, ET.ParseError):
+                    summary = {"downloaded": (folder / "source.srt").exists(), "completed": 0, "total": 0,
+                               "albumTitleVi": "", "lastError": "Không đọc được dữ liệu phụ đề đã lưu. Kiểm tra file của tập trước khi dịch tiếp."}
                 downloaded = summary["downloaded"]
                 completed = summary["completed"]
                 total = summary["total"]
@@ -2932,8 +2992,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
 
     def do_POST(self):
+        global TRANSLATION_GROUPS
         if not self.authorized():
             return
+        bulk_translation = False
+        route = urlsplit(self.path).path
         try:
             size = int(self.headers.get("Content-Length", "0"))
             if not 0 <= size <= 25_000_000:
@@ -2941,7 +3004,10 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.rfile.read(size) or b"{}")
             if not isinstance(data, dict):
                 raise ValueError("Request must be a JSON object")
-            route = urlsplit(self.path).path
+            if route == "/api/translate-all":
+                with LOCK_GUARD:
+                    TRANSLATION_GROUPS += 1
+                bulk_translation = True
             if route == "/api/browser-session":
                 self.send_json(200, IQCOM_SESSION.update(data.get("cookies"), data.get("sourceId"),
                                                        select=data.get("select", False)))
@@ -3210,13 +3276,13 @@ class Handler(BaseHTTPRequestHandler):
                                     target = staging / ("agent-" + memory_path.name)
                                     memory_path.replace(target)
                                     staged.append((target, memory_path))
+                            set_library_status([EPISODES[key] for key in ids], "dismissed")
                         except OSError:
                             for target, source in reversed(staged):
                                 if target.exists():
                                     target.replace(source)
                             shutil.rmtree(staging, ignore_errors=True)
                             raise
-                        set_library_status([EPISODES[key] for key in ids], "dismissed")
                         for key in ids:
                             EPISODES.pop(key, None)
                             DOWNLOAD_PROGRESS.pop(key, None)
@@ -3297,6 +3363,10 @@ class Handler(BaseHTTPRequestHandler):
                 label = "Kết nối API thất bại" if route in ("/api/settings", "/api/ai/models") else "Dịch/tải thất bại"
                 message = f"{label}: {type(exc).__name__}: {message}"
             self.send_json(502, {"error": message[:500]})
+        finally:
+            if bulk_translation:
+                with LOCK_GUARD:
+                    TRANSLATION_GROUPS -= 1
 
 
 class SubtitleHTTPServer(ThreadingHTTPServer):

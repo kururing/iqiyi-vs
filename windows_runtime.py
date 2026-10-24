@@ -15,6 +15,26 @@ class Process(NamedTuple):
     command_line: str
 
 
+def command_line_args(command: str) -> list[str]:
+    """Parse Windows quoting exactly, including Unicode paths with spaces."""
+    if os.name != "nt" or not command:
+        return []
+    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    shell32.CommandLineToArgvW.argtypes = [wintypes.LPCWSTR, ctypes.POINTER(ctypes.c_int)]
+    shell32.CommandLineToArgvW.restype = ctypes.POINTER(wintypes.LPWSTR)
+    kernel32.LocalFree.argtypes = [ctypes.c_void_p]
+    kernel32.LocalFree.restype = ctypes.c_void_p
+    count = ctypes.c_int()
+    arguments = shell32.CommandLineToArgvW(command, ctypes.byref(count))
+    if not arguments:
+        return []
+    try:
+        return list(arguments[:count.value])
+    finally:
+        kernel32.LocalFree(arguments)
+
+
 def create_named_mutex(name: str) -> wintypes.HANDLE | None:
     """Create a named Windows mutex; return None when unavailable or already running."""
     if os.name != "nt":

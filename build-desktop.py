@@ -78,7 +78,13 @@ def build(output: Path):
     print(f"ZIP: {archive} ({archive.stat().st_size / 1024 / 1024:.1f} MB)")
 
 
-if __name__ == "__main__":
+def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=ROOT / "dist/IQIYI-VI-Windows-x64")
     build(parser.parse_args().output.resolve())
+
+
+if __name__ == "__main__":
+    main()

@@ -41,6 +41,8 @@
     var captured = new Set();
     var capturing = new Map();
     var queued = new Set();
+    var sourceQueue = [];
+    var sourceActive = 0;
     var listPosted = new Set();
     var posting = new Map();
     var registrations = new Map();
@@ -133,6 +135,14 @@
       });
       translationStates.set(tvid, {promise:job, expires:0});
       return job;
+    }
+    function primeTranslationStates(ids) {
+      if (!ids.length) return Promise.resolve();
+      // Subtitle availability must not stall playback when the manager is offline.
+      return new Promise(function (resolve) {
+        var timer = setTimeout(resolve, 1500);
+        Promise.all(ids.map(getTranslationState)).then(function () { clearTimeout(timer); resolve(); });
+      });
     }
     function isViLabel(value) {
       return /^(?:tiếng\s*việt(?:\s*(?:ai|\(ai\)))?|vietnamese(?:\s*\(ai\))?|越南语|越南文)$/i.test(
@@ -645,6 +655,24 @@
       capturing.set(url, job);
       return job;
     }
+    function pumpSourceQueue() {
+      while (sourceActive < 2 && sourceQueue.length) {
+        (function (track) {
+          sourceActive++;
+          var controller = typeof AbortController === "function" ? new AbortController() : null;
+          var timer = controller ? setTimeout(function () { controller.abort(); }, 20000) : null;
+          Promise.resolve().then(function () {
+            return nativeFetch(track.url, controller ? {signal:controller.signal} : undefined);
+          }).then(function (response) {
+            if (!response.ok) throw new Error("track unavailable");
+            return response.text();
+          }).finally(function () { if (timer) clearTimeout(timer); })
+            .then(function (text) { return captureSource(track.url, text); })
+            .catch(function () { queued.delete(track.url); })
+            .finally(function () { sourceActive--; pumpSourceQueue(); });
+        })(sourceQueue.shift());
+      }
+    }
     function requestUrl(input) { return typeof input === "string" ? input : input && input.url || ""; }
     function registerEpisodeLists(value) {
       var rows = new Map();
@@ -682,7 +710,6 @@
       scan(value,{albumId:"",prefix:"",title:""},0);
       if (!rows.size) return;
       var episodes = Array.from(rows.values());
-      var jobs=[];
       var groups = new Map();
       episodes.forEach(function (episode) {
         if (!groups.has(episode.albumId)) groups.set(episode.albumId, []);
@@ -696,14 +723,10 @@
             episode.tracks.find(function (item) { return item.lid !== String(VI_LID); });
           if (!track) return;
           sourceByUrl.set(track.url,{tvid:episode.tvid,format:track.format,ready:ready});
-          if (!queued.has(track.url)) { queued.add(track.url); jobs.push(track); }
+          if (!queued.has(track.url)) { queued.add(track.url); sourceQueue.push(track); }
         });
       });
-      function worker(){var track=jobs.shift();if(!track)return Promise.resolve();return root.fetch(track.url)
-        .then(function(response){return response.ok?response.text():Promise.reject(new Error("track unavailable"));})
-        .then(function(text){return captureSource(track.url,text);}).catch(function(){queued.delete(track.url);})
-        .then(worker);}
-      Promise.all([worker(),worker()]);
+      pumpSourceQueue();
     }
     if (typeof module !== "undefined" && module.exports) module.exports = {rewrite: rewrite};
     if (root && root.setInterval && !root.__iqiyiSessionSync) {
@@ -781,7 +804,7 @@
         var self = this, args = Array.prototype.slice.call(arguments);
         var ids = trackTvids(args[0]);
         if (!ids.length) return callback.apply(self, args);
-        return Promise.all(ids.map(getTranslationState)).then(function () {
+        return primeTranslationStates(ids).then(function () {
           args[0] = rewrite(args[0]);
           return callback.apply(self, args);
         });
@@ -813,7 +836,7 @@
           if (/video|audio|image|octet-stream|mpegurl|xml/.test(type)) return response;
           return response.clone().text().then(function (text) {
             var ids = trackTvids(text);
-            return Promise.all(ids.map(function (id) { return getTranslationState(id); })).then(function () {
+            return primeTranslationStates(ids).then(function () {
               var body = rewrite(text);
               if (body === text) return response;
               var headers = new Headers(response.headers);
@@ -830,13 +853,22 @@
       if (proto.open && proto.send && proto.addEventListener) {
         var nativeOpen = proto.open, nativeSend = proto.send;
         var nativeAbort = proto.abort;
+        function cancelRelay(xhr) {
+          var relay = xhr.__iqiyiSubtitleRelay;
+          if (!relay) return;
+          xhr.__iqiyiSubtitleRelay = null;
+          if (relay.timer) clearTimeout(relay.timer);
+          relay.controller.abort();
+        }
         proto.open = function () {
+          cancelRelay(this);
           this.__iqiyiSubtitleRequest = (this.__iqiyiSubtitleRequest || 0) + 1;
           this.__iqiyiSubtitleAsync = arguments[2] !== false;
           this.__iqiyiSubtitleSourceUrl = requestUrl(arguments[1]);
           return nativeOpen.apply(this, arguments);
         };
         if (nativeAbort) proto.abort = function () {
+          cancelRelay(this);
           this.__iqiyiSubtitleRequest = (this.__iqiyiSubtitleRequest || 0) + 1;
           return nativeAbort.apply(this, arguments);
         };
@@ -856,19 +888,22 @@
             if (root.__iqiyiViLocalFetch && xhr.__iqiyiSubtitleAsync) {
               var generation = xhr.__iqiyiSubtitleRequest;
               var responseType = xhr.responseType, timeout = xhr.timeout;
+              var relay = {controller:new AbortController(), timer:null};
+              xhr.__iqiyiSubtitleRelay = relay;
               function fail(event) {
                 if (generation !== xhr.__iqiyiSubtitleRequest) return;
                 xhr.abort();
                 xhr.dispatchEvent(new Event(event));
                 xhr.dispatchEvent(new Event("loadend"));
               }
-              var relayTimer = timeout ? setTimeout(function () { fail("timeout"); }, timeout) : null;
-              localFetch(localUrl).then(function (response) {
+              relay.timer = timeout ? setTimeout(function () { fail("timeout"); }, timeout) : null;
+              localFetch(localUrl, {signal:relay.controller.signal}).then(function (response) {
                 if (!response.ok) throw new Error("Subtitle manager HTTP " + response.status);
                 return response.blob();
               }).then(function (blob) {
-                if (relayTimer) clearTimeout(relayTimer);
+                if (relay.timer) clearTimeout(relay.timer);
                 if (generation !== xhr.__iqiyiSubtitleRequest) return;
+                xhr.__iqiyiSubtitleRelay = null;
                 // Keep the player's native XHR/XML parsing, using bytes supplied by the worker.
                 var blobUrl = root.URL.createObjectURL(blob);
                 xhr.addEventListener("loadend", function () { root.URL.revokeObjectURL(blobUrl); }, {once:true});
@@ -879,14 +914,17 @@
                   nativeSend.call(xhr);
                 } catch (error) { root.URL.revokeObjectURL(blobUrl); throw error; }
               }).catch(function (error) {
-                if (relayTimer) clearTimeout(relayTimer);
+                if (relay.timer) clearTimeout(relay.timer);
+                if (generation !== xhr.__iqiyiSubtitleRequest) return;
                 console.warn("[iQIYI Việt hóa]", error.message);
                 fail("error");
               });
               return;
             }
             var args = arguments;
+            var sendGeneration = xhr.__iqiyiSubtitleRequest;
             function sendLocal(token) {
+              if (sendGeneration !== xhr.__iqiyiSubtitleRequest) return;
               // Native XHR may omit Origin. Authenticate only the exact loopback route;
               // a query token would leak if CaptionSDK retries through its remote relay.
               if (token) xhr.setRequestHeader("X-Iqiyi-Token", token);

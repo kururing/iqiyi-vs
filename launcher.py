@@ -6,7 +6,6 @@ import json
 import os
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 import time
@@ -15,9 +14,9 @@ import urllib.request
 import webbrowser
 from urllib.parse import urlsplit
 
-from iqiyi_common import browser_proxy_token, subtitle_manager_alive
+from iqiyi_common import browser_proxy_token
 from iqiyi_common import python_executable as _python_executable
-from windows_runtime import list_processes, run_elevated, terminate_process
+from windows_runtime import command_line_args, list_processes, run_elevated, terminate_process
 
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
@@ -28,7 +27,6 @@ for _stream in (sys.stdout, sys.stderr):
 
 ROOT = Path(__file__).resolve().parent
 MANAGER_URL = "http://127.0.0.1:18766/"
-MANAGER_HEALTH = MANAGER_URL + "health"
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 
@@ -39,40 +37,36 @@ def python_executable(background: bool = False) -> Path:
 def script_processes(names: set[str], argument: str | None = None):
     targets = {os.path.normcase(str(ROOT / name)).replace("/", "\\") for name in names}
     for process in list_processes():
-        command = os.path.normcase(process.command_line).replace("/", "\\")
-        if argument is not None and not command.rstrip().endswith(" " + argument):
+        if Path(process.name).name.lower() not in {"python.exe", "pythonw.exe"}:
             continue
-        if Path(process.name).name.lower() in {"python.exe", "pythonw.exe"} and any(
-            target in command for target in targets
-        ):
-            # The absolute script path scopes this match to this checkout.
+        arguments = command_line_args(process.command_line)
+        if len(arguments) < 2 or (argument is not None and arguments[-1] != argument):
+            continue
+        if os.path.normcase(arguments[1]).replace("/", "\\") in targets:
+            # Only the actual script argument can own a process in this checkout.
             yield process
 
 
 def manager_busy() -> bool:
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    from desktop import health
     try:
-        with opener.open(MANAGER_HEALTH, timeout=2) as response:
-            health = json.loads(response.read().decode("utf-8"))
-        if isinstance(health, dict) and health.get("app") in {"iqiyi-subtitles", "subtitle-manager"} and "busy" in health:
-            return bool(health["busy"])
-    except (OSError, ValueError, urllib.error.URLError):
-        pass
-    try:
-        with opener.open(MANAGER_URL + "api/episodes", timeout=2) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-            episodes = payload.get("episodes") if isinstance(payload, dict) else None
-        if isinstance(episodes, list):
-            return any(isinstance(item, dict) and
-                       (item.get("progress") or {}).get("stage") == "translating" for item in episodes)
-    except (OSError, ValueError, urllib.error.URLError):
-        pass
-    return True  # Unknown state is treated as busy to protect an active translation.
+        status = health()
+        return not status or status.get("busy") is not False
+    except (OSError, RuntimeError, ValueError):
+        return True  # Unknown state must protect an active translation.
 
 
 def stop_processes(processes) -> None:
-    for process in processes:
-        terminate_process(process.pid)
+    failed = {process.pid for process in processes if not terminate_process(process.pid)}
+    deadline = time.monotonic() + 0.5
+    while failed:
+        failed.intersection_update(process.pid for process in list_processes(include_command_line=False))
+        if not failed:
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError("Không dừng được dịch vụ hoặc watcher. Kiểm tra quyền chạy app rồi thử lại.")
+        time.sleep(min(0.05, remaining))
 
 
 def stop_previous_run(player: str, legacy_scripts: set[str], keep_manager: bool = False) -> bool:
@@ -80,7 +74,7 @@ def stop_previous_run(player: str, legacy_scripts: set[str], keep_manager: bool 
     related = list(script_processes({"watch-players.py"}, player))
     related.extend(script_processes(legacy_scripts | {"subtitle_app.py"}))
     managers = [process for process in related if "subtitle_app.py" in process.command_line.lower()]
-    if managers and manager_busy():
+    if managers and not keep_manager and manager_busy():
         print(f"App phụ đề đang dịch hoặc chưa xác nhận được trạng thái. "
               f"Chờ dịch xong rồi chạy lại launcher {player}.")
         return False
@@ -118,17 +112,8 @@ def webview_runtime() -> str:
 
 def ensure_manager() -> bool:
     """Start the relay's owner if needed; preserve an already-running manager."""
-    if subtitle_manager_alive():
-        return False
-    with (ROOT / "subtitle-manager.stderr.log").open("a", encoding="utf-8") as errors:
-        subprocess.Popen([str(python_executable(background=True)), str(ROOT / "subtitle_app.py")],
-                         cwd=ROOT, creationflags=CREATE_NO_WINDOW, close_fds=True,
-                         stdout=subprocess.DEVNULL, stderr=errors)
-    for _ in range(50):
-        if subtitle_manager_alive():
-            return True
-        time.sleep(0.1)
-    raise RuntimeError("App phụ đề chưa sẵn sàng. Mở lại app rồi thử launcher.")
+    from desktop import ensure_manager as start_manager
+    return start_manager()
 
 
 def iqiyi_player_proxy() -> str:
@@ -258,7 +243,8 @@ def launch_youku(open_ui: bool = True) -> int:
     if not client:
         print("Không tìm thấy YOUKU.exe trong Program Files.")
         return 1
-    if not stop_previous_run("youku", {"watch-youku-vi.py"}):
+    ensure_manager()
+    if not stop_previous_run("youku", {"watch-youku-vi.py"}, keep_manager=True):
         return 1
     try:
         subprocess.Popen([str(client), "--remote-debugging-port=9224"], cwd=client.parent)
@@ -273,16 +259,14 @@ def launch_youku(open_ui: bool = True) -> int:
 
 
 def open_manager_when_ready(player: str, open_ui: bool = True) -> int:
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    from desktop import health
     for _ in range(20):
-        try:
-            with opener.open(MANAGER_URL, timeout=1):
-                if open_ui:
-                    webbrowser.open(MANAGER_URL)
-                print(f"Xong. {player} đã mở; app quản lý phụ đề đã sẵn sàng.")
-                return 0
-        except (OSError, urllib.error.URLError):
-            time.sleep(0.5)
+        if health():
+            if open_ui:
+                webbrowser.open(MANAGER_URL)
+            print(f"Xong. {player} đã mở; app quản lý phụ đề đã sẵn sàng.")
+            return 0
+        time.sleep(0.5)
     print(f"{player} đã mở nhưng app phụ đề chưa sẵn sàng. Chạy lại launcher để khởi động watcher.")
     return 1
 

@@ -5,8 +5,9 @@ const LOCAL_PLAYER_ROUTES = {
     "/api/translation-state", "/api/file", "/subtitle.xml"]),
   POST: new Set(["/api/session", "/api/register", "/api/album/register", "/api/capture"])
 };
+const localPlayerRequests = new Map();
 
-async function localPlayerRequest(message) {
+async function localPlayerRequest(message, signal) {
   const method = message.method || "GET";
   if (typeof message.path !== "string" || !message.path.startsWith("/") || message.path.length > 8192) {
     throw Error("Yêu cầu phụ đề không hợp lệ.");
@@ -17,7 +18,7 @@ async function localPlayerRequest(message) {
       (message.body != null && (typeof message.body !== "string" || message.body.length > 2000000))) {
     throw Error("Yêu cầu phụ đề không được phép.");
   }
-  const configResponse = await fetch(chrome.runtime.getURL("proxy-token.json"), {cache: "no-store"});
+  const configResponse = await fetch(chrome.runtime.getURL("proxy-token.json"), {cache: "no-store", signal});
   if (!configResponse.ok) throw Error("Mở lại app quản lý và tải lại tiện ích Việt hóa.");
   const config = await configResponse.json();
   if (!config.playerToken) throw Error("Mở lại app quản lý để cập nhật kết nối Chrome/Edge.");
@@ -27,7 +28,7 @@ async function localPlayerRequest(message) {
   const response = await fetch(url.href, {
     method, body: method === "POST" ? message.body : undefined,
     headers: {"X-Iqiyi-Token": config.playerToken, ...(method === "POST" ? {"Content-Type": "application/json"} : {})},
-    cache: "no-store", credentials: "omit", redirect: "error", signal: AbortSignal.timeout(45000)
+    cache: "no-store", credentials: "omit", redirect: "error", signal
   });
   const body = await response.text();
   if (body.length > 8000000) throw Error("Dữ liệu phụ đề quá lớn.");
@@ -35,12 +36,25 @@ async function localPlayerRequest(message) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
-  if (message?.type !== "iqiyi-local-api") return;
+  if (!["iqiyi-local-api", "iqiyi-local-cancel"].includes(message?.type)) return;
   try {
     const origin = new URL(sender.origin || sender.url);
     if (sender.id !== chrome.runtime.id || origin.protocol !== "https:" || origin.port ||
         !(origin.hostname === "iqiyi.com" || origin.hostname.endsWith(".iqiyi.com"))) return;
   } catch (_) { return; }
-  localPlayerRequest(message).then(reply, error => reply({error: error.message}));
+  if (message.requestId != null && (typeof message.requestId !== "string" || message.requestId.length > 80)) return;
+  // Scope cancellation to the originating document, including separate tabs/frames.
+  const key = JSON.stringify([sender.tab?.id, sender.frameId, sender.documentId, message.requestId ?? crypto.randomUUID()]);
+  if (message.type === "iqiyi-local-cancel") {
+    localPlayerRequests.get(key)?.abort();
+    reply({cancelled: true});
+    return;
+  }
+  if (localPlayerRequests.has(key)) { reply({error: "Yêu cầu phụ đề đang được xử lý."}); return; }
+  const controller = new AbortController();
+  localPlayerRequests.set(key, controller);
+  const timer = setTimeout(() => controller.abort(), 45000);
+  localPlayerRequest(message, controller.signal).then(reply, error => reply({error: error.message}))
+    .finally(() => { clearTimeout(timer); localPlayerRequests.delete(key); });
   return true;
 });

@@ -4,30 +4,56 @@
     try { host = new URL(document.referrer).hostname; } catch (_) {}
   }
   if (!/(^|\.)iqiyi\.com$/i.test(host)) return;
-  function localRequest(message) {
+  function localRequest(message, signal) {
     return new Promise(function (resolve, reject) {
+      if (signal && signal.aborted) return reject(signal.reason);
+      var requestId = message.requestId || crypto.randomUUID();
+      var settled = false;
+      function finish(result, error) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (signal) signal.removeEventListener("abort", abort);
+        if (error) reject(error);
+        else resolve(result);
+      }
+      function cancel() {
+        try { chrome.runtime.sendMessage({type: "iqiyi-local-cancel", requestId: requestId}, function () { void chrome.runtime.lastError; }); }
+        catch (_) {}
+      }
+      function abort() { cancel(); finish(null, signal.reason); }
+      var timer = setTimeout(function () {
+        cancel(); finish(null, Error("Không kết nối được app phụ đề. Kiểm tra app đang chạy."));
+      }, 45000);
+      if (signal) signal.addEventListener("abort", abort, {once:true});
       try {
-        chrome.runtime.sendMessage(Object.assign({}, message, {type: "iqiyi-local-api"}), function (result) {
-          if (chrome.runtime.lastError || !result) reject(Error("Tải lại tiện ích và trang iQIYI để kết nối app phụ đề."));
-          else if (result.error) reject(Error(result.error));
-          else resolve(result);
+        chrome.runtime.sendMessage(Object.assign({}, message, {type: "iqiyi-local-api", requestId: requestId}), function (result) {
+          if (chrome.runtime.lastError || !result) finish(null, Error("Tải lại tiện ích và trang iQIYI để kết nối app phụ đề."));
+          else if (result.error) finish(null, Error(result.error));
+          else finish(result);
         });
-      } catch (_) { reject(Error("Tải lại tiện ích và trang iQIYI để kết nối app phụ đề.")); }
+      } catch (_) { finish(null, Error("Tải lại tiện ích và trang iQIYI để kết nối app phụ đề.")); }
     });
   }
   window.__iqiyiViLocalFetch = function (input, options) {
     options = options || {};
     var url = new URL(typeof input === "string" ? input : input.url, location.href);
     if (url.origin !== "http://127.0.0.1:18766") return Promise.reject(Error("Yêu cầu ngoài app phụ đề."));
-    return localRequest({path: url.pathname + url.search, method: options.method || "GET", body: options.body})
+    return localRequest({path: url.pathname + url.search, method: options.method || "GET", body: options.body}, options.signal)
       .then(function (result) { return new Response(result.body, {status: result.status, headers: result.headers}); });
   };
   window.addEventListener("message", function (event) {
-    if (event.source !== window || (location.origin !== "null" && event.origin !== location.origin) || event.data?.type !== "iqiyi-local-request" ||
+    if (event.source !== window || (location.origin !== "null" && event.origin !== location.origin) ||
+        !["iqiyi-local-request", "iqiyi-local-cancel"].includes(event.data?.type) ||
         typeof event.data.requestId !== "string" || event.data.requestId.length > 80) return;
     var requestId = event.data.requestId;
+    if (event.data.type === "iqiyi-local-cancel") {
+      try { chrome.runtime.sendMessage({type: "iqiyi-local-cancel", requestId: requestId}, function () { void chrome.runtime.lastError; }); }
+      catch (_) {}
+      return;
+    }
     function reply(result) { window.postMessage({type: "iqiyi-local-result", requestId: requestId, result: result}, location.origin === "null" ? "*" : location.origin); }
-    localRequest({path: event.data.path, method: event.data.method, body: event.data.body})
+    localRequest({requestId: requestId, path: event.data.path, method: event.data.method, body: event.data.body})
       .then(reply, function (error) { reply({error: error.message}); });
   });
   window.__iqiyiViTokenPending = true;

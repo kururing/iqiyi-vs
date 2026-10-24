@@ -39,18 +39,19 @@ def health():
     return data
 
 
-def ensure_manager():
+def ensure_manager() -> bool:
     if health():
-        return
+        return False
     from iqiyi_common import python_executable
     with (ROOT / "subtitle-manager.stderr.log").open("a", encoding="utf-8") as errors:
         process = subprocess.Popen(
             [str(python_executable(ROOT, background=True)), str(ROOT / "subtitle_app.py")],
             cwd=ROOT, stdout=subprocess.DEVNULL, stderr=errors, creationflags=NO_WINDOW,
         )
-    for _ in range(150):
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
         if health():
-            return
+            return True
         if process.poll() is not None:
             raise RuntimeError("Không mở được dịch vụ phụ đề. Xem subtitle-manager.stderr.log trong thư mục app.")
         time.sleep(0.1)
@@ -124,10 +125,11 @@ def main():
     import launcher
     if args.action == "stop":
         status = health()
-        if status:
-            if launcher.manager_busy():
-                raise RuntimeError("App đang xử lý phụ đề. Chờ hoàn tất trước khi dừng dịch vụ.")
-        launcher.stop_processes(launcher.script_processes({"watch-players.py", "subtitle_app.py"}))
+        processes = list(launcher.script_processes({"watch-players.py", "subtitle_app.py"}))
+        unknown_manager = status is None and any("subtitle_app.py" in process.command_line.lower() for process in processes)
+        if unknown_manager or (status and status.get("busy") is not False):
+            raise RuntimeError("App đang xử lý phụ đề hoặc chưa xác nhận được trạng thái. Chờ hoàn tất trước khi dừng dịch vụ.")
+        launcher.stop_processes(processes)
         return 0
     ensure_manager()
     if args.action in ("iqiyi", "youku"):
