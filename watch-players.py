@@ -236,7 +236,8 @@ def run_iqiyi() -> int:
         try:
             if not (ROOT / "watch-iqiyi-vi.disabled").exists():
                 inject_runtime()
-                if time.monotonic() >= next_maintenance:
+                # Finish preparing frames before disk maintenance can delay CDP polling.
+                if time.monotonic() >= next_maintenance and (EARLY_RUNTIME is None or not EARLY_RUNTIME.pending):
                     start_manager()
                     with installation_lock(ROOT):
                         patch_lwa()

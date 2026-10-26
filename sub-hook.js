@@ -463,13 +463,13 @@
           'font-family:Arial,Helvetica,sans-serif!important;font-weight:700!important;color:#fff!important;' +
           // Stroke rasterization leaves an inner fringe in the player WebView; use a flat outline.
           '-webkit-text-stroke:0!important;' +
-          'text-shadow:-1px -1px 0 #111,0 -1px 0 #111,1px -1px 0 #111,1px 0 0 #111,1px 1px 0 #111,0 1px 0 #111,-1px 1px 0 #111,-1px 0 0 #111!important;}' +
+          'text-shadow:-2px -2px 0 #111,0 -2px 0 #111,2px -2px 0 #111,2px 0 0 #111,2px 2px 0 #111,0 2px 0 #111,-2px 2px 0 #111,-2px 0 0 #111!important;}' +
           '.caption-main::after,.caption-sub::after{content:none!important;}' +
           '.iqiyi-official-upper{position:absolute;top:6%;left:5%;width:90%;box-sizing:border-box;' +
           'white-space:pre-line;text-align:center;line-height:1.4;pointer-events:none;z-index:2;' +
           'font-size:clamp(14px,3.8vh,32px);}' +
           'video::cue{font-family:Arial,Helvetica,sans-serif;font-weight:700;color:#fff;background:transparent;' +
-          '-webkit-text-stroke:0;text-shadow:-1px -1px 0 #111,0 -1px 0 #111,1px -1px 0 #111,1px 0 0 #111,1px 1px 0 #111,0 1px 0 #111,-1px 1px 0 #111,-1px 0 0 #111;}';
+          '-webkit-text-stroke:0;text-shadow:-2px -2px 0 #111,0 -2px 0 #111,2px -2px 0 #111,2px 0 0 #111,2px 2px 0 #111,0 2px 0 #111,-2px 2px 0 #111,-2px 0 0 #111;}';
         if (!style.parentNode) (doc.head || doc.documentElement).appendChild(style);
       }
       if (doc.documentElement) addStyle();
@@ -1008,7 +1008,7 @@
       "[class*=pack_mark_],[class*=pack_mark_]>span{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}" +
       ".kui-subtitle-subtitle-container,.kui-subtitle-subtitle-container *{" +
       "font-family:Arial,Helvetica,sans-serif!important;font-weight:700!important;color:#fff!important;" +
-      "-webkit-text-stroke:1.2px #111!important;paint-order:stroke fill;" +
+      "-webkit-text-stroke:2.2px #111!important;paint-order:stroke fill;" +
       "text-shadow:0 1px 1px #111,1px 0 1px #111,-1px 0 1px #111,0 -1px 1px #111,0 2px 4px #000!important;}";
     function installLayout() {
       var doc = root.document;
@@ -1020,7 +1020,7 @@
       if (!style.isConnected) parent.appendChild(style);
     }
     installLayout();
-    var VERSION = 4;
+    var VERSION = 5;
     if (root.__youkuViSubtitleVersion === VERSION) {
       if (root.__youkuViSubtitleRefresh) root.__youkuViSubtitleRefresh();
       return;
@@ -1254,7 +1254,7 @@
       box.setAttribute("aria-live", "polite");
       box.style.cssText = "position:fixed;z-index:2147483646;left:50%;bottom:11%;transform:translateX(-50%);" +
         "max-width:86vw;color:#fff;font:700 clamp(24px,5vw,48px)/1.25 Arial,Helvetica,sans-serif;text-align:center;" +
-        "-webkit-text-stroke:1.2px #111;paint-order:stroke fill;text-shadow:0 2px 4px #000;" +
+        "-webkit-text-stroke:2.2px #111;paint-order:stroke fill;text-shadow:0 2px 4px #000;" +
         "pointer-events:none;white-space:pre-line;display:none";
       (document.body || document.documentElement).appendChild(box);
       return box;

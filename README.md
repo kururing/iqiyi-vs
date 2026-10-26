@@ -2,6 +2,9 @@
 
 Việt hóa giao diện và hỗ trợ phụ đề tiếng Việt cho iQIYI / Youku trên Windows.
 
+Giao diện dùng bản dịch có sẵn, tra cứu tên từ iq.com và dịch nhanh có bộ nhớ đệm;
+không gọi AI, kể cả khi dịch nhanh gặp lỗi. AI chỉ dùng cho tác vụ phụ đề được chọn.
+
 - Giao diện dùng bản dịch có sẵn, ưu tiên hiện tiếng Việt ngay khi mở trang.
 - Lấy phụ đề Việt từ iq.com hoặc dịch phụ đề bằng AI khi bạn chọn.
 - Quản lý phim, tập và phụ đề tại [trang quản lý](http://127.0.0.1:18766/).

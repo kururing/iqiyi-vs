@@ -140,7 +140,35 @@ TRANSLATION_MODULES = (
 - Giữ đúng trạng thái: được đề nghị, tạm thời/ngoài biên chế, có điều kiện, sắp xảy ra, đã xảy ra. Lời hứa, sắp bổ nhiệm hoặc “nếu qua sát hạch” không thành đã nhận chức."""),
 )
 HISTORICAL_STYLE_RULE = """MODULE CỔ TRANG
-- setting=historical định hướng giọng thoại, không cấm đại từ: “tôi” vẫn dùng được khi hợp vai và giọng cảnh; không mặc định ta/ngươi, không bịa thần/trẫm. Trang phục không quyết định cách nói của người hiện đại trong cảnh xuyên không."""
+- Với setting=historical, ưu tiên từ Hán–Việt thông dụng hợp thời đại, vai vế và lĩnh vực; câu gọn, trang nhã, dễ hiểu. Chọn tên/thuật ngữ đã chốt trong hồ sơ → cách dùng cổ trang thông dụng đúng nghĩa nguồn → lời Việt rõ nghĩa. Cùng nghĩa và sắc thái thì ưu tiên cách nói cổ trang hơn cách nói hiện đại.
+- Trong tu tiên, giữ rõ 修为 = tu vi, 修炼 = tu luyện, 修行 = tu hành, 灵力 = linh lực, 灵气 = linh khí, 功法 = công pháp, 疗伤 = trị thương. Không trộn linh lực với linh khí hoặc ghép “lực linh khí”; không đổi tu luyện thành tu dưỡng khi nguồn nói luyện công. Dùng nhất quán giữa các cue, lô và tập.
+- Lời xã giao có thể dùng đa tạ, cáo từ, xin chỉ giáo khi đúng ý và mức kính trọng của nguồn. Giữ giọng dân dã/hài hước khi có căn cứ; tránh tiếng lóng và cách nói công sở hiện đại tự thêm. Không nhồi từ Hán–Việt hiếm, ghép chữ gượng như “bái gia nhập”, đổi sắc thái hoặc thêm thân phận/thuật pháp.
+- Xưng hô vẫn theo nguồn và default_register; không tự đổi mọi tôi thành ta hay thêm thần/trẫm. Cảnh xuyên không có người/cơ chế hiện đại được giữ đúng giọng ấy; trang phục không tự quyết định văn phong."""
+
+# These are review candidates, never a replacement table or an output rejection gate.
+HISTORICAL_LEXICON_RISKS = (
+    (r"灵力", r"\b(?:lực linh khí|năng lượng tinh thần|sức mạnh tinh thần)\b", "Đối chiếu linh lực, không trộn với linh khí hay sức mạnh tinh thần."),
+    (r"修炼|修行", r"\b(?:luyện tập|tập luyện|tu dưỡng)\b", "Đối chiếu tu luyện/tu hành đúng nghĩa nguồn; tu dưỡng không mặc nhiên đồng nghĩa."),
+    (r"修为", r"\b(?:trình độ|kỹ năng|cấp độ)\b", "Xét thuật ngữ tu vi thay cách nói về trình độ/kỹ năng chung."),
+    (r"功法", r"\b(?:kỹ năng|kỹ thuật|phương pháp luyện tập)\b", "Xét thuật ngữ công pháp theo đúng bối cảnh tu luyện."),
+    (r"拜入|拜师", r"\bbái\s+(?:gia nhập|nhận|vào)\b", "Diễn đạt việc bái sư/vào môn hạ tự nhiên, tránh ghép chữ gượng."),
+    (r"如何|岂能|怎能", r"\bkiểu gì\b", "Xét khẩu khí cổ trang như làm sao/thế nào, vẫn giữ sắc thái và nghĩa câu hỏi."),
+)
+
+
+def historical_style_issues(source: list, translations: dict, setting: str) -> dict[int, str]:
+    """Flag source-grounded vocabulary for review without rewriting saved subtitles."""
+    if setting != "historical":
+        return {}
+    issues = {}
+    for key, text in translations.items():
+        cue_id = int(key)
+        chinese = source[cue_id - 1][2]
+        hints = [hint for src, vi, hint in HISTORICAL_LEXICON_RISKS
+                 if re.search(src, chinese) and re.search(vi, text, re.I)]
+        if hints:
+            issues[cue_id] = " ".join(hints)
+    return issues
 
 
 def translation_modules(source_text: str, setting: str = "unknown") -> str:
@@ -187,6 +215,7 @@ HAI PHẦN ĐẦU RA
 CÁC MỤC
 - characters: name = tên nguồn; translation = tên Việt không rỗng; role = vai trò/quan hệ có căn cứ hoặc “chưa rõ”; address = xưng hô theo chiều và phạm vi; evidence = episode_id, id cue, ai gọi ai và lý do kết luận bằng tiếng Việt, không trích lời Trung; status = evidence khi tên và xưng hô có tập/cue dẫn chứng, guess khi mới là phỏng đoán chưa đủ dẫn chứng (không bao giờ tự đặt locked). Giữ bằng chứng/phạm vi cũ còn hiệu lực khi bổ sung bằng chứng mới.
 - glossary: source = từ nguồn; translation = tên, danh xưng, địa danh hoặc thuật ngữ Việt nhất quán. Không đưa nhãn tên phim vào đây.
+- Nếu setting=historical, ghi các thuật ngữ Hán–Việt thông dụng thực sự xuất hiện trong nguồn (tu vi, linh lực, công pháp…) vào glossary để giữ ổn định giữa các tập; phân biệt linh lực/linh khí và tu luyện/tu dưỡng. Chỉ sửa thuật ngữ cũ khi nêu rõ nguồn và lý do đổi văn phong, giữ nguyên tên người dùng khóa.
 - uncertainties: điều chưa rõ hoặc sửa kết luận cũ có lý do. Mục không có thông tin dùng []; không bịa dữ kiện để lấp mảng.
 - Chữ Hán chỉ được giữ trong characters.name và glossary.source của cả hai phần. summary, translation, role, address, evidence và uncertainties phải bằng tiếng Việt, không pinyin/chữ Hán/câu trích nguồn. Nhắc nhân vật bằng tên Việt; giữ mã setting, episode_id và số cue theo dữ liệu/schema.
 
@@ -195,11 +224,12 @@ MẪU CẤU TRÚC TỐI THIỂU (không phải dữ kiện của phim)
 """ + ADDRESS_RULES + CHARACTER_NAME_RULES + WORK_NAME_RULES + PROFILE_NAME_RULES + QUALITY_RULES
 
 # Re-analyze unchanged subtitles when the interpretation rules change.
-PROFILE_VERSION = hashlib.sha256((PROFILE_SYSTEM + "\ncontinuity-editor-v22-register-status-modular-rules").encode()).hexdigest()
+PROFILE_VERSION = hashlib.sha256((PROFILE_SYSTEM + "\ncontinuity-editor-v23-historical-vocabulary").encode()).hexdigest()
 
 # Profiles written by these earlier prompt versions were built from the Chinese source only, so
 # their film memory stays valid as `previous_memory`; the episodes are simply analysed again.
 LEGACY_TRUSTED_PROFILE_VERSIONS = frozenset({
+    "3c7763ad291bed908402ab7ec8984cf66fe95ef3d5a71a4b51e31485c55fea94",  # v22; preserve source evidence and user locks
     "302fddd89d57df118e2f9ea36f735ec7293aa5bdc8add04d5e1d7c15f4ff6ca7",  # v21; retain memory before default_register/status fields
     "983f70123f62f95d2ce4c4f4cc209cba2ce5b3b8e384ebbe99e78ce71f8a217b",  # v20; retain source-grounded memory before removing the historical word gate
     "64e07e230bbabeed749f2bfe9278e3eab88eb81d0be553a49c358cb932e22fc4",  # v19; preserve source-grounded context before historical-register clarification
@@ -325,7 +355,8 @@ def normalize_episode_context(value, repair: bool = True):
         if not repair:
             raise ValueError("Ngữ cảnh tập không đúng cấu trúc.")
         value = {}
-    memory = normalize_memory({"setting": "unknown", **value}, repair)
+    # The episode schema has neither film-only field; validate its own shape above.
+    memory = normalize_memory({"setting": "unknown", "default_register": "", **value}, repair)
     return {key: memory[key] for key in ("summary", "characters", "glossary", "uncertainties")}
 
 

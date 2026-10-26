@@ -158,7 +158,8 @@ class EarlyScriptSession:
         message = {"id": self.command_id, "method": method, "params": params}
         if session:
             message["sessionId"] = session
-        self.pending[self.command_id] = (time.monotonic(), session, done)
+        self.pending[self.command_id] = (time.monotonic(), session, done,
+                                         method == "Runtime.evaluate" and "contextId" in params)
         send(self.sock, message)
 
     def install(self, source: str) -> None:
@@ -191,6 +192,8 @@ class EarlyScriptSession:
                 # Also update an already loaded page; the engine is idempotent.
                 self.command("Runtime.evaluate", {"expression": source}, session,
                              lambda result: self.resume(session))
+                for context in state.get("contexts", ()):
+                    self.command("Runtime.evaluate", {"expression": source, "contextId": context}, session)
             else:
                 self.resume(session)
 
@@ -204,17 +207,35 @@ class EarlyScriptSession:
             session = params["sessionId"]
             target = params["targetInfo"]
             if target.get("type") in {"page", "iframe", "webview"}:
-                self.sessions[session] = {}
+                self.sessions[session] = {"contexts": set()}
+                # Same-process child frames do not create separate Target attachments.
+                self.command("Runtime.enable", {}, session)
                 self.command("Page.enable", {}, session,
                              lambda response: self.register(session) if session in self.sessions else None)
             else:
                 self.resume(session)
         elif message.get("method") == "Target.detachedFromTarget":
             self.sessions.pop(message["params"]["sessionId"], None)
+        elif message.get("method") == "Runtime.executionContextCreated":
+            session = message.get("sessionId")
+            context = message["params"]["context"]
+            if session in self.sessions and context.get("auxData", {}).get("isDefault"):
+                self.sessions[session]["contexts"].add(context["id"])
+                self.command("Runtime.evaluate", {"expression": self.source, "contextId": context["id"]}, session)
+        elif message.get("method") == "Runtime.executionContextDestroyed":
+            state = self.sessions.get(message.get("sessionId"))
+            if state is not None:
+                state["contexts"].discard(message["params"]["executionContextId"])
+        elif message.get("method") == "Runtime.executionContextsCleared":
+            state = self.sessions.get(message.get("sessionId"))
+            if state is not None:
+                state["contexts"].clear()
         elif "id" in message:
             entry = self.pending.pop(message["id"], None)
             if entry:
-                if "error" in message:
+                context_gone = entry[3] and message.get("error", {}).get("message") in {
+                    "Cannot find context with specified id", "Execution context was destroyed."}
+                if "error" in message and not context_gone:
                     self.errors.append(message["error"].get("message", "Early script registration failed"))
                 if entry[2]:
                     entry[2](message)
@@ -227,7 +248,7 @@ class EarlyScriptSession:
         expired = [identifier for identifier, entry in self.pending.items()
                    if time.monotonic() - entry[0] > 5]
         for identifier in expired:
-            _, session, done = self.pending.pop(identifier)
+            _, session, done, _ = self.pending.pop(identifier)
             if session:
                 self.resume(session)
             self.errors.append("Timed out preparing WebView before playback")

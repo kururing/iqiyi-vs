@@ -24,6 +24,8 @@ Tự xưng cụ thể trong nguồn được ưu tiên hơn đoán từ 我: 属
 
 `setting=historical` định hướng giọng thoại, không phải danh sách từ cấm. Không còn cổng từ chối chữ “tôi” hoặc schema `style_exceptions`. Bước biên tập được giữ để đánh giá xưng hô theo nguồn và ngữ cảnh; câu dùng “tôi” hợp cảnh được nhận như mọi câu khác. Từ vựng “tôi luyện/tôi tớ” không phải tự xưng. Không sửa chỉ vì tần suất một đại từ; chỉ giảm lặp bằng tỉnh lược khi vẫn rõ chủ thể và sở hữu. Những dấu hiệu như “xuyên qua rừng” không tự xác nhận xuyên không hay người hiện đại.
 
+Trong cổ trang, ưu tiên từ Hán–Việt thông dụng, đúng nghĩa và dễ đọc: tu vi, tu luyện, linh lực, công pháp… Agent ghi thuật ngữ có căn cứ vào glossary; lượt dịch, rà độc lập và trọng tài cùng nhận module văn phong này. Các dấu hiệu như “lực linh khí”, “bái gia nhập” hoặc “tu dưỡng” cho nguồn nói tu luyện chỉ tạo ứng viên cần rà, không tự thay chữ hay từ chối bản dịch. Cảnh hiện đại/xuyên không và khẩu khí dân dã có căn cứ vẫn được giữ theo nguồn.
+
 | Tình huống đã có căn cứ | Cách xử lý |
 |---|---|
 | Người dưới thưa việc với cấp trên | Giữ tự xưng và danh xưng đang dùng; không tự biến thành quân thần hoặc cha/con. |
@@ -46,11 +48,11 @@ Tự xưng cụ thể trong nguồn được ưu tiên hơn đoán từ 我: 属
 | Dịch: module `polarity` (chèn khi nguồn trúng) | 285 |
 | Dịch: module `self_title` (chèn khi nguồn trúng) | 233 |
 | Dịch: module `status` (chèn khi nguồn trúng) | 198 |
-| Dịch: module cổ trang (khi setting=historical) | 251 |
-| Rà nghĩa (`SEMANTIC_REVIEW_SYSTEM`) | 5,409 |
+| Module cổ trang dùng chung: dịch, rà, trọng tài (khi setting=historical) | 1,110 |
+| Rà nghĩa (`SEMANTIC_REVIEW_SYSTEM`) | 5,677 |
 | Trọng tài (`ARBITER_SYSTEM`) | 825 |
 | Đọc cú pháp (`SYNTAX_UNIT_SYSTEM`) | 837 |
-| Lập hồ sơ (`PROFILE_SYSTEM`) | 15,533 |
+| Lập hồ sơ (`PROFILE_SYSTEM`) | 15,843 |
 
 ### Dịch (lõi, luôn gửi)
 
@@ -115,7 +117,10 @@ MODULE TRẠNG THÁI CHỨC VIỆC
 - Giữ đúng trạng thái: được đề nghị, tạm thời/ngoài biên chế, có điều kiện, sắp xảy ra, đã xảy ra. Lời hứa, sắp bổ nhiệm hoặc “nếu qua sát hạch” không thành đã nhận chức.
 
 MODULE CỔ TRANG
-- setting=historical định hướng giọng thoại, không cấm đại từ: “tôi” vẫn dùng được khi hợp vai và giọng cảnh; không mặc định ta/ngươi, không bịa thần/trẫm. Trang phục không quyết định cách nói của người hiện đại trong cảnh xuyên không.
+- Với setting=historical, ưu tiên từ Hán–Việt thông dụng hợp thời đại, vai vế và lĩnh vực; câu gọn, trang nhã, dễ hiểu. Chọn tên/thuật ngữ đã chốt trong hồ sơ → cách dùng cổ trang thông dụng đúng nghĩa nguồn → lời Việt rõ nghĩa. Cùng nghĩa và sắc thái thì ưu tiên cách nói cổ trang hơn cách nói hiện đại.
+- Trong tu tiên, giữ rõ 修为 = tu vi, 修炼 = tu luyện, 修行 = tu hành, 灵力 = linh lực, 灵气 = linh khí, 功法 = công pháp, 疗伤 = trị thương. Không trộn linh lực với linh khí hoặc ghép “lực linh khí”; không đổi tu luyện thành tu dưỡng khi nguồn nói luyện công. Dùng nhất quán giữa các cue, lô và tập.
+- Lời xã giao có thể dùng đa tạ, cáo từ, xin chỉ giáo khi đúng ý và mức kính trọng của nguồn. Giữ giọng dân dã/hài hước khi có căn cứ; tránh tiếng lóng và cách nói công sở hiện đại tự thêm. Không nhồi từ Hán–Việt hiếm, ghép chữ gượng như “bái gia nhập”, đổi sắc thái hoặc thêm thân phận/thuật pháp.
+- Xưng hô vẫn theo nguồn và default_register; không tự đổi mọi tôi thành ta hay thêm thần/trẫm. Cảnh xuyên không có người/cơ chế hiện đại được giữ đúng giọng ấy; trang phục không tự quyết định văn phong.
 ```
 
 ### Rà nghĩa độc lập
@@ -134,6 +139,7 @@ Trả meaning tóm tắt ngắn bằng tiếng Việt ai nói với ai, hành đ
 5. Giữ phủ định, sở hữu, số lượng và thời điểm. 疑凶/嫌疑犯/嫌疑人 khi chưa xác nhận phạm tội dùng nghi phạm/kẻ tình nghi, không viết “hung thủ nghi vấn” gượng nghĩa. Sắp/ngoài biên chế/nếu qua sát hạch không thành đã chính thức. 对得起 khác 对不起; 坐实/证实 giữ ý chứng minh. Thành ngữ giữ chức năng trong cảnh, không thay bằng nửa tục ngữ nói về chuyện khác.
 6. Hồ sơ tên dùng cho đúng thực thể, không phải luật thay chuỗi. Tên và biệt danh phải nhất quán; từ thường đang tả hình dạng vẫn được dịch nghĩa. Không suy thêm nhân vật từ chuỗi trúng bên trong một từ khác. Giữ tên người dùng khóa khi thật sự chỉ người đó, không lấy vai trò tương lai áp về cảnh cũ.
 7. Đọc liền bản Việt trước khi trả: cùng người/cùng người nghe không đổi hệ xưng giữa câu, ví dụ gọi em rồi tự xưng tao vô cớ. Giọng quê, thân thiết hay hài hước chưa đủ thành thô tục. Sở hữu lồng phải rõ từng tầng: 我一个朋友的弟弟 là em trai của một người bạn của người nói, không gộp thành bạn kiêm em trai. Ưu tiên câu Việt gọn, rõ quan hệ, không giữ trật tự Trung khiến mơ hồ.
+8. historical_lexicon_check_ids và historical_lexicon_notes là ứng viên rà từ vựng, không tự chứng minh bản nháp sai. Đối chiếu nguồn và khẩu khí; chọn thuật ngữ Hán–Việt cổ trang thông dụng khi cùng nghĩa, giữ lời Việt dễ đọc và giọng hiện đại thực sự có trong cảnh.
 Chỉ trả JSON theo schema: meaning và results. Mỗi result gồm đúng id, source (đúng 8 ký tự đầu của câu id, bỏ khoảng trắng; câu ngắn hơn 8 ký tự thì chép cả câu), translation đã biên tập bằng tiếng Việt. Không in giải thích khác hoặc sửa ngoài review_ids.
 ```
 
@@ -172,6 +178,7 @@ HAI PHẦN ĐẦU RA
 CÁC MỤC
 - characters: name = tên nguồn; translation = tên Việt không rỗng; role = vai trò/quan hệ có căn cứ hoặc “chưa rõ”; address = xưng hô theo chiều và phạm vi; evidence = episode_id, id cue, ai gọi ai và lý do kết luận bằng tiếng Việt, không trích lời Trung; status = evidence khi tên và xưng hô có tập/cue dẫn chứng, guess khi mới là phỏng đoán chưa đủ dẫn chứng (không bao giờ tự đặt locked). Giữ bằng chứng/phạm vi cũ còn hiệu lực khi bổ sung bằng chứng mới.
 - glossary: source = từ nguồn; translation = tên, danh xưng, địa danh hoặc thuật ngữ Việt nhất quán. Không đưa nhãn tên phim vào đây.
+- Nếu setting=historical, ghi các thuật ngữ Hán–Việt thông dụng thực sự xuất hiện trong nguồn (tu vi, linh lực, công pháp…) vào glossary để giữ ổn định giữa các tập; phân biệt linh lực/linh khí và tu luyện/tu dưỡng. Chỉ sửa thuật ngữ cũ khi nêu rõ nguồn và lý do đổi văn phong, giữ nguyên tên người dùng khóa.
 - uncertainties: điều chưa rõ hoặc sửa kết luận cũ có lý do. Mục không có thông tin dùng []; không bịa dữ kiện để lấp mảng.
 - Chữ Hán chỉ được giữ trong characters.name và glossary.source của cả hai phần. summary, translation, role, address, evidence và uncertainties phải bằng tiếng Việt, không pinyin/chữ Hán/câu trích nguồn. Nhắc nhân vật bằng tên Việt; giữ mã setting, episode_id và số cue theo dữ liệu/schema.
 

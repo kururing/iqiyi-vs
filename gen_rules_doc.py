@@ -22,7 +22,7 @@ def render() -> str:
              f"| Dịch: lõi (`TRANSLATION_SYSTEM`) | {len(app.TRANSLATION_SYSTEM):,} |"]
     for name, _, rule in agent.TRANSLATION_MODULES:
         parts.append(f"| Dịch: module `{name}` (chèn khi nguồn trúng) | {len(rule):,} |")
-    parts += [f"| Dịch: module cổ trang (khi setting=historical) | {len(agent.HISTORICAL_STYLE_RULE):,} |",
+    parts += [f"| Module cổ trang dùng chung: dịch, rà, trọng tài (khi setting=historical) | {len(agent.HISTORICAL_STYLE_RULE):,} |",
               f"| Rà nghĩa (`SEMANTIC_REVIEW_SYSTEM`) | {len(app.SEMANTIC_REVIEW_SYSTEM):,} |",
               f"| Trọng tài (`ARBITER_SYSTEM`) | {len(app.ARBITER_SYSTEM):,} |",
               f"| Đọc cú pháp (`SYNTAX_UNIT_SYSTEM`) | {len(app.SYNTAX_UNIT_SYSTEM):,} |",

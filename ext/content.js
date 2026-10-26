@@ -1,6 +1,6 @@
 /* iqiyi-vi */
 (function () {
-  var ENGINE_VERSION = 185;
+  var ENGINE_VERSION = 199;
   if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
     if (window.__iqiyiViReload) window.__iqiyiViReload();
     return;
@@ -18,20 +18,24 @@
   var IQCOM_PENDING_LABELS = new Set();
   var TEXT_CACHE = new Map();
   var MACHINE_COPY = new Map();
+  function machineTextKey(value) { return String(value || "").replace(/\s+/g, " ").trim(); }
   try {
     var savedCopy = JSON.parse(localStorage.getItem("iqiyi-vi-machine-copy-v1") || "[]");
     if (Array.isArray(savedCopy)) savedCopy.slice(-1000).forEach(function (row) {
-      if (Array.isArray(row) && typeof row[0] === "string" && typeof row[1] === "string") MACHINE_COPY.set(row[0], row[1]);
+      if (Array.isArray(row) && typeof row[0] === "string" && typeof row[1] === "string" && row[1].trim() && !cjkCount(row[1]))
+        MACHINE_COPY.set(machineTextKey(row[0]), row[1].trim());
     });
   } catch (_) {}
   var machineTimer = null;
+  var machineTimerAt = 0;
   var machineBusy = false;
-  var machineDirty = false;
-  var machineRetryAt = 0;
+  var MACHINE_PENDING = new Set();
+  var MACHINE_WORKERS = [{busy:false, retryAt:0, failures:0}, {busy:false, retryAt:0, failures:0}];
   var SEARCH_TITLE_ALIASES = new Map();
   var SEARCH_IN_FLIGHT = false;
   var REPLAYING_SEARCH = false;
   var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, CODE: 1 };
+  var IS_RANKING_PAGE = /^\/ranks1(?:PCA)?(?:\/|$)/i.test(location.pathname);
   var FIXED_UI_TARGETS = [
     '[class*="metas_tag__"]',
     'img[src*="ry_bk_20.svg"]',
@@ -53,6 +57,98 @@
     'img[src*="f660fb9c2f57476fbe234f397fd21e37"]'
   ].join(",");
   var FIXED_COPY = {
+    "年代榜": "Phim thời kỳ",
+    "悬疑罪案榜": "Bí ẩn, tội phạm",
+    "谍战榜": "Điệp chiến",
+    "Bảng Xếp Hạng Niên Đại": "Phim thời kỳ",
+    "Bảng Xếp Hạng Hồi Hộp Tội Phạm": "Bí ẩn, tội phạm",
+    "Bảng Xếp Hạng Gián Điệp": "Điệp chiến",
+    "爱奇艺风云榜": "Bảng xếp hạng iQIYI",
+    "热播榜": "Đang hot",
+    "飙升榜": "Tăng hạng",
+    "免费榜": "Miễn phí",
+    "必看榜": "Đáng xem",
+    "期待榜": "Được mong đợi",
+    "高分榜": "Điểm cao",
+    "N刷榜": "Xem lại nhiều",
+    "古偶榜": "Cổ trang lãng mạn",
+    "警匪榜": "Hình sự",
+    "励志榜": "Truyền cảm hứng",
+    "喜剧榜": "Hài",
+    "家庭榜": "Gia đình",
+    "仙侠榜": "Tiên hiệp",
+    "都市榜": "Hiện đại",
+    "青春榜": "Thanh xuân",
+    "枪战榜": "Đấu súng",
+    "动作榜": "Hành động",
+    "科幻榜": "Khoa học viễn tưởng",
+    "武侠榜": "Võ hiệp",
+    "悬疑榜": "Bí ẩn",
+    "国漫榜": "Hoạt hình Trung Quốc",
+    "恋爱榜": "Tình cảm",
+    "榜单规则": "Quy tắc xếp hạng",
+    "实时热度": "Độ hot hiện tại",
+    "最高热度": "Độ hot cao nhất",
+    "飙升幅度": "Mức tăng",
+    "百万讨论": "1 triệu lượt thảo luận",
+    "全部榜单": "Tất cả bảng",
+    "按实时热度排行": "Xếp theo độ hot hiện tại",
+    "hiển thị lời bài hát": "Hiện lời bài hát",
+    "đường dẫn lời bài hát": "Thư mục lời",
+    "Cùng đường dẫn với file nhạc": "Cùng thư mục với nhạc",
+    "Lưu vào đường dẫn đã chỉ định": "Thư mục tùy chọn",
+    "con đường che chắn": "Ảnh bìa",
+    "Tải tập tin lời bài hát": "Chọn tệp lời",
+    "danh sách minh bạch": "Độ trong suốt",
+    "hình ảnh tùy chỉnh": "Ảnh riêng",
+    "Kích thước phông chữ phụ đề": "Cỡ chữ phụ đề",
+    "phông chữ phụ đề": "Phông chữ",
+    "(Các) độ trễ phụ đề": "Độ trễ phụ đề (s)",
+    "Bên dưới": "Dưới",
+    "Bên trên": "Trên",
+    "Bỏ qua tiêu đề:": "Đầu phim:",
+    "Bỏ qua phần kết:": "Cuối phim:",
+    "Tắt máy sau": "phút nữa tắt máy",
+    "tắt máy sau": "nữa sẽ tắt máy",
+    "跟随系统设置": "Theo cài đặt hệ thống",
+    "传承觉醒": "Thức tỉnh truyền thừa",
+    "短剧热播榜": "BXH phim ngắn đang hot",
+    "查看完整短剧榜": "Xem toàn bộ BXH phim ngắn",
+    "查看完整动漫榜": "Xem toàn bộ BXH anime",
+    "Sự cố hiện tại có thể xảy ra do không cập nhật lên phiên bản mới nhất.": "Lỗi có thể do ứng dụng chưa được cập nhật.",
+    "Nếu bạn chọn tắt máy theo lịch trình, hệ thống sẽ": "Máy sẽ tắt sau",
+    "đóng cửa bên trong": "nữa.",
+    "Tắt sau khi phát lại video hoàn tất": "Tắt máy khi phát xong",
+    "Tắt máy tính sau khi tải tác vụ offline": "Tắt máy khi tải xong",
+    "Đang tải nhật ký lên, vui lòng đợi...": "Đang gửi nhật ký…",
+    "Mở Windows bằng chế độ tối giản": "Chạy chế độ tối giản cùng Windows",
+    "Nhấp đúp trình phát:": "Nhấp đúp:",
+    "Đổi toàn màn / chuẩn": "Toàn màn / chuẩn",
+    "Đổi cửa sổ nhỏ / chuẩn": "Cửa sổ nhỏ / chuẩn",
+    "Tăng chất lượng:": "Chất lượng:",
+    "Tăng tốc video:": "Tăng tốc:",
+    "Bật tăng tốc GPU:": "Tăng tốc GPU:",
+    "Muốn biết thêm thông tin? Thăm nom ": "Xem thêm tại: ",
+    "Muốn biết thêm thông tin? Thăm nom": "Xem thêm tại:",
+    "想了解更多信息? 请访问": "Xem thêm tại:",
+    " Thông tin sao kê ": " Thông tin pháp lý ",
+    "Thông tin sao kê": "Thông tin pháp lý",
+    "声明信息": "Thông tin pháp lý",
+    "Tự động thêm các tệp tương tự theo cùng một đường dẫn vào danh sách": "Tự thêm tệp tương tự vào danh sách",
+    "Chào mừng đến với iQiyi Universal Play": "Chào mừng đến iQIYI",
+    "Hiện tại không có tập tin nào trong danh sách": "Chưa có tệp",
+    "Tệp không còn hiệu lực": "Tệp bị mất",
+    "Xóa các tập tin đã hết hạn": "Xóa tệp bị mất",
+    "Sắp xếp tăng dần theo tên tệp": "Tên tệp: A → Z",
+    "Sắp xếp giảm dần theo tên tệp": "Tên tệp: Z → A",
+    "Theo dõi độ trễ": "Độ trễ âm thanh (s)",
+    "đột quỵ phụ đề": "Viền phụ đề",
+    "màu đột quỵ": "Màu viền",
+    "Nghị quyết:": "Độ phân giải:",
+    "đồng bộ hóa âm thanh": "Đồng bộ âm thanh",
+    "Tình trạng hiện tại:": "Trạng thái:",
+    "Bật bỏ qua phần tín dụng mở đầu và kết thúc": "Bỏ qua đầu và cuối phim",
+    "Khôi phục giao diện mặc định": "Giao diện gốc",
     "演员": "Diễn viên ",
     "正片": "Tập chính",
     "短片": "Phim ngắn",
@@ -323,6 +419,14 @@
     "更多精彩": "Xem thêm nội dung",
     "全部内容": "Tất cả nội dung",
     "公司介绍": "Giới thiệu công ty",
+    "公司简介": "Giới thiệu công ty",
+    "爱奇艺简介": "Giới thiệu iQIYI",
+    "爱奇艺官网": "Trang chủ iQIYI",
+    "业务合作": "Hợp tác kinh doanh",
+    "内容投诉": "Khiếu nại nội dung",
+    "历史协议版本": "Các phiên bản điều khoản cũ",
+    "服务协议": "Thỏa thuận dịch vụ",
+    "账号注销": "Xóa tài khoản",
     "专业内容合作": "Hợp tác nội dung chuyên nghiệp",
     "爱奇艺号": "Kênh iQIYI",
     "爱奇艺纳逗Pro": "iQIYI NaDou Pro",
@@ -540,13 +644,13 @@
     "<c #999999>2.遇到问题，也可以联系</c><a http://cserver.iqiyi.com/index?e=9><c #23d41e>在线客服</c></a>": "<c #999999>2. Gặp vấn đề, liên hệ </c><a http://cserver.iqiyi.com/index?e=9><c #23d41e>hỗ trợ online</c></a>",
     "继续反馈": "Tiếp tục góp ý",
     "建议更新版本": "Nên cập nhật bản",
-    "当前问题可能是未更新到最新版造成的，": "Sự cố hiện tại có thể xảy ra do không cập nhật lên phiên bản mới nhất.",
+    "当前问题可能是未更新到最新版造成的，": "Lỗi có thể do ứng dụng chưa được cập nhật.",
     "请更新后重试。": "Vui lòng cập nhật và thử lại.",
     "仍要反馈": "Vẫn góp ý",
     "立即更新": "Cập nhật ngay",
     "定时设置": "Hẹn giờ",
-    "您选择了定时关机，系统将在": "Nếu bạn chọn tắt máy theo lịch trình, hệ thống sẽ",
-    "内关闭": "đóng cửa bên trong",
+    "您选择了定时关机，系统将在": "Máy sẽ tắt sau",
+    "内关闭": "nữa.",
     "立即关机": "Tắt máy ngay",
     "取消关机": "Hủy tắt máy",
     "反馈与建议": "Phản hồi và đề xuất",
@@ -570,11 +674,11 @@
     "修复": "Sửa",
     "定时关机": "Hẹn giờ tắt máy",
     "重置定时": "Đặt lại hẹn giờ",
-    "影片播放完成后关机": "Tắt sau khi phát lại video hoàn tất",
-    "离线任务下载完成后关机": "Tắt máy tính sau khi tải tác vụ offline",
+    "影片播放完成后关机": "Tắt máy khi phát xong",
+    "离线任务下载完成后关机": "Tắt máy khi tải xong",
     "时": "giờ",
-    "分 后关机": "Tắt máy sau",
-    "后关机": "tắt máy sau",
+    "分 后关机": "phút nữa tắt máy",
+    "后关机": "nữa sẽ tắt máy",
     "确 认": "Xác nhận",
     "客户端软件出现异常情况啦!T^T": "Đã xảy ra sự cố bất thường trong phần mềm máy khách! T^T",
     "下载最新版试试哦": "Tải về phiên bản mới nhất và thử nó",
@@ -746,7 +850,7 @@
     "网页模式": "Chế độ web",
     "关闭网页": "Đóng trang",
     "上传中…": "Đang tải lên…",
-    "正在上传日志 请稍等…": "Đang tải nhật ký lên, vui lòng đợi...",
+    "正在上传日志 请稍等…": "Đang gửi nhật ký…",
     "驱动修复": "Sửa driver",
     "修复显卡": "Sửa chữa card đồ họa",
     "修复时可能出现多个弹窗，请选择当前设备驱动进行": "Có thể hiện nhiều cửa sổ, hãy chọn driver máy này",
@@ -781,7 +885,7 @@
     "无声音或者音量过大。": "Không có âm thanh hoặc âm lượng quá lớn.",
     "开启与关闭：": "Bật / tắt:",
     "开机自动运行": "Chạy cùng Windows",
-    "开机自动运行极简模式": "Mở Windows bằng chế độ tối giản",
+    "开机自动运行极简模式": "Chạy chế độ tối giản cùng Windows",
     "当程序最小化后显示在": "Khi thu nhỏ thì hiện ở",
     "任务栏": "Thanh tác vụ",
     "托盘": "Khay hệ thống",
@@ -837,16 +941,16 @@
     "退出应用时清理本地播放列表和播放记录": "Xóa playlist và lịch sử khi thoát",
     "自动添加同路径相似文件到播放列表": "Tự thêm file cùng thư mục vào playlist",
     "定时关机：": "Hẹn giờ tắt:",
-    "双击播放器：": "Nhấp đúp trình phát:",
-    "全屏/标准 模式切换": "Đổi toàn màn / chuẩn",
-    "小窗/标准 模式切换": "Đổi cửa sổ nhỏ / chuẩn",
-    "画质增强：": "Tăng chất lượng:",
+    "双击播放器：": "Nhấp đúp:",
+    "全屏/标准 模式切换": "Toàn màn / chuẩn",
+    "小窗/标准 模式切换": "Cửa sổ nhỏ / chuẩn",
+    "画质增强：": "Chất lượng:",
     "超分": "Siêu nét",
     "超帧": "Siêu khung hình",
     "（仅针对1080P清晰度生效）": "(chỉ với 1080P)",
-    "视频加速：": "Tăng tốc video:",
+    "视频加速：": "Tăng tốc:",
     "开启视频加速服务": "Bật dịch vụ tăng tốc video",
-    "开启GPU加速：": "Bật tăng tốc GPU:",
+    "开启GPU加速：": "Tăng tốc GPU:",
     "更改后需要重启客户端": "Đổi xong cần mở lại app",
     "本地视频默认使用爱奇艺视频播放": "Các video cục bộ được phát bằng iQiyi Video theo mặc định.",
     "退出应用时自动清理播放列表和最新的播放记录": "Tự động xóa danh sách phát và bản ghi phát lại mới nhất khi thoát khỏi ứng dụng",
@@ -866,9 +970,9 @@
     "退出截图": "Thoát chụp",
     "字号": "Cỡ chữ",
     "Copyright © 2026 爱奇艺 All Rights Reserved": "Copyright © 2026 iQIYI. Bảo lưu mọi quyền",
-    "想了解更多信息? 请访问 ": "Muốn biết thêm thông tin? Thăm nom ",
+    "想了解更多信息? 请访问 ": "Xem thêm tại: ",
     " 版本信息 ": " Thông tin phiên bản ",
-    " 声明信息 ": " Thông tin sao kê ",
+    " 声明信息 ": " Thông tin pháp lý ",
     "关联": "Liên kết",
     "始终保持文件关联": "Luôn gắn loại tệp",
     "自动文件关联后提示": "Nhắc sau khi liên kết tập tin tự động",
@@ -929,12 +1033,12 @@
     "经典模式": "Cổ điển",
     "后续可在设置中更改": "Có thể đổi sau trong Cài đặt",
     "歌词": "Lời bài hát",
-    "显示歌词": "hiển thị lời bài hát",
-    "歌词路径": "đường dẫn lời bài hát",
-    "与音乐文件同路径": "Cùng đường dẫn với file nhạc",
-    "保存至指定路径": "Lưu vào đường dẫn đã chỉ định",
+    "显示歌词": "Hiện lời bài hát",
+    "歌词路径": "Thư mục lời",
+    "与音乐文件同路径": "Cùng thư mục với nhạc",
+    "保存至指定路径": "Thư mục tùy chọn",
     "浏览": "Duyệt",
-    "封面路径": "con đường che chắn",
+    "封面路径": "Ảnh bìa",
     "媒体文件": "tập tin đa phương tiện",
     "启动应用时，窗口恢复上次大小及位置": "Khi ứng dụng được khởi chạy, cửa sổ sẽ khôi phục kích thước và vị trí cuối cùng của nó",
     "播放视频时": "Trong khi phát video",
@@ -942,7 +1046,7 @@
     "列表": "Danh sách",
     "退出时清空播放列表": "Xóa danh sách phát khi thoát",
     "退出时清空播放记录": "Xóa lịch sử khi thoát",
-    "自动添加同路径下的相似文件到列表": "Tự động thêm các tệp tương tự theo cùng một đường dẫn vào danh sách",
+    "自动添加同路径下的相似文件到列表": "Tự thêm tệp tương tự vào danh sách",
     "快捷键（按退格键可取消设置）": "Phím tắt (Backspace để xóa)",
     "声卡选择": "Chọn card âm thanh",
     "请选择声卡": "Vui lòng chọn card âm thanh",
@@ -973,7 +1077,7 @@
     "立即重启": "Mở lại ngay",
     "置顶": "Ghim trên cùng",
     "当前系统时间": "Giờ hệ thống",
-    "欢迎使用爱奇艺万能播放": "Chào mừng đến với iQiyi Universal Play",
+    "欢迎使用爱奇艺万能播放": "Chào mừng đến iQIYI",
     "编辑皮肤": "Chỉnh sửa da",
     "向左旋转90度": "Xoay 90 độ sang trái",
     "向右旋转90度": "Xoay phải 90°",
@@ -1001,11 +1105,11 @@
     "搜索播放列表": "Tìm kiếm danh sách phát",
     "退出搜索": "Thoát tìm kiếm",
     "从列表移除": "Gỡ khỏi danh sách",
-    "列表中暂时没有文件": "Hiện tại không có tập tin nào trong danh sách",
+    "列表中暂时没有文件": "Chưa có tệp",
     "添加文件": "Thêm tệp",
     "暂无相关内容": "Chưa có nội dung liên quan",
     "上一次播放的文件": "Tệp vừa phát",
-    "文件已失效": "Tệp không còn hiệu lực",
+    "文件已失效": "Tệp bị mất",
     "文件无效": "Tệp không hợp lệ",
     "打开URL": "Mở URL",
     "A-B循环播放": "Lặp A-B",
@@ -1025,7 +1129,7 @@
     "退出播放器": "Thoát trình phát",
     "查看文件信息": "Xem thông tin tệp",
     "清空播放列表": "Xóa danh sách phát",
-    "移除失效文件": "Xóa các tập tin đã hết hạn",
+    "移除失效文件": "Xóa tệp bị mất",
     "添加文件夹": "Thêm thư mục",
     "添加URL": "Thêm URL",
     "最近播放": "Phát gần đây",
@@ -1048,8 +1152,8 @@
     "添加同路径相似文件到列表": "Thêm các tệp tương tự có cùng đường dẫn vào danh sách",
     "定位到列表所在位置": "Đi đến vị trí của danh sách",
     "打开所在文件夹": "Mở thư mục chứa nó",
-    "按文件名升序": "Sắp xếp tăng dần theo tên tệp",
-    "按文件名降序": "Sắp xếp giảm dần theo tên tệp",
+    "按文件名升序": "Tên tệp: A → Z",
+    "按文件名降序": "Tên tệp: Z → A",
     "显示主界面": "Hiển thị giao diện chính",
     "设置...  ": "cài đặt...  ",
     "关于...  ": "Về...  ",
@@ -1065,7 +1169,7 @@
     "播放调节": "Điều chỉnh phát lại",
     "   抱歉，没找到歌词。": "   Xin lỗi, không tìm thấy lời bài hát.",
     "您可以尝试": "Bạn có thể thử",
-    "载入歌词文件": "Tải tập tin lời bài hát",
+    "载入歌词文件": "Chọn tệp lời",
     "正在搜索歌词，请稍候...": "Đang tìm kiếm lời bài hát, vui lòng đợi...",
     "投屏已断开": "Truyền màn hình đã bị ngắt kết nối",
     "与电视的链接断开了，请尝试重新投屏": "Liên kết tới TV bị hỏng, vui lòng thử truyền lại",
@@ -1131,7 +1235,7 @@
     "声音调节": "Chỉnh âm",
     "添加音轨": "Thêm bản âm thanh",
     "本视频暂无音轨": "Video này chưa có bản âm thanh",
-    "音轨延迟(s)": "Theo dõi độ trễ",
+    "音轨延迟(s)": "Độ trễ âm thanh (s)",
     "声道选择": "Chọn kênh âm",
     "亮度": "Độ sáng",
     "对比度": "Tương phản",
@@ -1152,15 +1256,15 @@
     "重置": "Đặt lại",
     "添加字幕": "Thêm phụ đề",
     "本视频暂无字幕": "Video này chưa có phụ đề",
-    "字幕延迟(s)": "(Các) độ trễ phụ đề",
+    "字幕延迟(s)": "Độ trễ phụ đề (s)",
     "字幕位置": "Vị trí phụ đề",
-    "底部": "Bên dưới",
-    "顶部": "Bên trên",
-    "字幕字体": "phông chữ phụ đề",
-    "字幕字号": "Kích thước phông chữ phụ đề",
+    "底部": "Dưới",
+    "顶部": "Trên",
+    "字幕字体": "Phông chữ",
+    "字幕字号": "Cỡ chữ phụ đề",
     "字幕颜色": "Màu phụ đề",
-    "字幕描边": "đột quỵ phụ đề",
-    "描边颜色": "màu đột quỵ",
+    "字幕描边": "Viền phụ đề",
+    "描边颜色": "Màu viền",
     "文件信息": "Thông tin tập tin",
     "文件名.avi": "tên tập tin.avi",
     "基本信息": "Thông tin cơ bản",
@@ -1173,7 +1277,7 @@
     "视频编码:": "Mã hóa video:",
     "视频码率:": "Tốc độ bit video:",
     "视频帧率:": "Tốc độ khung hình video:",
-    "分辨率:": "Nghị quyết:",
+    "分辨率:": "Độ phân giải:",
     "音频信息": "thông tin âm thanh",
     "音频编码:": "Mã hóa âm thanh:",
     "音频码率:": "Tốc độ bit âm thanh:",
@@ -1183,11 +1287,11 @@
     "定时动作：": "Hành động theo thời gian:",
     "立即执行": "Thực hiện ngay lập tức",
     "取消执行": "Hủy thực thi",
-    "音频同步": "đồng bộ hóa âm thanh",
+    "音频同步": "Đồng bộ âm thanh",
     "音频同步（毫秒）：": "Đồng bộ hóa âm thanh (mili giây):",
     "声音延后": "Trễ âm",
     "声音提前": "Sớm âm",
-    "当前状态：": "Tình trạng hiện tại:",
+    "当前状态：": "Trạng thái:",
     "未设置": "Chưa đặt",
     "自定义": "Tùy chỉnh",
     "饱和度/鲜艳度": "Độ bão hòa/Sức sống",
@@ -1201,10 +1305,10 @@
     "旋转": "Xoay",
     "左旋90度": "90 độ trái",
     "右旋90度": "Quay phải 90 độ",
-    "开启跳过片头片尾": "Bật bỏ qua phần tín dụng mở đầu và kết thúc",
-    "跳过片头：": "Bỏ qua tiêu đề:",
+    "开启跳过片头片尾": "Bỏ qua đầu và cuối phim",
+    "跳过片头：": "Đầu phim:",
     "秒": "giây",
-    "跳过片尾：": "Bỏ qua phần kết:",
+    "跳过片尾：": "Cuối phim:",
     "投屏到电视": "Chiếu TV",
     "正在搜索投屏设备…": "Đang tìm kiếm thiết bị phản chiếu màn hình…",
     "确保当前设备与投屏接收方 (电视等设备) 处于同一WiFi下": "Đảm bảo thiết bị hiện tại và thiết bị nhận chiếu (TV...) dùng cùng Wi‑Fi.",
@@ -1777,6 +1881,68 @@
     "正在开启杜比音效": "Đang bật âm thanh Dolby",
     "正在为您开启会员专享杜比音效中，限时免费体验，请稍等...": "Đang bật trải nghiệm miễn phí có thời hạn âm thanh Dolby dành cho VIP…",
     "已为您成功开启会员专享的杜比音效，限时免费体验": "Đã bật trải nghiệm miễn phí có thời hạn âm thanh Dolby dành cho VIP",
+    "VIP专享杜比音效试用中": "Đang dùng thử âm thanh Dolby VIP",
+    "VIP专享杜比音效试用结束": "Đã hết thời gian dùng thử âm thanh Dolby VIP",
+    "杜比音效试用中": "Đang dùng thử âm thanh Dolby",
+    "杜比音效试用结束": "Đã hết thời gian dùng thử âm thanh Dolby",
+    "标准音效": "Âm thanh tiêu chuẩn",
+    "音效：": "Hiệu ứng âm thanh:",
+    "当前选中音效不支持基础会员，需要": "Âm thanh này không dành cho VIP Cơ bản. Bạn cần",
+    "你选中了VIP音效，需要": "Bạn đã chọn âm thanh VIP. Bạn cần",
+    "杜比视界": "Dolby Vision",
+    "杜比全景声": "Dolby Atmos",
+    "使用客户端体验杜比音效": "Dùng ứng dụng để trải nghiệm âm thanh Dolby",
+    "未发现杜比音效解码器": "Không tìm thấy bộ giải mã âm thanh Dolby",
+    "正在等待杜比音效解码器安装完成\n安装完成后请点击「已安装」按钮": "Đang chờ cài đặt bộ giải mã âm thanh Dolby.\nCài xong, hãy nhấn “Đã cài đặt”.",
+    "设备超限不享会员权益": "Đã vượt giới hạn thiết bị, không thể dùng quyền lợi VIP",
+    "设备管理": "Quản lý thiết bị",
+    "登录可享准高清720P，可同步观看历史": "Đăng nhập để xem 720P và đồng bộ lịch sử xem",
+    "已为您同步爱奇艺网页版的登录状态": "Đã đồng bộ trạng thái đăng nhập từ web iQIYI",
+    "已为您同步爱奇艺客户端的登录状态": "Đã đồng bộ trạng thái đăng nhập từ ứng dụng iQIYI",
+    "播放失败，请": "Không phát được video. Vui lòng",
+    "前往系统设置": "Mở cài đặt hệ thống",
+    "打开HDR功能，并重启客户端": "Bật HDR rồi khởi động lại ứng dụng",
+    "您正在使用高品质影音": "Bạn đang dùng hình ảnh và âm thanh chất lượng cao",
+    "邀您开启高品质影音": "Mời bật hình ảnh và âm thanh chất lượng cao",
+    "您正在开启杜比音效": "Đang bật âm thanh Dolby",
+    "您正在切换至": "Đang chuyển sang",
+    "体验震撼视听": "Trải nghiệm hình ảnh và âm thanh sống động",
+    "立即开启": "Bật ngay",
+    "已恢复": "Đã khôi phục",
+    "正常速度": "tốc độ bình thường",
+    "已切换": "Đã chuyển",
+    "即将播放：": "Sắp phát:",
+    "只看": "Chỉ xem",
+    "片段": "phân đoạn",
+    "即将播放下一个": "Sắp phát tiếp",
+    "卡顿问题是否已解决？": "Tình trạng giật video đã được khắc phục chưa?",
+    "已解决": "Đã khắc phục",
+    "未解决": "Chưa khắc phục",
+    "超前点播视频不支持录屏哦,请关闭录屏软件后重试": "Video xem trước không hỗ trợ ghi màn hình. Hãy tắt phần mềm ghi hình rồi thử lại.",
+    "抱歉，当前视频为加密视频，需开启系统Aero效果，开启后请重试": "Video được mã hóa. Hãy bật hiệu ứng Aero của Windows rồi thử lại.",
+    "查看如何开启": "Xem cách bật",
+    "立即购买/用券观看": "Mua ngay / Dùng vé để xem",
+    "喜欢这个内容吗，观看完整版请": "Bạn thích nội dung này? Để xem toàn bộ, vui lòng",
+    "试看已结束": "Đã hết thời gian xem thử",
+    "后结束": "nữa sẽ kết thúc",
+    "您正在使用标清480P 登录可享准高清720P": "Bạn đang xem 480P. Đăng nhập để xem 720P",
+    "当前视频为付费视频，请到爱奇艺移动端购买后可观看": "Đây là video trả phí. Hãy mua trên ứng dụng iQIYI điện thoại để xem.",
+    "抱歉，Mac客户端暂不支持购买此内容，请先在爱奇艺网页端购买后再重新播放": "Ứng dụng Mac chưa hỗ trợ mua nội dung này. Hãy mua trên web iQIYI rồi phát lại.",
+    "暂不支持购买体育会员，请前往爱奇艺网页端购买体育会员后再试": "Chưa hỗ trợ mua VIP thể thao tại đây. Hãy mua trên web iQIYI rồi thử lại.",
+    "显卡驱动异常，可能导致播放卡顿": "Driver đồ họa gặp lỗi, có thể khiến video bị giật",
+    "查看解决方案": "Xem cách khắc phục",
+    "您的设备支持4K超清画质，推荐使用爱奇艺客户端体验": "Thiết bị hỗ trợ 4K. Dùng ứng dụng iQIYI để trải nghiệm.",
+    "设备支持4K超清，安装客户端立即体验！": "Thiết bị hỗ trợ 4K. Cài ứng dụng để trải nghiệm ngay!",
+    "下载客户端": "Tải ứng dụng",
+    "已为您设置成默认开启，可在弹幕设置中调整": "Đã đặt bật mặc định. Bạn có thể đổi trong cài đặt bình luận chạy.",
+    "切换账号失败，请重试": "Không đổi được tài khoản. Hãy thử lại.",
+    "尊贵的星钻VIP会员，你可以免费观看星钻剧场": "Hội viên VIP Kim Cương có thể xem miễn phí rạp Kim Cương",
+    "已为您自动下载爱奇艺客户端，安装后即可下载该视频": "Đã tự động tải ứng dụng iQIYI. Cài xong, bạn có thể tải video này.",
+    "已为您自动下载爱奇艺客户端，安装后即可享4K观影体验": "Đã tự động tải ứng dụng iQIYI. Cài xong để xem phim 4K.",
+    "已为您自动下载爱奇艺客户端，安装后即可享更流畅观影体验": "Đã tự động tải ứng dụng iQIYI. Cài xong để xem video mượt hơn.",
+    "已为您自动下载隔空手势插件\n安装完成后将为您自动开启隔空手势": "Đã tự động tải tiện ích điều khiển bằng cử chỉ.\nTính năng sẽ tự bật sau khi cài xong.",
+    "当前内容为创作者原创付费视频\n请更新版本后解锁": "Đây là video gốc trả phí của nhà sáng tạo.\nHãy cập nhật ứng dụng để mở khóa.",
+    "当前内容为创作者原创付费视频\n请购买后解锁": "Đây là video gốc trả phí của nhà sáng tạo.\nHãy mua để mở khóa.",
     "精简模式已开启，可手动切回正常模式": "Đã bật chế độ tối giản. Bạn có thể chuyển về chế độ bình thường.",
     "播放器被系统静音，请点击右侧按钮恢复": "Hệ thống đã tắt tiếng player. Nhấn nút bên phải để bật lại.",
     "弹幕不会遮挡画面中的人物哦，若调整请去弹幕设置": "Bình luận chạy sẽ tránh che nhân vật. Bạn có thể chỉnh trong cài đặt bình luận.",
@@ -1899,7 +2065,7 @@
     "纯色": "Màu đơn",
     "品牌图片": "Ảnh thương hiệu",
     "自定义图片": "Ảnh tùy chọn",
-    "恢复默认界面": "Khôi phục giao diện mặc định",
+    "恢复默认界面": "Giao diện gốc",
     "歌词字体放大": "Tăng cỡ chữ lời bài hát",
     "歌词字体缩小": "Giảm cỡ chữ lời bài hát",
     "歌词时间提前": "Hiển thị lời bài hát sớm hơn",
@@ -1998,7 +2164,7 @@
       var path = (el.ownerDocument && el.ownerDocument.location && el.ownerDocument.location.pathname) || location.pathname;
       if (el.tagName === "H1" && /(?:^|\/)(?:[va]_[^/]+|player(?:_mac)?)\.html$/i.test(path)) return true;
       if (/^(?:卡片|缩略图|影片|视频|专辑|剧集)标题$/.test(entity) || entity === "播放器标题栏视频标题" ||
-          /filmFeed_title__|feedZaizhui_itemTitle__|thumbnailItemTitle|flexVideoList_title__|tilesItem_title__|videoListItem_title__|title_title__|meta_title(?:TextBlock|NotCloud)|search-board-item_title|(?:album|movie|video|player|detail)[-_]?(?:name|title)(?:__|\b)/i.test(label)) return true;
+          /filmFeed_title__|feedZaizhui_itemTitle__|thumbnailItemTitle|flexVideoList_title__|tilesItem_title__|videoListItem_title__|title_title__|meta_title(?:TextBlock|NotCloud)|search-board-item_title|(?:^|\s)rvi__tit\d*(?:\s|$)|(?:album|movie|video|player|detail)[-_]?(?:name|title)(?:__|\b)/i.test(label)) return true;
     }
     return false;
   }
@@ -2074,6 +2240,7 @@
       if (el.nodeType !== 1) continue;
       var label = String(el.className || "");
       var entity = el.getAttribute("data-ai-entity") || "";
+      if (IS_RANKING_PAGE && /(?:^|\s)rvi__type\d*(?:\s|$)/.test(label)) return true;
       if (/(?:演员|主演|明星|人物)(?:姓名|名称|名字)$/.test(entity) || /TVG演员筛选标签/.test(entity) ||
           /(?:act|actor|star|cast)[-_]?name(?:Text(?:Wrap)?|__|[-_]|\b)|(?:albumMeta|reserveMeta)OpenCastItem|(?:actor|cast)[-_]item[-_]name/i.test(label)) return true;
       if (el.tagName === "A" && /\/lib\/s_\d+\.html(?:[?#]|$)|\/actor-info\//i.test(el.getAttribute("href") || "")) return true;
@@ -2177,6 +2344,7 @@
         delete slots[field];
         // Show the original name when the catalog has no Vietnamese match.
         setMetadataPending(node, field === "text" ? "" : field, false);
+        scheduleRemainingLocalization();
       }
     });
   }
@@ -2197,7 +2365,8 @@
     if (!isActorNameNode(node)) return false;
     var raw = String(value || "");
     var original = actorSourceText(node, raw);
-    var source = original.replace(/^(\s*(?:主演|演员|导演)[：:\s]*)/, "");
+    var rankingInfo = IS_RANKING_PAGE && original.match(/^(\s*\d{4}\s*\/.*\/\s*)([^/]+)$/);
+    var source = rankingInfo ? rankingInfo[2] : original.replace(/^(\s*(?:主演|演员|导演)[：:\s]*)/, "");
     var names = source.match(/[\u3400-\u9fff]+(?:[·・][\u3400-\u9fff]+)*/g) || [];
     names = names.filter(function (name, index) { return names.indexOf(name) === index; });
     if (!names.length) return true;
@@ -2243,7 +2412,7 @@
   function requestInternationalTitle(node, value, setter, field) {
     var raw = String(value || "");
     // Prepared UI copy is synchronous, even when a control has a title-like class.
-    if (FIXED_COPY[raw.trim()]) return false;
+    if (FIXED_COPY[raw.trim()] || (IS_RANKING_PAGE && /风云榜(?:[-–]爱奇艺风云榜)?$/.test(raw.trim()))) return false;
     setMetadataPending(node, field, false);
     if (requestInternationalActor(node, value, setter, field)) return true;
     if (!/[\u3400-\u9fff]/.test(raw)) return false;
@@ -2296,6 +2465,13 @@
   }
 
   function trPatterns(s) {
+    var activity = s.match(/^(超)?(\d+(?:\.\d+)?)(万|亿)?(?:条)?(弹幕|讨论)$/);
+    if (activity) {
+      var total = Number(activity[2]) * ({万:10000, 亿:100000000}[activity[3]] || 1);
+      var amount = total >= 1000000 ? Number((total / 1000000).toFixed(2)) + " triệu" :
+        total >= 1000 ? Number((total / 1000).toFixed(2)) + " nghìn" : String(total);
+      return (activity[1] ? "Hơn " : "") + amount + (activity[4] === "弹幕" ? " bình luận chạy" : " lượt thảo luận");
+    }
     // Match the complete count before generic unit replacements consume 万/亿.
     s = s.replace(/(\d+(?:\.\d+)?)(万|亿)?(人正在看|次播放)/g, function (_, n, unit, kind) {
       var total = Number(n) * ({万:10000, 亿:100000000}[unit] || 1);
@@ -2330,10 +2506,16 @@
       [/^(\d+)\s*部新片即将上映$/, "$1 phim mới sắp ra mắt"],
       [new RegExp("^" + count + "人已预约$"), "$1 người đã đặt nhắc"],
       [/^更新至(\d{2}-\d{2})期$/, "Cập nhật tới kỳ $1"],
-      [/^本周([一二三四五六日天])更新$/, function (_, day) {
-        return "Cập nhật " + ({一:"thứ Hai",二:"thứ Ba",三:"thứ Tư",四:"thứ Năm",五:"thứ Sáu",六:"thứ Bảy",日:"Chủ nhật",天:"Chủ nhật"})[day] + " tuần này";
+      [/^(\d+)\s*部短剧即将上线$/, "$1 phim ngắn sắp ra mắt"],
+      [/^本周([一二三四五六日天])(?:(\d{1,2}:\d{2}))?(更新|上线)$/, function (_, day, time, action) {
+        return (action === "上线" ? "Ra mắt " : "Cập nhật ") +
+          ({一:"thứ Hai",二:"thứ Ba",三:"thứ Tư",四:"thứ Năm",五:"thứ Sáu",六:"thứ Bảy",日:"Chủ nhật",天:"Chủ nhật"})[day] +
+          (time ? " lúc " + time : "") + " tuần này";
       }],
       [/^热度破(\d+)$/, "Độ hot vượt $1"],
+      [/^霸榜(\d+)个?月$/, "Dẫn đầu $1 tháng"],
+      [/^基于实时热度排行\s*(\d{1,2}:\d{2})更新$/, "Xếp theo độ hot · Cập nhật $1"],
+      [/^按实时热度排行\s*最近更新(\d{1,2})-(\d{1,2})$/, "Xếp theo độ hot · Cập nhật $2/$1"],
       [/^黄金年卡低至(\d+(?:\.\d+)?)折$/, "Gói VIP vàng năm còn $1/10 giá gốc"],
       [/^月月享(\d+(?:\.\d+)?)折$/, "Mỗi tháng còn $1/10 giá gốc"],
       [/^(\d+(?:\.\d+)?)折$/, "Còn $1/10 giá gốc"],
@@ -2409,12 +2591,15 @@
   function tr(s) {
     if (!s) return s;
     var source = String(s);
-    if (MACHINE_COPY.has(source)) return MACHINE_COPY.get(source);
-    if (TEXT_CACHE.has(source)) return TEXT_CACHE.get(source);
-    var translated = translateText(source);
-    if (TEXT_CACHE.size >= 2000) TEXT_CACHE.delete(TEXT_CACHE.keys().next().value);
-    TEXT_CACHE.set(source, translated);
-    return translated;
+    var translated = TEXT_CACHE.get(source);
+    if (translated === undefined) {
+      translated = translateText(source);
+      if (TEXT_CACHE.size >= 2000) TEXT_CACHE.delete(TEXT_CACHE.keys().next().value);
+      TEXT_CACHE.set(source, translated);
+    }
+    // Prepared UI copy wins; a later machine result can still fill an unknown label.
+    var cached = MACHINE_COPY.get(machineTextKey(source));
+    return translated !== source ? translated : cached === undefined ? source : cached;
   }
 
   function translateText(s) {
@@ -2424,6 +2609,18 @@
     var t = orig.slice(lead.length, orig.length - tail.length);
     if (!t) return orig;
     if (FIXED_COPY[t]) return lead + FIXED_COPY[t] + tail;
+    var rankingInfoPrefix = t.match(/^(\d{4})\s*\/\s*(.*?)\s*\/$/);
+    if (rankingInfoPrefix) {
+      var infoGenres = rankingInfoPrefix[2].split(/\s+/);
+      if (infoGenres.every(function (genre) { return !!FIXED_COPY[genre]; }))
+        return lead + rankingInfoPrefix[1] + " / " + infoGenres.map(function (genre) { return FIXED_COPY[genre]; }).join(" · ") + " /" + tail;
+    }
+    var chartTitle = t.match(/^(.+?)风云榜(?:[-–]爱奇艺风云榜)?$/);
+    if (chartTitle && FIXED_COPY[chartTitle[1]]) return lead + "BXH " + FIXED_COPY[chartTitle[1]] + " – iQIYI" + tail;
+    var rankingTop = t.match(/^(.+榜)\s*[·•・]\s*TOP(\d+)$/i);
+    if (rankingTop && FIXED_COPY[rankingTop[1]]) return lead + FIXED_COPY[rankingTop[1]] + " · TOP " + rankingTop[2] + tail;
+    var categoryBoard = t.match(/^(电视剧|中剧|短剧|电影|综艺|动漫|少儿|漫剧|纪录片|知识|体育)榜$/);
+    if (categoryBoard && FIXED_COPY[categoryBoard[1]]) return lead + "BXH " + FIXED_COPY[categoryBoard[1]] + tail;
     var notice = t.replace(/，\s+/g, "，").replace(/[~～。！!]+$/, "");
     if (notice !== t && FIXED_COPY[notice]) return lead + FIXED_COPY[notice] + tail;
     if (VERIFIED_TITLE_COPY[t]) return lead + VERIFIED_TITLE_COPY[t] + tail;
@@ -2459,12 +2656,34 @@
     if (adCountdown) return lead + "Sau " + adCountdown[1] + " giây có thể xem tiếp phim" + tail;
     var trialStatus = t.match(/^试看中[，,：:、\s]*(黄金\/白金\/星钻(?:VIP)?)(尊享)?$/);
     if (trialStatus) return lead + "Đang xem thử · VIP Vàng/Bạch Kim/Kim Cương" + tail;
+    var trialMinutes = t.match(/^试看(\d+)分钟[，,]由于版权原因[，,]观看完整版请$/);
+    if (trialMinutes) return lead + "Do bản quyền, chỉ được xem thử " + trialMinutes[1] + " phút. Để xem toàn bộ, vui lòng" + tail;
+    var memberNotice = t.match(/^尊敬的(.+?)会员[，,]\s*(.+)$/);
+    if (memberNotice) {
+      var member = tr(memberNotice[1]), message = tr(memberNotice[2]);
+      if (!/[\u3400-\u9fff]/.test(member + message)) return lead + "Quý hội viên " + member + ", " + message.charAt(0).toLowerCase() + message.slice(1) + tail;
+    }
+    var skippedAd = t.match(/^已为您跳过(\d+)\s*(秒|分钟)?广告$/);
+    if (skippedAd) return lead + "Đã bỏ qua " + skippedAd[1] + (skippedAd[2] === "分钟" ? " phút" : skippedAd[2] ? " giây" : "") + " quảng cáo" + tail;
+    var unlockedEpisode = t.match(/^已解锁第(\d+)集[，,](\d+)分钟内可看$/);
+    if (unlockedEpisode) return lead + "Đã mở khóa tập " + unlockedEpisode[1] + ", có thể xem trong " + unlockedEpisode[2] + " phút" + tail;
+    var spoilerCount = t.match(/^已屏蔽鉴定官治理的(\d+)条剧透弹幕[，,]发现遗漏可举报[，,]一起维护弹幕环境吧[！!]?$/);
+    if (spoilerCount) return lead + "Đã ẩn " + spoilerCount[1] + " bình luận tiết lộ nội dung qua kiểm duyệt. Hãy báo cáo nếu còn sót." + tail;
+    var deepSpoilerCount = t.match(/^深度防剧透已屏蔽(\d+)条有剧透倾向弹幕[，,]弹幕变少可能影响剧情讨论哦[。.]如发现遗漏可举报[，,]一起维护弹幕环境[！!]?$/);
+    if (deepSpoilerCount) return lead + "Chống tiết lộ nội dung nâng cao đã ẩn " + deepSpoilerCount[1] + " bình luận. Bình luận ít đi có thể ảnh hưởng thảo luận; hãy báo cáo nếu còn sót." + tail;
+    var qualityFailure = t.match(/^(.+?)画质开启失败[，,]请重试$/);
+    if (qualityFailure) {
+      var quality = tr(qualityFailure[1]);
+      if (!/[\u3400-\u9fff]/.test(quality)) return lead + "Không bật được chất lượng " + quality + ". Hãy thử lại." + tail;
+    }
     var frameRate = t.match(/^(超高清4K|超高清4K[ ··-]*|4K[ ··-]*)(\d+)帧$/);
     if (frameRate) return lead + "4K · " + frameRate[2] + " khung hình/giây" + tail;
     var playerSwitch = t.match(/^(已切换至|正在切换至)\s*(.+)$/);
     if (playerSwitch && FIXED_COPY[playerSwitch[2]]) return lead + FIXED_COPY[playerSwitch[1]] + " " + FIXED_COPY[playerSwitch[2]] + tail;
-    var subtitleSwitch = t.match(/^已切换主字幕为\s*(.+)$/);
-    if (subtitleSwitch) return lead + "Đã chuyển phụ đề chính sang " + tr(subtitleSwitch[1]) + tail;
+    var subtitleSwitch = t.match(/^已切换(主|副)字幕为\s*(.+)$/);
+    if (subtitleSwitch) return lead + "Đã chuyển phụ đề " + (subtitleSwitch[1] === "主" ? "chính" : "phụ") + " sang " + tr(subtitleSwitch[2]) + tail;
+    var subtitleClosed = t.match(/^已关闭(主|副)字幕$/);
+    if (subtitleClosed) return lead + "Đã tắt phụ đề " + (subtitleClosed[1] === "主" ? "chính" : "phụ") + tail;
     var adPrefix = t.match(/^广告\s+(.+)$/);
     if (adPrefix) return lead + "Quảng cáo " + adPrefix[1] + tail;
     // Most page text is already Vietnamese or English. Skip the dynamic Chinese templates for it.
@@ -2705,10 +2924,22 @@
       '#pcaSubtitleContainer,#pcaSubtitleContainer *,.caption-main,.caption-main *{' +
       'font-family:Arial,Helvetica,sans-serif!important;font-weight:700!important;color:#fff!important;' +
       '-webkit-text-stroke:0!important;' +
-      'text-shadow:-1px -1px 0 #111,0 -1px 0 #111,1px -1px 0 #111,1px 0 0 #111,1px 1px 0 #111,0 1px 0 #111,-1px 1px 0 #111,-1px 0 0 #111!important;}' +
+      'text-shadow:-2px -2px 0 #111,0 -2px 0 #111,2px -2px 0 #111,2px 0 0 #111,2px 2px 0 #111,0 2px 0 #111,-2px 2px 0 #111,-2px 0 0 #111!important;}' +
       '.caption-main::after,.caption-sub::after{content:none!important;}' +
       'video::cue{font-family:Arial,Helvetica,sans-serif;font-weight:700;color:#fff;background:transparent;' +
-      '-webkit-text-stroke:0;text-shadow:-1px -1px 0 #111,0 -1px 0 #111,1px -1px 0 #111,1px 0 0 #111,1px 1px 0 #111,0 1px 0 #111,-1px 1px 0 #111,-1px 0 0 #111;}';
+      '-webkit-text-stroke:0;text-shadow:-2px -2px 0 #111,0 -2px 0 #111,2px -2px 0 #111,2px 0 0 #111,2px 2px 0 #111,0 2px 0 #111,-2px 2px 0 #111,-2px 0 0 #111;}';
+    if (IS_RANKING_PAGE) s.textContent +=
+      'div:has(>div>.rtab__fix){position:sticky;top:0;z-index:10;}' +
+      '.rtab__fix{height:auto!important;position:static!important;}' +
+      '.rtab__top{height:auto!important;position:relative!important;top:auto!important;}' +
+      '.rtab__fix__bg,.rtab__sub{height:auto!important;overflow:visible!important;}' +
+      '.rtab__slider{height:auto!important;min-height:64px;overflow:visible!important;}' +
+      '.rtab__slider__box{height:auto!important;width:100%!important;overflow:visible!important;}' +
+      '.rtab__slider__in,.rtab__sub__in{display:flex!important;flex-wrap:wrap!important;gap:8px 24px;' +
+      'height:auto!important;white-space:normal!important;overflow:visible!important;' +
+      'transform:none!important;padding:16px 0!important;}' +
+      '.rtab__slider__in{width:100%!important;}' +
+      '.rtab__slider__link,.rtab__sub__link{margin:0!important;flex:0 0 auto;white-space:nowrap!important;}';
     (document.head || document.documentElement).appendChild(s);
   }
 
@@ -3102,27 +3333,26 @@
     } catch (e) {}
   }
 
-  function scheduleRemainingLocalization() {
+  function scheduleRemainingLocalization(delay) {
     var player = /(?:\/play\/|\/v_[^/]+\.html?$|\/player(?:_mac)?\.html$)/i.test(location.pathname);
     if (IQCOM_METADATA_STOPPED || document.hidden || !document.body ||
-        (window.top !== window && !player)) return;
-    if (machineBusy) { machineDirty = true; return; }
-    if (machineTimer !== null) return;
+        (window.top !== window && !player && !IS_RANKING_PAGE) ||
+        (!window.__iqiyiViToken && window.__iqiyiViTokenPending)) return;
+    var due = Date.now() + Math.max(150, typeof delay === "number" ? delay : 0);
+    if (machineTimer !== null && machineTimerAt <= due) return;
+    if (machineTimer !== null) clearTimeout(machineTimer);
+    machineTimerAt = due;
     machineTimer = setTimeout(function () {
       machineTimer = null;
       localizeRemaining();
-    }, Math.max(500, machineRetryAt - Date.now()));
+    }, Math.max(0, due - Date.now()));
   }
 
   async function localizeRemaining() {
     if (machineBusy || IQCOM_METADATA_STOPPED || document.hidden) return;
     machineBusy = true;
-    machineDirty = false;
+    var jobs = [], nextRetry = Infinity;
     try {
-      await Promise.race([
-        Promise.all(Array.from(IQCOM_METADATA_CACHE.values()).map(function (entry) { return entry.promise; })),
-        new Promise(function (resolve) { setTimeout(resolve, 1500); })
-      ]);
       if (IQCOM_METADATA_STOPPED) return;
       var slots = new Map();
       function collect(root) {
@@ -3139,12 +3369,19 @@
             continue;
           }
           if (!el ||
-              el.closest('script,style,noscript,code,input,textarea,[contenteditable]:not([contenteditable="false"]),#pcaSubtitleContainer,[class*="subtitleContainer"],[class*="caption-main"],[class*="caption-sub"]') ||
+              el.closest('script,style,noscript,code,input,textarea,[contenteditable]:not([contenteditable="false"]),[data-iqiyi-vi-pending="1"],#pcaSubtitleContainer,[class*="subtitleContainer"],[class*="caption-main"],[class*="caption-sub"]') ||
               !el.getClientRects().length || getComputedStyle(el).visibility === "hidden") continue;
+          var bounds = el.getBoundingClientRect();
+          if (IS_RANKING_PAGE) {
+            // Warm the next screen while idle; visible text takes priority below.
+            if (bounds.bottom < 0 || bounds.top > window.innerHeight * 2) continue;
+          }
           function add(raw, field) {
             if (!raw || raw.length > 2000 || !/[\u3400-\u9fff]/.test(raw)) return;
-            if (!slots.has(raw)) slots.set(raw, []);
-            slots.get(raw).push({node:node, field:field});
+            var key = machineTextKey(raw);
+            if (!slots.has(key)) slots.set(key, []);
+            slots.get(key).push({node:node, field:field, raw:raw,
+              priority:(bounds.top < window.innerHeight ? 0 : 2) + (key.length > 160 ? 1 : 0)});
           }
           if (node.nodeType === 3) add(node.nodeValue, "");
           else {
@@ -3158,45 +3395,74 @@
         slots.get(raw).forEach(function (slot) {
           if (!slot.node.isConnected) return;
           if (slot.field) {
-            if (slot.node.getAttribute(slot.field) === raw) slot.node.setAttribute(slot.field, translated);
-          } else if (slot.node.nodeValue === raw) slot.node.nodeValue = translated;
+            if (slot.node.getAttribute(slot.field) === slot.raw) slot.node.setAttribute(slot.field, translated);
+          } else if (slot.node.nodeValue === slot.raw) slot.node.nodeValue = translated;
         });
       }
       var texts = Array.from(slots.keys()).filter(function (raw) {
-        if (!MACHINE_COPY.has(raw)) return true;
+        if (!MACHINE_COPY.has(raw)) return !MACHINE_PENDING.has(raw);
         apply(raw, MACHINE_COPY.get(raw));
         return false;
       });
-      for (var start = 0; start < texts.length; start += 20) {
-        if (IQCOM_METADATA_STOPPED || document.hidden) break;
-        var batch = texts.slice(start, start + 20);
-        var response = await (window.__iqiyiViLocalFetch || fetch)("http://127.0.0.1:18766/api/localize-remaining", {
-          method:"POST", headers:{"Content-Type":"application/json", "X-Iqiyi-Token":window.__iqiyiViToken || ""},
-          body:JSON.stringify({texts:batch})
-        });
-        var payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || "API Việt hóa lỗi HTTP " + response.status);
-        if (!Array.isArray(payload.translations) || payload.translations.length !== batch.length)
-          throw new Error("API trả bản Việt hóa không đầy đủ.");
-        batch.forEach(function (raw, index) {
-          var translated = payload.translations[index];
-          if (typeof translated !== "string" || !translated.trim()) return;
-          if (IQCOM_METADATA_STOPPED) return;
-          MACHINE_COPY.set(raw, translated);
-          if (MACHINE_COPY.size > 1000) MACHINE_COPY.delete(MACHINE_COPY.keys().next().value);
-          apply(raw, translated);
-        });
-        try { localStorage.setItem("iqiyi-vi-machine-copy-v1", JSON.stringify(Array.from(MACHINE_COPY))); } catch (_) {}
+      function priority(raw) { return Math.min.apply(null, slots.get(raw).map(function (slot) { return slot.priority; })); }
+      texts.sort(function (a, b) { return priority(a) - priority(b) || a.length - b.length; });
+      async function translateBatch(lane, batch) {
+          var controller = typeof AbortController === "function" ? new AbortController() : null;
+          var timer = controller ? setTimeout(function () { controller.abort(); }, 15000) : null;
+          if (controller) IQCOM_METADATA_CONTROLLERS.add(controller);
+          try {
+            var options = {method:"POST", headers:{"Content-Type":"application/json", "X-Iqiyi-Token":window.__iqiyiViToken || ""},
+              body:JSON.stringify({texts:batch})};
+            if (controller) options.signal = controller.signal;
+            var response = await (window.__iqiyiViLocalFetch || fetch)("http://127.0.0.1:18766/api/localize-remaining", options);
+            var payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || "API Việt hóa lỗi HTTP " + response.status);
+            if (!Array.isArray(payload.translations) || payload.translations.length !== batch.length ||
+                payload.translations.some(function (value) { return typeof value !== "string" || !value.trim() || cjkCount(value); }))
+              throw new Error("API chưa trả bản Việt hóa đầy đủ.");
+            if (IQCOM_METADATA_STOPPED) return;
+            batch.forEach(function (raw, index) {
+              var translated = payload.translations[index].trim();
+              MACHINE_COPY.set(raw, translated);
+              if (MACHINE_COPY.size > 1000) MACHINE_COPY.delete(MACHINE_COPY.keys().next().value);
+              apply(raw, translated);
+            });
+            try { localStorage.setItem("iqiyi-vi-machine-copy-v1", JSON.stringify(Array.from(MACHINE_COPY))); } catch (_) {}
+            lane.failures = 0;
+            lane.retryAt = 0;
+          } catch (error) {
+            if (!IQCOM_METADATA_STOPPED) {
+              lane.failures++;
+              lane.retryAt = Date.now() + Math.min(30000, 3000 * Math.pow(2, lane.failures - 1));
+              console.warn("Việt hóa tự động: " + (error.message || "Không kết nối được API."));
+            }
+          } finally {
+            if (timer) clearTimeout(timer);
+            if (controller) IQCOM_METADATA_CONTROLLERS.delete(controller);
+            lane.busy = false;
+            batch.forEach(function (raw) { MACHINE_PENDING.delete(raw); });
+            if (!IQCOM_METADATA_STOPPED) scheduleRemainingLocalization(Math.max(0, lane.retryAt - Date.now()));
+          }
       }
-      machineRetryAt = 0;
+      MACHINE_WORKERS.forEach(function (lane) {
+        if (lane.busy) return;
+        var candidates = texts.filter(function (raw) { return !MACHINE_PENDING.has(raw); });
+        if (!candidates.length) return;
+        if (lane.retryAt > Date.now()) { nextRetry = Math.min(nextRetry, lane.retryAt); return; }
+        var batch = [candidates.shift()];
+        while (batch[0].length <= 160 && batch.length < 4 && candidates.length &&
+               candidates[0].length <= 160 && priority(candidates[0]) === priority(batch[0])) batch.push(candidates.shift());
+        lane.busy = true;
+        batch.forEach(function (raw) { MACHINE_PENDING.add(raw); });
+        jobs.push(translateBatch(lane, batch));
+      });
     } catch (error) {
-      machineRetryAt = Date.now() + 60000;
-      machineDirty = true;
       console.warn("Việt hóa tự động: " + (error.message || "Không kết nối được API."));
     } finally {
       machineBusy = false;
-      if (machineDirty) scheduleRemainingLocalization();
     }
+    if (nextRetry < Infinity) scheduleRemainingLocalization(nextRetry - Date.now());
+    await Promise.allSettled(jobs);
   }
 
   window.__iqiyiVi = true;
@@ -3213,6 +3479,7 @@
     document.addEventListener("input", clearSearchSuggestions, true);
   }
   document.addEventListener("visibilitychange", scheduleRemainingLocalization);
+  if (IS_RANKING_PAGE) window.addEventListener("scroll", scheduleRemainingLocalization, {passive:true, capture:true});
   observeRoot(document);
   run();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run, {once:true});
@@ -3238,6 +3505,7 @@
     clearInterval(metadataRetryTimer);
     clearTimeout(machineTimer);
     document.removeEventListener("visibilitychange", scheduleRemainingLocalization);
+    if (IS_RANKING_PAGE) window.removeEventListener("scroll", scheduleRemainingLocalization, true);
     var homeButton = document.getElementById("iqiyi-vi-home-button");
     if (homeButton) homeButton.remove();
     document.removeEventListener("DOMContentLoaded", run);

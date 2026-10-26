@@ -196,6 +196,150 @@ def patch_native_subtitle_menu(raw: str) -> str:
     return re.sub(r'(<Font\b[^>]*\bsize=)"\d+"', r'\g<1>"13"', raw, count=1)
 
 
+def _set_xml_tag_attributes(tag: str, updates: dict) -> str:
+    for attr, value in updates.items():
+        value = escape(str(value), quote=True)
+        pattern = rf'(\b{attr}\s*=\s*)"[^"]*"'
+        if re.search(pattern, tag):
+            tag = re.sub(pattern, lambda m: f'{m[1]}"{value}"', tag, count=1)
+        else:
+            tag = re.sub(r'(/?>)$', lambda m: f' {attr}="{value}"{m[1]}', tag, count=1)
+    return tag
+
+
+def patch_native_settings_layout(raw: str, rel: Path) -> str:
+    """Fit Vietnamese labels inside the native settings dialog's fixed page width."""
+    if rel.parent.as_posix().casefold() != "configres/settingdlgres":
+        return raw
+    page = rel.stem.casefold().removesuffix("_wine")
+    if page not in {"settingdlg", "playsetting", "playadvancedsetting", "basicsetting", "downloadsetting", "hotkeysetting"}:
+        return raw
+
+    def patch_tag(match: re.Match) -> str:
+        tag = match.group(0)
+        attrs = dict(re.findall(r'([\w-]+)\s*=\s*"([^"]*)"', tag))
+        updates = {}
+        name = attrs.get("name", "")
+        if page == "settingdlg" and "config_icon.svg" in attrs.get("bkimage", ""):
+            updates["pos"] = "20,24,180,44"
+        if page == "playsetting":
+            if match.group(1) == "Label" and attrs.get("text") in {
+                    "Tăng tốc phần cứng:", "Cài đặt FPS cao:"}:
+                updates["width"] = "150"
+            if match.group(1) == "Label" and attrs.get("width") == "66":
+                updates["width"] = "118"
+            if attrs.get("name") in {"comb_adapter", "ps_comboaudio"}:
+                updates["width"] = "240"
+            if attrs.get("name") in {"auto_high_fps", "open_high_fps", "close_high_fps"}:
+                updates["width"] = "110"
+            widths = {"ps_radioselFull": 118, "ps_radioselSimple": 142, "playacceleratesvr": 190,
+                      "open_lwa_gpu_ck": 190, "sup_resolution": 82, "memc_check": 120}
+            if name in widths:
+                updates["width"] = str(widths[name])
+            if attrs.get("text") == "(Chỉ áp dụng cho chất lượng 1080P trở xuống)":
+                updates.update(text="(Chỉ với 1080P trở xuống)", tooltip=attrs["text"])
+            if attrs.get("text") == "(chỉ với 1080P)":
+                updates["width"] = "150"
+        if page == "playadvancedsetting":
+            if match.group(1) == "Label" and attrs.get("width") in {"66", "70"}:
+                updates["width"] = "150" if attrs["width"] == "70" else "110"
+            if attrs.get("name") in {"comb_adapter", "ps_comboaudio"}:
+                updates["width"] = "268"
+            if attrs.get("name") in {"intelligencedecode", "ps_decode_soft", "ps_decode_hard"}:
+                updates["width"] = "160"
+        if page != "settingdlg" and attrs.get("text") == "(nên dùng)":
+            updates["width"] = "90"
+        if page == "basicsetting":
+            widths = {"bs_autorun": 146, "bs_radiotaskbar": 112, "bs_radiotray": 112,
+                      "bs_miniqiyi": 150, "bs_exitiqiyi": 70, "bs_jijian_open": 150, "bs_jijian_close": 70}
+            if name in widths:
+                updates["width"] = str(widths[name])
+            if name == "bs_jijian_autorun":
+                updates["padding"] = "12,0,0,0"
+            if name == "bs_radiotray":
+                updates["padding"] = "32,0,0,0"
+            if name in {"bs_exitiqiyi", "bs_jijian_close"}:
+                updates["padding"] = "16,0,0,0"
+        if page == "downloadsetting":
+            if name in {"ds_btnBrowserdownload", "ds_btnBrowsercache"}:
+                updates["pos"] = "282,0,370,26"
+            if name in {"ds_editdownloadpath", "ds_editcachepath"}:
+                updates["textpadding"] = "4,3,90,3"
+            if name == "ds_checkdownloaddelwitdlocal":
+                updates.update(text="Xóa cả tệp trên máy", tooltip="Xóa tệp trên máy khi xóa khỏi danh sách tải")
+            if attrs.get("text") == "Xóa cache":
+                updates["width"] = "76"
+            if attrs.get("width") == "1" and attrs.get("padding") == "237,9,0,0":
+                updates["padding"] = "187,9,0,0"
+            if name == "ds_btnClearCache":
+                updates["width"] = "70"
+        if page == "hotkeysetting":
+            if name == "hs_openboss":
+                updates["width"] = "150"
+            if name == "btnShortCutDefault":
+                updates.update(width="130", pos="260,0,0,0")
+        return _set_xml_tag_attributes(tag, updates)
+
+    return re.sub(r'<(Label|CheckBox|Combo|Button|Edit)\b[^>]*>', patch_tag, raw)
+
+
+def patch_native_auxiliary_layout(raw: str, rel: Path) -> str:
+    """Repair fixed text in common dialogs without touching control bindings or state."""
+    page = rel.as_posix().casefold()
+    rules = {
+        "configres/timesetdlg.xml": {"radioPlayEnd": {"width": 225}, "radioDownloadEnd": {"width": 225},
+                                    "btnreset": {"width": 100}},
+        "configres/shutdowntipdlg.xml": {"showtip": {"width": 112}, "showtime": {"width": 32},
+                                        "showtip1": {"width": 42}, "btnOK": {"width": 104}, "btnCancel": {"width": 104}},
+        "geeplayer/skin/config/aboutdlg.xml": {"btnVersionInfo": {"textpadding": "12,0,12,0"},
+                                               "btndeclareInfo": {"textpadding": "12,0,12,0"}},
+        "geeplayer/skin/player/miniplayer/other/playconfig/subaudio.xml": {
+            "btnAudioAdjust": {"textpadding": "38,13,12,13"}, "btnLoadTrack": {"textpadding": "38,13,12,13"}},
+        "geeplayer/skin/player/miniplayer/other/playconfig/subsubtitle.xml": {
+            "btnSubtitleAdjust": {"textpadding": "38,13,38,13"}, "btnLoad": {"textpadding": "38,13,12,13"}},
+        "geeplayer/skin/player/miniplayer/other/sound_sync/sound_sync.xml": {"label_state": {"width": 220}},
+        "geeplayer/skin/player/miniplayer/other/playfileattri/playfileattriwnd.xml": {
+            "lab_file_size": {"width": 92}, "lab_file_bitrate": {"width": 92}},
+        "geeplayer/skin/config/playlist.xml": {"clearlist": {"width": 220}},
+        "geeplayer/skin/config/lyric_setting.xml": {"show_lyric": {"width": 160},
+            "check_same_path_playfile": {"width": 210}, "check_self_define_path": {"width": 190}},
+        "geeplayer/skin/frame/skinpeeler.xml": {"transLabel": {"width": 96}, "colorLabel": {"width": 60},
+                                               "btn_DIYBk": {"padding": "8,2,0,0"}},
+        "geeplayer/skin/list/locallist.xml": {"filename": {"padding": "4,2,0,0"},
+                                             "search_btn": {"padding": "8,0,0,0"}, "OpenFile": {"width": 120}},
+        "geeplayer/skin/menu/delmenu.xml": {"217093": {"text": "Xóa danh sách", "tooltip": "Xóa danh sách phát"}},
+        "geeplayer/skin/player/miniplayer/other/titletrailer/titletrailer.xml": {"check_open": {"width": 190}},
+    }
+    if page not in rules:
+        return raw
+
+    def patch_tag(match):
+        tag = match.group(0)
+        attrs = dict(re.findall(r'([\w-]+)\s*=\s*"([^"]*)"', tag))
+        updates = dict(rules[page].get(attrs.get("name"), {}))
+        if page.endswith("timesetdlg.xml") and attrs.get("text") == "giờ":
+            updates["width"] = 24
+        if page.endswith("sound_sync.xml") and match.group(1) == "Label":
+            if attrs.get("text") == "Đồng bộ âm thanh":
+                updates["width"] = 160
+            if attrs.get("text") == "Trạng thái:":
+                updates["width"] = 90
+        if page.endswith("playfileattriwnd.xml") and match.group(1) == "Label" and not attrs.get("name") and attrs.get("width") == "60":
+            updates["width"] = 130
+            if attrs.get("text") == "Tốc độ khung hình video:":
+                updates["text"] = "Khung hình/giây:"
+        if page.endswith("locallist.xml") and match.group(1) == "Label":
+            if not attrs.get("name") and attrs.get("text") == "Danh sách phát" and attrs.get("width") == "64":
+                updates.update(text="Danh sách", tooltip="Danh sách phát", width=72, indexfont="yahei_12")
+            if attrs.get("text") == "Chưa có nội dung liên quan":
+                updates["width"] = 220
+        if page.endswith("titletrailer.xml") and match.group(1) == "Label" and attrs.get("text") in {"Đầu phim:", "Cuối phim:"}:
+            updates["width"] = 68
+        return _set_xml_tag_attributes(tag, updates)
+
+    return re.sub(r'<(Label|CheckBox|Button|Option)\b[^>]*>', patch_tag, raw)
+
+
 def read_text(path: Path) -> tuple[str, str]:
     data = path.read_bytes()
     if data.startswith(b"\xff\xfe"):
@@ -379,12 +523,18 @@ def apply_skin(skin: Path, mapping: dict[str, str]) -> tuple[int, int, int]:
             patched_nodes, n_nodes = patch_text_nodes(new, mapping)
             if n_nodes:
                 new, n = patched_nodes, n + n_nodes
-        menu_layout_changed = False
+        layout_changed = False
         if rel.as_posix().casefold() == "geeplayer/skin/menu/subtitlelist.xml":
             menu = patch_native_subtitle_menu(new)
-            menu_layout_changed = menu != new
+            layout_changed = menu != new
             new = menu
-        if n == 0 and not menu_layout_changed:
+        settings = patch_native_settings_layout(new, rel)
+        layout_changed = layout_changed or settings != new
+        new = settings
+        auxiliary = patch_native_auxiliary_layout(new, rel)
+        layout_changed = layout_changed or auxiliary != new
+        new = auxiliary
+        if n == 0 and not layout_changed:
             continue
         backup_file(skin, skin_backup_dir(skin), rel)
         atomic_write(path, new.encode(enc))
