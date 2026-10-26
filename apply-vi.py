@@ -16,8 +16,9 @@ if os.name == "nt":
     import winreg
 
 from iqiyi_common import (
-    atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
-    lwa_backup_dir, patch_subtitle_tag, python_executable, subtitle_hook, update_lwa_ini_flags,
+    SIGNED_LWA_HTML, atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
+    lwa_backup_dir, patch_subtitle_tag, patch_ui_tag, python_executable, restore_lwa_ini_flags,
+    subtitle_hook, update_lwa_ini_flags,
 )
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -40,28 +41,18 @@ ATTR_RE = re.compile(
 TEXT_NODE_RE = re.compile(r">([^<>]+)<")
 CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 
-SKIN_CANDIDATES = [
-    Path(os.environ[name]) / "IQIYI Video" / "LStyle"
-    for name in ("ProgramFiles", "ProgramFiles(x86)") if os.environ.get(name)
-]
 APPDATA_LWA = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "localwebapp"
 PPSTREAM_INI = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "LStyle" / "PPStream.ini"
 
-MARKER = "/* iqiyi-vi */"
 LWA_JS = ROOT / "lwa-vi.js"
 LWA_ENGINE = ROOT / "ui-engine.js"
 SCRIPT_TAG = '<script src="./lwa-vi.js"></script>'
 WRAPPER_APP = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs/iQIYI/resources/app"
-SIGNED_LWA_HTML = frozenset({
-    "compactplayer.html", "compactplayer_mac.html", "download.html", "index.html", "login.html",
-    "mac.html", "mini.html", "placeholder.html", "player.html", "player_mac.html",
-})
 
 
 def find_skin() -> Path | None:
-    bases = iqiyi_install_roots(ROOT) + SKIN_CANDIDATES
     seen: set[str] = set()
-    for base in bases:
+    for base in iqiyi_install_roots(ROOT):
         key = os.path.normcase(str(base))
         if key in seen:
             continue
@@ -246,7 +237,20 @@ def disable_lwa_sign() -> None:
 def restore_lwa_sign() -> None:
     bak = ROOT / "backup-ppstream.ini"
     if bak.exists() and PPSTREAM_INI.exists():
-        PPSTREAM_INI.write_text(bak.read_text(encoding="utf-8"), encoding="utf-8")
+        raw = PPSTREAM_INI.read_bytes().decode("utf-8")
+        restored = restore_lwa_ini_flags(raw, bak.read_bytes().decode("utf-8"))
+        if restored != raw:
+            atomic_write(PPSTREAM_INI, restored.encode("utf-8"))
+
+
+def remove_injected_html_tags(text: str) -> str:
+    """Remove this app's external/marked scripts, including versioned tags, only."""
+    text = re.sub(r'<script\b[^>]*\bsrc=["\']\./(?:lwa-vi|sub-hook)\.js(?:\?[^"\'<>]*)?["\'][^>]*>\s*</script>',
+                  "", text, flags=re.I)
+    text = re.sub(r'<script\b[^>]*\bdata-iqiyi-vi(?:-ui|-subtitle)?(?:\s|=|>)[\s\S]*?</script>',
+                  "", text, flags=re.I)
+    return re.sub(r'<script\b[^>]*>\s*/\*\s*iqiyi-vi(?:-[a-z]+)?\s*\*/[\s\S]*?</script>',
+                  "", text, flags=re.I)
 
 
 STARTUP_REGISTRY_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
@@ -300,18 +304,7 @@ def inject_lwa_dir(webapp: Path, payload: str) -> int:
         raw, enc = read_text(path)
         backup_file(webapp, lwa_backup_dir(BACKUP_LWA, webapp), Path(path.name))
         raw = patch_subtitle_tag(raw, hook)
-        if "lwa-vi.js" in raw:
-            atomic_write(path, raw.encode(enc))
-            continue
-        # Chèn vào </head> để từ điển có mặt trước khi React render chuỗi tiếng Trung.
-        if "</head>" in raw:
-            raw = raw.replace("</head>", SCRIPT_TAG + "</head>", 1)
-        elif "</body>" in raw:
-            raw = raw.replace("</body>", SCRIPT_TAG + "</body>", 1)
-        elif "<body>" in raw:
-            raw = raw.replace("<body>", SCRIPT_TAG + "<body>", 1)
-        else:
-            raw += SCRIPT_TAG
+        raw = patch_ui_tag(raw, payload.encode("utf-8"))
         atomic_write(path, raw.encode(enc))
         n += 1
 
@@ -324,7 +317,7 @@ def patch_wrapper_app(app_dir: Path = WRAPPER_APP) -> bool:
     if not main.is_file():
         return False
     hook_dest = app_dir / "iqiyi-vi-subtitle.js"
-    atomic_write(hook_dest, subtitle_hook(ROOT))
+    atomic_write(hook_dest, build_lwa_js().encode("utf-8") + b"\n" + subtitle_hook(ROOT))
     raw = main.read_text(encoding="utf-8")
     marker = "// IQIYI-VI EARLY SUBTITLE HOOK"
     if marker in raw:
@@ -447,8 +440,10 @@ def _main() -> int:
             for webapp in find_lwa_dirs():
                 n += restore_tree(lwa_backup_dir(BACKUP_LWA, webapp), webapp)
                 for page in webapp.glob("*.html"):
+                    if page.name.casefold() in SIGNED_LWA_HTML:
+                        continue
                     raw, enc = read_text(page)
-                    cleaned = patch_subtitle_tag(raw.replace(SCRIPT_TAG, ""), None)
+                    cleaned = remove_injected_html_tags(raw)
                     if cleaned != raw:
                         atomic_write(page, cleaned.encode(enc))
                 for name in ("lwa-vi.js", "sub-hook.js"):
@@ -472,8 +467,13 @@ def _main() -> int:
         print("Tat app iQIYI roi mo lai.")
         return 0
 
-    disable_lwa_sign()
-    if patch_wrapper_app():
+    permission_errors = []
+    try:
+        wrapper_patched = patch_wrapper_app()
+    except PermissionError as exc:
+        wrapper_patched = False
+        permission_errors.append(str(exc))
+    if wrapper_patched:
         print("Da gan hook phu de som vao app iQ.com.")
     lwa_dirs = find_lwa_dirs()
     lwa_n = 0
@@ -487,18 +487,29 @@ def _main() -> int:
             try:
                 lwa_n += inject_lwa_dir(webapp, payload)
             except PermissionError:
-                print(f"Bo qua LWA can quyen Administrator: {webapp}")
+                permission_errors.append(str(webapp))
+                print(f"LWA can quyen Administrator: {webapp}")
         print(f"Da nhung script dich trang chu vao {lwa_n} file LWA.")
 
-    install_autostart()
-
     if lwa_only:
+        if permission_errors:
+            return 2
+        if not lwa_dirs and not wrapper_patched:
+            print("Khong tim thay goi web hoac app de Viet hoa.")
+            return 1
+        install_autostart()
         return 0
 
     skin = find_skin()
     if not skin:
         print("Khong tim thay thu muc skin. Phan native bo qua.")
         print("Tat iQIYI roi mo lai de thay tieng Viet o trang chu.")
+        if permission_errors:
+            return 2
+        if not lwa_dirs and not wrapper_patched:
+            print("Khong tim thay tai nguyen iQIYI de Viet hoa.")
+            return 1
+        install_autostart()
         return 0
 
     try:
@@ -517,6 +528,10 @@ def _main() -> int:
     print(f"Da dich {hits} chuoi trong {files} file skin.")
     if skipped:
         print(f"Bo qua {skipped} file khong doc duoc.")
+        return 1
+    if permission_errors:
+        return 2
+    install_autostart()
     print(f"Ban sao luu: {BACKUP}")
     print("Tat QyClient / iQIYI roi mo lai.")
     return 0

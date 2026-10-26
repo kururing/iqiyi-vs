@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "iQIYI Vietnamese",
-  "version": "1.2.37",
+  "version": "1.2.46",
   "minimum_chrome_version": "120",
   "description": "Dịch giao diện và phụ đề iQIYI sang tiếng Việt",
   "host_permissions": [

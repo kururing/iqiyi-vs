@@ -8,7 +8,6 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 import time
 import urllib.error
 import urllib.request
@@ -17,8 +16,8 @@ from urllib.parse import urlsplit
 
 import cdp
 from iqiyi_common import (
-    api_token, atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
-    lwa_backup_dir, patch_subtitle_tag, python_executable, subtitle_hook,
+    SIGNED_LWA_HTML, api_token, atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
+    lwa_backup_dir, patch_subtitle_tag, patch_ui_tag, python_executable, subtitle_hook,
     subtitle_manager_alive, update_lwa_ini_flags, player_token,
 )
 from windows_runtime import create_named_mutex
@@ -28,7 +27,6 @@ ROOT = Path(__file__).resolve().parent
 APP_PORT = 18766
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
-SCRIPT_TAG = '<script src="./lwa-vi.js"></script>'
 LWA_JS = ROOT / "lwa-vi.js"
 SUB_HOOK_JS = ROOT / "sub-hook.js"
 WRAPPER_APP = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs/iQIYI/resources/app"
@@ -40,6 +38,7 @@ WATCH_LOCK_FILE = None
 MANAGER_PROCESS = None
 LAST_MANAGER_CHECK = 0.0
 RUNTIME_SESSIONS: dict[str, CDP.ScriptSession] = {}
+EARLY_RUNTIME = None
 
 
 def python_exe() -> str:
@@ -87,10 +86,7 @@ def patch_lwa() -> None:
             write_if_changed(webapp / "sub-hook.js", hook)
         for html in webapp.glob("*.html"):
             # These native bootstrap pages are signature-checked by QyClient.
-            if html.name in {
-                "compactPlayer.html", "compactPlayer_mac.html", "download.html", "index.html", "login.html",
-                "mac.html", "mini.html", "placeholder.html", "player.html", "player_mac.html",
-            }:
+            if html.name.casefold() in SIGNED_LWA_HTML:
                 continue
             try:
                 text = html.read_text(encoding="utf-8-sig")
@@ -102,17 +98,7 @@ def patch_lwa() -> None:
                 continue
             if hook is not None:
                 text = patch_subtitle_tag(text, hook)
-            if "lwa-vi.js" in text and "sub-hook.js" in text:
-                write_if_changed(html, text)
-                continue
-            if "lwa-vi.js" in text:
-                continue
-            if "</head>" in text:
-                text = text.replace("</head>", SCRIPT_TAG + "</head>", 1)
-            elif "</body>" in text:
-                text = text.replace("</body>", SCRIPT_TAG + "</body>", 1)
-            else:
-                text += SCRIPT_TAG
+            text = patch_ui_tag(text, payload)
             write_if_changed(html, text)
 
 
@@ -128,7 +114,7 @@ def sync_wrapper_hook() -> None:
             return
         if patched:
             try:
-                write_if_changed(WRAPPER_SUB_HOOK, subtitle_hook(ROOT))
+                write_if_changed(WRAPPER_SUB_HOOK, LWA_JS.read_bytes() + b"\n" + subtitle_hook(ROOT))
             except OSError:
                 pass
 
@@ -170,7 +156,29 @@ def start_manager() -> None:
 
 def inject_runtime() -> None:
     """Load Vietnamese in WebView2 memory, preserving signed application files."""
+    global EARLY_RUNTIME
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open("http://127.0.0.1:9223/json/version", timeout=1) as response:
+            browser = json.load(response)
+        address = browser.get("webSocketDebuggerUrl", "")
+        endpoint = urlsplit(address)
+        if endpoint.scheme != "ws" or endpoint.hostname != "127.0.0.1" or endpoint.port != 9223:
+            raise ValueError("Unexpected WebView debugger endpoint")
+        script = ("window.__iqiyiViTokenPending = true;\n" + LWA_JS.read_text(encoding="utf-8")
+                  + "\n" + subtitle_hook(ROOT).decode("utf-8"))
+        revision = revision_of(script)
+        script += "\nwindow.__iqiyiRuntimeVi = " + json.dumps(revision) + ";"
+        script = "if (/(^|\\.)iqiyi\\.com$/i.test(location.hostname)) {\n" + script + "\n}"
+        if EARLY_RUNTIME is None:
+            EARLY_RUNTIME = CDP.EarlyScriptSession(address)
+        EARLY_RUNTIME.install(script)
+        return
+    except (OSError, ValueError, RuntimeError):
+        if EARLY_RUNTIME is not None:
+            EARLY_RUNTIME.close()
+            EARLY_RUNTIME = None
+        # Older WebViews still get a document-start script and are resumed below.
     try:
         with opener.open("http://127.0.0.1:9223/json/list", timeout=1) as response:
             targets = json.load(response)
@@ -218,7 +226,7 @@ def inject_runtime() -> None:
 
 
 def run_iqiyi() -> int:
-    global WATCH_LOCK_FILE
+    global WATCH_LOCK_FILE, EARLY_RUNTIME
     handle = create_named_mutex("Local\\iqiyi-vi-watch")
     if not handle:
         return 0
@@ -233,9 +241,11 @@ def run_iqiyi() -> int:
                     with installation_lock(ROOT):
                         patch_lwa()
                         sync_wrapper_hook()
-                        persist_ini()
                     next_maintenance = time.monotonic() + 2
             else:
+                if EARLY_RUNTIME is not None:
+                    EARLY_RUNTIME.close()
+                    EARLY_RUNTIME = None
                 for session in RUNTIME_SESSIONS.values():
                     session.close()
                 RUNTIME_SESSIONS.clear()

@@ -76,6 +76,17 @@ Mở iQIYI và app quản lý phụ đề:
 .\.venv\Scripts\python.exe launcher.py iqiyi
 ```
 
+Mở iQIYI qua launcher để bộ Việt hóa được gắn trước khi trang bắt đầu chạy.
+Mở trực tiếp QyClient có thể làm giao diện gốc xuất hiện trước khi watchdog kết nối.
+Ô tìm kiếm hỗ trợ tên phim Việt có dấu hoặc không dấu. Bộ Việt hóa đối chiếu tên
+đã biết và danh mục iq.com; chỉ đổi sang tên gốc khi khớp duy nhất một phim.
+Nhập một phần tên hoặc tên gõ sai nhẹ rồi bấm Tìm/Enter để xem tối đa 5 gợi ý.
+Chọn phim trong danh sách để tìm bằng tên gốc đã xác minh. Nếu không có gợi ý,
+từ khóa được tìm như bạn nhập; kết quả gần đúng không tự chọn thay bạn.
+
+Tên phim/diễn viên đang tra tên Việt sẽ tạm ẩn; nếu danh mục chưa có tên Việt,
+tên gốc được hiện lại để thẻ phim luôn có tên.
+
 Thay `iqiyi` bằng:
 
 - `youku`: mở Youku.
@@ -109,6 +120,26 @@ Sau khi cập nhật, mở lại app quản lý, bấm **Tải lại** tiện í
 quản lý tiện ích của Chrome/Edge, rồi tải lại trang iQIYI. Khi đổi trình duyệt,
 mở trang quản lý phụ đề trong trình duyệt mới và bấm **Kiểm tra iq.com** để chọn
 đúng phiên đăng nhập của trình duyệt đó.
+
+## Quy tắc dịch AI
+
+Agent lập hồ sơ và tầng dịch dùng [quy tắc chung Trung–Việt](TRANSLATION-RULES.md):
+phân biệt tên, danh xưng và số hiệu; xưng hô theo từng chiều và phạm vi cảnh;
+giữ bằng chứng qua các tập. Sau khi cập nhật mã, mở lại app quản lý để nạp
+prompt mới. Quy tắc áp dụng cho câu dịch mới/còn thiếu; bản dịch hoàn tất
+không tự bị thay thế.
+
+Prompt hồ sơ và prompt dịch dùng chung một bộ quy tắc, tránh lặp chỉ dẫn.
+Mặc định chia lô cố định 80 câu (`AI_BATCH_SIZE`), 3 lô song song; app không
+tự giảm số câu vì giới hạn context hay đầu ra. Tổng request có trần 24.000 ký tự JSON (`AI_INPUT_CHARS`),
+gồm cả system, schema và hồ sơ. Mỗi lô chỉ lấy hồ sơ liên quan, tối đa 6.000
+ký tự, cùng tối đa 24 cue trước và 24 cue sau; JSON lời thoại mặc định tối đa
+8.000 ký tự. Các số này là giới hạn ký tự, không phải số token của model.
+Mỗi lô xong được lưu ngay. Khi đầu ra thiếu, sai JSON
+hoặc bị cắt, app chỉ thử lại toàn bộ câu còn thiếu trong lô, tối đa 3 lượt.
+App có thể bỏ bớt ngữ cảnh phụ; nếu vẫn không vừa, app báo chỉnh cấu hình
+và giữ các câu đã lưu. Có thể chọn **Dịch tiếp** nếu còn câu chưa hợp lệ. Timeout mỗi
+yêu cầu AI mặc định 180 giây, đổi bằng `AI_REQUEST_TIMEOUT` nếu cần.
 
 ## Lưu ý
 

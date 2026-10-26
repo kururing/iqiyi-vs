@@ -6,6 +6,8 @@ import json
 import os
 import socket
 import struct
+import select
+import time
 
 
 def ws_connect(url: str) -> socket.socket:
@@ -118,6 +120,7 @@ class ScriptSession:
         for script in scripts:
             result = self.command("Page.addScriptToEvaluateOnNewDocument", {"source": script})
             self.script_ids.append(result["identifier"])
+        self.command("Runtime.runIfWaitingForDebugger", {})
         result = self.command("Runtime.evaluate", {
             "expression": "\n".join(scripts), "awaitPromise": True, "returnByValue": False,
         })
@@ -136,3 +139,110 @@ def inject(target: dict, scripts: list[str]) -> None:
         session.install(scripts)
     finally:
         session.close()
+
+
+class EarlyScriptSession:
+    """Pause newly created WebViews until their document-start script is registered."""
+
+    def __init__(self, url: str):
+        self.sock = ws_connect(url)
+        self.sock.settimeout(3)
+        self.command_id = 0
+        self.source = ""
+        self.sessions: dict[str, dict] = {}
+        self.pending: dict[int, tuple] = {}
+        self.errors: list[str] = []
+
+    def command(self, method: str, params: dict, session: str = "", done=None) -> None:
+        self.command_id += 1
+        message = {"id": self.command_id, "method": method, "params": params}
+        if session:
+            message["sessionId"] = session
+        self.pending[self.command_id] = (time.monotonic(), session, done)
+        send(self.sock, message)
+
+    def install(self, source: str) -> None:
+        if not self.source:
+            self.source = source
+            self.command("Target.setAutoAttach", {
+                "autoAttach": True, "waitForDebuggerOnStart": True, "flatten": True,
+            })
+        elif self.source != source:
+            self.source = source
+            for session in list(self.sessions):
+                self.register(session)
+        self.poll()
+
+    def resume(self, session: str) -> None:
+        self.command("Runtime.runIfWaitingForDebugger", {}, session)
+
+    def register(self, session: str) -> None:
+        state = self.sessions[session]
+        source = self.source
+        old = state.get("identifier")
+        if old:
+            self.command("Page.removeScriptToEvaluateOnNewDocument", {"identifier": old}, session)
+
+        def registered(response):
+            if session not in self.sessions:
+                return
+            if "error" not in response:
+                state["identifier"] = response["result"]["identifier"]
+                # Also update an already loaded page; the engine is idempotent.
+                self.command("Runtime.evaluate", {"expression": source}, session,
+                             lambda result: self.resume(session))
+            else:
+                self.resume(session)
+
+        self.command("Page.addScriptToEvaluateOnNewDocument", {
+            "source": source, "runImmediately": True,
+        }, session, registered)
+
+    def handle(self, message: dict) -> None:
+        if message.get("method") == "Target.attachedToTarget":
+            params = message["params"]
+            session = params["sessionId"]
+            target = params["targetInfo"]
+            if target.get("type") in {"page", "iframe", "webview"}:
+                self.sessions[session] = {}
+                self.command("Page.enable", {}, session,
+                             lambda response: self.register(session) if session in self.sessions else None)
+            else:
+                self.resume(session)
+        elif message.get("method") == "Target.detachedFromTarget":
+            self.sessions.pop(message["params"]["sessionId"], None)
+        elif "id" in message:
+            entry = self.pending.pop(message["id"], None)
+            if entry:
+                if "error" in message:
+                    self.errors.append(message["error"].get("message", "Early script registration failed"))
+                if entry[2]:
+                    entry[2](message)
+
+    def poll(self) -> None:
+        for _ in range(200):
+            if not select.select([self.sock], [], [], 0)[0]:
+                break
+            self.handle(receive(self.sock))
+        expired = [identifier for identifier, entry in self.pending.items()
+                   if time.monotonic() - entry[0] > 5]
+        for identifier in expired:
+            _, session, done = self.pending.pop(identifier)
+            if session:
+                self.resume(session)
+            self.errors.append("Timed out preparing WebView before playback")
+        if self.errors:
+            error = self.errors.pop(0)
+            self.errors.clear()
+            raise RuntimeError(error)
+
+    def close(self) -> None:
+        try:
+            for session in self.sessions:
+                self.resume(session)
+            self.command("Target.setAutoAttach", {
+                "autoAttach": False, "waitForDebuggerOnStart": False, "flatten": True,
+            })
+        except OSError:
+            pass
+        self.sock.close()

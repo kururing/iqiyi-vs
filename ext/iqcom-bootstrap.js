@@ -73,8 +73,17 @@
     }
     if (changed && window.__iqiyiViReload) window.__iqiyiViReload();
   }
-  window.__iqiyiViLocalFetch("http://127.0.0.1:18766/api/extension-token")
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (data) { finish(data && data.token); })
-    .catch(function (error) { console.warn("[iQIYI Việt hóa]", error.message); finish(); });
+  function requestToken() {
+    window.__iqiyiViLocalFetch("http://127.0.0.1:18766/api/extension-token")
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function (error) {
+        if (!finished) console.warn("[iQIYI Việt hóa]", error.message);
+        return null;
+      }).then(function (data) {
+        var token = data && typeof data.token === "string" && data.token;
+        finish(token);
+        if (!token) setTimeout(requestToken, 15000);
+      });
+  }
+  requestToken();
 })();

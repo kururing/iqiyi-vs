@@ -10,6 +10,36 @@
     function localFetch(input, options) {
       return (root.__iqiyiViLocalFetch || nativeFetch)(input, options);
     }
+    function localSubtitleFetch(input, options) {
+      var signal = options && options.signal;
+      function retry(response, error, attempt) {
+        if (signal && signal.aborted) throw signal.reason;
+        if (attempt >= 4) {
+          if (error) throw error;
+          return response;
+        }
+        return new Promise(function (resolve, reject) {
+          function abort() {
+            clearTimeout(timer);
+            signal.removeEventListener("abort", abort);
+            reject(signal.reason);
+          }
+          var timer = setTimeout(function () {
+            if (signal) signal.removeEventListener("abort", abort);
+            resolve();
+          }, 500 * Math.pow(2, attempt));
+          if (signal) signal.addEventListener("abort", abort, {once:true});
+        }).then(function () { return load(attempt + 1); });
+      }
+      function load(attempt) {
+        if (signal && signal.aborted) return Promise.reject(signal.reason);
+        return localFetch(input, options).then(function (response) {
+          // The official track can still be warming up when the SDK first selects it.
+          return response.status === 404 ? retry(response, null, attempt) : response;
+        }, function (error) { return retry(null, error, attempt); });
+      }
+      return load(0);
+    }
     var TOKEN = root && root.__iqiyiViToken || "";
     var tokenPromise = null;
     var tokenRetryAt = 0;
@@ -47,6 +77,7 @@
     var posting = new Map();
     var registrations = new Map();
     var translationStates = new Map();
+    var preloadedOfficialTvid = "";
     var activeViTvid = "";
     var activeViDisabled = true;
     var activeAiManaged = true;
@@ -108,7 +139,9 @@
         if (!token) throw new Error("Subtitle manager token is unavailable");
         return localFetch(SIDE + route, {method:"POST",
           headers:{"Content-Type":"application/json", "X-Iqiyi-Token":token}, body:JSON.stringify(data)});
-      }).then(function (response) { if (!response.ok) throw new Error("Subtitle manager HTTP " + response.status); });
+      }).then(function (response) {
+        if (!response.ok) throw new Error("Subtitle manager HTTP " + response.status);
+      });
     }
     function getTranslationState(tvid) {
       if (!nativeFetch || !tvid) return Promise.resolve({available:false, translating:true});
@@ -423,7 +456,7 @@
         if (!doc.documentElement) return;
         var style = doc.getElementById("iqiyi-vi-subtitle-css") || doc.createElement("style");
         style.id = "iqiyi-vi-subtitle-css";
-        style.setAttribute("data-hook-version", "27");
+        style.setAttribute("data-hook-version", "28");
         style.textContent =
           'img[src*="/watermark_rightTop"],img[src*="/watermark_rightBottom"]{display:none!important;}' +
           '#pcaSubtitleContainer,#pcaSubtitleContainer *,.caption-main,.caption-main *,.caption-sub,.caption-sub *,.iqiyi-official-upper{' +
@@ -749,6 +782,10 @@
       var tvid = String(info.tvId || info.tvid || "");
       var albumId = String(info.albumId || info.album_id || "");
       if (!/^\d{1,20}$/.test(tvid) || !/^\d{1,24}$/.test(albumId)) return;
+      if (preloadedOfficialTvid !== tvid) {
+        preloadedOfficialTvid = tvid;
+        getTranslationState(tvid).catch(function () {});
+      }
       var album = info.album || {};
       var title = String(info.tvName || info.entityTitle || info.name || info.title || album.albumName || album.name || "");
       var order = title.match(/第\s*(\d+)\s*集/);
@@ -763,7 +800,7 @@
     syncWebEpisode();
     if (iqPlayer && root.setInterval) root.setInterval(syncWebEpisode, 3000);
     installSubtitleMenuGuard();
-    root.__iqiyiSubtitleEngine = {version: 27, rewrite: rewrite, titles: titles};
+    root.__iqiyiSubtitleEngine = {version: 28, rewrite: rewrite, titles: titles};
 
     // The accelerator assigns encoded DASH metadata directly, bypassing fetch/XHR/JSONP.
     function rewriteAccelerator(value) {
@@ -825,7 +862,9 @@
     }
     if (root.fetch) {
       root.fetch = function (input, init) {
-        if (requestUrl(input).indexOf(SIDE + "/") === 0) return localFetch(input, init);
+        var url = requestUrl(input);
+        if (url === SIDE + "/subtitle.xml" || url.indexOf(SIDE + "/subtitle.xml?") === 0) return localSubtitleFetch(input, init);
+        if (url.indexOf(SIDE + "/") === 0) return localFetch(input, init);
         return nativeFetch(input, init).then(function (response) {
           var sourceUrl = requestUrl(input) || response.url;
           if (sourceByUrl.has(sourceUrl)) {
@@ -897,7 +936,7 @@
                 xhr.dispatchEvent(new Event("loadend"));
               }
               relay.timer = timeout ? setTimeout(function () { fail("timeout"); }, timeout) : null;
-              localFetch(localUrl, {signal:relay.controller.signal}).then(function (response) {
+              localSubtitleFetch(localUrl, {signal:relay.controller.signal}).then(function (response) {
                 if (!response.ok) throw new Error("Subtitle manager HTTP " + response.status);
                 return response.blob();
               }).then(function (blob) {

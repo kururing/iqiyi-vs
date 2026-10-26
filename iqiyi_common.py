@@ -17,6 +17,10 @@ from windows_runtime import list_processes
 
 _IQIYI_ROOTS: tuple[Path | None, list[Path]] = (None, [])
 _IQIYI_ROOTS_REFRESH = 0.0
+SIGNED_LWA_HTML = frozenset({
+    "compactplayer.html", "compactplayer_mac.html", "download.html", "index.html", "login.html",
+    "mac.html", "mini.html", "placeholder.html", "player.html", "player_mac.html",
+})
 LWA_INI_FLAGS = {
     "lwa_disable_checksign_pcafx": "1",
     "lwa_disable_update": "1",
@@ -172,13 +176,20 @@ def subtitle_manager_alive(port: int = 18766) -> bool:
 
 
 def update_lwa_ini_flags(raw: str) -> str:
-    updated = raw
-    for key, value in LWA_INI_FLAGS.items():
-        if re.search(rf"(?m)^{re.escape(key)}=.*$", updated):
-            updated = re.sub(rf"(?m)^{re.escape(key)}=.*$", f"{key}={value}", updated)
+    """Legacy compatibility: localization now preserves signing and update settings."""
+    return raw
+
+
+def restore_lwa_ini_flags(current: str, backup: str) -> str:
+    """Undo only installer-managed legacy keys, preserving current unrelated preferences."""
+    for key in LWA_INI_FLAGS:
+        pattern = rf"(?m)^{re.escape(key)}=[^\r\n]*"
+        original = re.search(pattern, backup)
+        if original:
+            current = re.sub(pattern, lambda _: original.group(), current)
         else:
-            updated += f"\n{key}={value}\n"
-    return updated
+            current = re.sub(pattern + r"(?:\r?\n|$)", "", current)
+    return current
 
 
 def subtitle_hook(root: Path) -> bytes:
@@ -195,6 +206,15 @@ def patch_subtitle_tag(text: str, hook: bytes | None) -> str:
         return text
     text = re.sub(pattern, "", text)
     return re.sub(r"(<head\b[^>]*>)", lambda match: match[0] + tag, text, count=1, flags=re.I)
+
+
+def patch_ui_tag(text: str, source: bytes) -> str:
+    """Put the versioned, blocking UI script before application scripts."""
+    text = re.sub(r'<script\s+src="\./lwa-vi\.js(?:\?[^"<>]*)?"\s*></script>', "", text)
+    tag = '<script src="./lwa-vi.js?v=' + hashlib.sha256(source).hexdigest()[:12] + '"></script>'
+    if re.search(r"<head\b", text, re.I):
+        return re.sub(r"(<head\b[^>]*>)", lambda match: match[0] + tag, text, count=1, flags=re.I)
+    return tag + text
 
 
 def lwa_backup_dir(backup: Path, webapp: Path) -> Path:

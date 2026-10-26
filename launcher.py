@@ -217,6 +217,8 @@ def start_iqiyi_client(client: Path, proxy: str, processes=None) -> None:
                 env.pop(key)
         print("Đang mở iQIYI với kết nối trực tiếp (không proxy)...")
     env["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = browser_args
+    # The watchdog registers Vietnamese at document-start before resuming each WebView.
+    env["WEBVIEW2_WAIT_FOR_SCRIPT_DEBUGGER"] = "1"
     if webview:
         env["WEBVIEW2_BROWSER_EXECUTABLE_FOLDER"] = webview
     try:

@@ -68,11 +68,8 @@ class IqcomSession:
         self.state = {"connected": False, "browserOpen": False, "opening": False,
                       "synced": False, "message": "", "version": 0}
         self.context = self.playwright = None
-        self.headed = False
         self.cookie_signature = hashlib.sha256(b"").hexdigest()
         self.auth_signature = hashlib.sha256(b"").hexdigest()
-        self.last_poll = 0.0
-        self.poll_pending = False
         self.browser_cookies = None
         self.applied_signature = None
         self.cookie_store_pending = False
@@ -218,7 +215,7 @@ class IqcomSession:
         self.applied_signature = None
         self._set(browserOpen=False)
 
-    def _browser(self, headed: bool = False):
+    def _browser(self):
         if self.closed:
             raise ValueError("Phiên iq.com đang đóng.")
         if self.context is not None:
@@ -246,7 +243,6 @@ class IqcomSession:
             raise ValueError("Không mở được hồ sơ iq.com. Đóng cửa sổ iq.com cũ rồi thử lại; "
                              "cần Edge/Chrome hoặc chạy: python -m playwright install chromium") from None
         self.context.on("close", self._closed)
-        self.headed = False
         return self.context
 
     def _poll(self):
@@ -267,10 +263,6 @@ class IqcomSession:
                                              "Phiên iq.com chưa đăng nhập hoặc đã hết hạn. Bấm Mở đăng nhập iq.com.")
         except Exception:
             self._set(browserOpen=False)
-        finally:
-            with self.lock:
-                self.last_poll = time.monotonic()
-                self.poll_pending = False
 
     def _dash(self, url: str, tvid: str) -> dict:
         page = None
