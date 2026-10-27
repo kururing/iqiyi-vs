@@ -14,9 +14,10 @@ import zipfile
 ROOT = Path(__file__).resolve().parent
 SOURCES = (
     "desktop.py", "launcher.py", "apply-vi.py", "watch-players.py", "subtitle_app.py",
-    "subtitle_agent.py", "iqiyi_common.py", "windows_runtime.py", "cdp.py",
+    "iqiyi_common.py", "windows_runtime.py", "cdp.py",
     "iqcom_requests.py", "iqcom_session.py", "proxy_support.py",
-    "ui-engine.js", "lwa-vi.js", "sub-hook.js", "README.md", "TRANSLATION-RULES.md", ".env.example", "requirements.txt",
+    "translation_ai.py", "translation_srt.py", "translation_pipeline.py", "translation_ui.html",
+    "ui-engine.js", "lwa-vi.js", "sub-hook.js", "README.md", "requirements.txt",
 )
 EXTENSION = ("manifest.json", "content.js", "sub-hook.js", "proxy.js", "https-rules.json",
              "iqcom-bootstrap.js", "iqcom-session.js", "session-bridge.js", "local-api.js", "local-api-worker.js")

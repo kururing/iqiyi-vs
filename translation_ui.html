@@ -1,0 +1,297 @@
+<style>
+#translationPanel,#translationSettings{width:min(880px,calc(100vw - 28px))}
+#translationSettings input,#translationSettings select{min-height:44px;min-width:0;max-width:100%}
+#translationSettings fieldset{min-width:0;margin:10px 0;padding:14px;border:1px solid var(--line);border-radius:10px}
+#translationSettings legend{padding:0 6px;font-weight:650}
+#translationSettings button{min-height:44px;white-space:normal}
+#translationSettings [hidden]{display:none!important}
+.translationModels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.modelScanActions{display:flex;flex-wrap:wrap;gap:8px}.modelScanStatus{min-height:20px;overflow-wrap:anywhere}
+.providerToolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.providerToolbar select{flex:1;min-width:150px!important;border:1px solid #465162;border-radius:7px;padding:8px 10px;background:#11151b;color:var(--text)}.providerToolbar input{flex:1;min-width:160px!important;width:auto}
+#translationProviderManager{margin:16px 0;border-top:1px solid var(--line);padding-top:12px}#translationProviderManager>summary{cursor:pointer;min-height:44px;font-weight:650;padding:8px 0}
+#providerEditor{border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:12px}.providerFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.providerFields .settingsField{min-width:0}
+@media(max-width:760px){.providerFields{grid-template-columns:1fr}}
+#translationPanel fieldset{min-width:0;margin:10px 0;padding:14px;border:1px solid var(--line);border-radius:10px}
+#translationPanel legend{padding:0 6px;font-weight:650}
+#translationPanel .settingsField{margin:10px 0}
+#translationPanel input,#translationPanel select{min-height:44px;min-width:0;max-width:100%}
+#translationPanel button{min-height:44px;white-space:normal}
+.translationSteps{display:flex;gap:10px;flex-wrap:wrap;padding:0;list-style:none;counter-reset:steps}
+.translationSteps li{counter-increment:steps;padding:7px 10px;border-radius:6px;color:var(--muted);border:1px solid var(--line)}
+.translationSteps li:before{content:counter(steps) '. ';font-weight:700}
+.translationSteps li[aria-current=step]{color:var(--text);border-color:var(--focus);background:var(--panel2)}
+#translationStatus{white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0}
+#translationStatus.error{color:#ffb7bd}
+#translationProgress{width:100%;height:12px;accent-color:var(--blue)}
+.translationActions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.legendDot.sourceReady{background:#5294d1}
+#translationPreview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;background:var(--bg);padding:14px;border-radius:8px;font:14px/1.6 system-ui,sans-serif}
+#translationPanel [hidden]{display:none!important}
+@media(max-width:760px){.translationModels{grid-template-columns:1fr}#translationPanel{padding:12px}.translationSteps{gap:6px}.translationSteps li{font-size:13px}.translationActions button{flex:1 1 150px}}
+</style>
+<dialog id="translationSettings" aria-labelledby="translationSettingsTitle">
+ <div class="settingsHead"><h2 id="translationSettingsTitle">Cài đặt dịch</h2><button type="button" class="secondary" onclick="document.getElementById('translationSettings').close()">Đóng</button></div>
+ <p class="settingsHint">Chọn provider và model đã lưu cho từng bước. Danh sách provider, model và API key được lưu trong trình duyệt này.</p>
+ <form id="translationSettingsForm"><div id="translationModels" class="translationModels"></div></form>
+ <details id="translationProviderManager"><summary id="providerManagerTitle">Quản lý provider</summary>
+ <p class="settingsHint">Lưu nhiều tài khoản, kể cả cùng một hãng. Quét danh sách model một lần hoặc thêm model ID thủ công.</p>
+ <div class="providerToolbar"><select id="savedProviderEditor" aria-label="Provider cần chỉnh sửa"></select><button id="providerEdit" type="button" class="secondary">Sửa provider</button><button id="providerNew" type="button" class="secondary">Thêm provider</button></div>
+ <form id="providerEditor" hidden>
+ <div class="providerFields">
+ <div class="settingsField"><label for="providerName">Tên gợi nhớ</label><input id="providerName" required maxlength="100" placeholder="Ví dụ: Gemini cá nhân"></div>
+ <div class="settingsField"><label for="providerType">Mẫu provider</label><select id="providerType"></select></div>
+ <div class="settingsField"><label for="providerUrl">Base URL</label><input id="providerUrl" type="url" required maxlength="2048" spellcheck="false"></div>
+ <div class="settingsField"><label for="providerKey">API key</label><input id="providerKey" type="password" autocomplete="off" maxlength="4096"><span class="settingsHint">Endpoint localhost có thể bỏ trống key.</span></div>
+ <div class="settingsField" id="providerWorkspaceRow" hidden><label for="providerWorkspace">Workspace ID (nếu có)</label><input id="providerWorkspace" maxlength="200" autocomplete="off"></div>
+ </div>
+ <div class="modelScanActions"><button id="providerScanModels" type="button" class="secondary">Quét model</button></div>
+ <p id="providerScanStatus" class="settingsHint modelScanStatus" role="status" aria-live="polite"></p>
+ <div class="settingsField"><label for="providerModelCatalog">Model của provider</label><select id="providerModelCatalog" aria-describedby="providerScanStatus"></select></div>
+ <div class="settingsField"><label for="providerManualModel">Thêm model ID thủ công</label><div class="providerToolbar"><input id="providerManualModel" maxlength="200" placeholder="Nhập model ID" spellcheck="false"><button id="providerAddModel" type="button" class="secondary">Thêm model</button></div></div>
+ <p id="providerEditorStatus" class="settingsHint" role="status" aria-live="polite"></p>
+ <div class="settingsActions"><button id="providerDelete" type="button" class="danger" hidden>Xóa provider</button><button id="providerEditorCancel" type="button" class="secondary">Hủy sửa</button><button type="submit">Lưu provider</button></div>
+ </form></details>
+ <p id="translationSettingsStatus" class="settingsHint" role="status" aria-live="polite"></p>
+ <div class="settingsActions"><button type="button" class="secondary" onclick="document.getElementById('translationSettings').close()">Đóng</button><button id="translationSaveSettings" type="submit" form="translationSettingsForm" disabled>Lưu lựa chọn</button></div>
+</dialog>
+<dialog id="translationPanel" aria-labelledby="translationTitle">
+ <div class="settingsHead"><h2 id="translationTitle">Tiến độ dịch</h2><button type="button" class="secondary" onclick="document.getElementById('translationPanel').close()">Đóng</button></div>
+ <ol class="translationSteps" aria-label="Quy trình dịch"><li>Đọc SRT</li><li>Ngữ cảnh</li><li>Dịch thuật</li><li>Kiểm định</li><li>Xuất SRT</li></ol>
+ <form id="translationForm"><fieldset id="translationInputs"><legend>Phụ đề gốc</legend>
+  <div id="translationEpisodeSource" hidden><strong id="translationEpisodeLabel"></strong><p class="settingsHint">Dùng phụ đề gốc đã tải của tập này.</p><button id="translationUseFile" type="button" class="secondary">Chuyển sang file SRT</button></div>
+  <div class="settingsField" id="translationFileRow"><label for="translationFile">Phụ đề gốc (.srt, UTF-8)</label><input id="translationFile" type="file" accept=".srt" required aria-describedby="translationFileHint"><span id="translationFileHint" class="settingsHint">Tối đa 2 triệu ký tự và 10.000 câu. Bản gốc được giữ nguyên.</span></div>
+  <p class="settingsHint">App tự phân cụm, phân tích ngữ cảnh và kiểm định độ dài trước khi xuất phụ đề.</p>
+ </fieldset><div class="translationActions"><button id="translationStart" type="submit" disabled>Bắt đầu dịch</button><button id="translationResume" type="button" hidden>Dịch tiếp</button><button id="translationCancel" type="button" class="secondary" hidden>Hủy phiên dịch</button><button id="translationReconnect" type="button" class="secondary" hidden>Kiểm tra lại trạng thái</button></div></form>
+ <div id="translationStatus" role="status" aria-live="polite" aria-atomic="true">Đang tải danh sách provider…</div>
+ <p id="translationSaved" class="settingsHint" hidden></p>
+ <progress id="translationProgress" aria-label="Tiến độ dịch batch" hidden></progress>
+ <div class="translationActions"><button type="button" data-artifact="translated.srt" hidden>Tải SRT tiếng Việt</button><button type="button" data-artifact="memory.json" class="secondary" hidden>Tải JSON Memory</button><button type="button" data-artifact="qc.json" class="secondary" hidden>Tải báo cáo QC</button></div>
+ <details id="translationPreviewBox" hidden><summary>Xem trước 30 câu đầu</summary><pre id="translationPreview" tabindex="0"></pre></details>
+</dialog>
+<script>
+function translationSettingsV2(value){
+ if(value?.version===2&&Array.isArray(value.providers))return value;
+ const result={version:2,providers:[],selections:{}};
+ for(const [role,key] of [["context","context_model"],["translate","translation_model"]]){
+  const config=value?.[key];if(!config||typeof config.provider!=="string"||!config.model)continue;
+  let provider=result.providers.find(p=>["provider","base_url","api_key","workspace_id"].every(k=>(p[k]||"")===(config[k]||"")));
+  if(!provider){provider={id:"provider-"+(result.providers.length+1),name:config.provider+" "+(result.providers.length+1),provider:config.provider,base_url:config.base_url||"",api_key:config.api_key||"",workspace_id:config.workspace_id||"",models:[]};result.providers.push(provider)}
+  if(!provider.models.some(m=>m.id===config.model))provider.models.push({id:config.model,name:config.model});
+  result.selections[role]={provider_id:provider.id,model:config.model};
+ }
+ return result;
+}
+function translationModelConfig(settings,role){
+ const selected=settings.selections?.[role],provider=settings.providers.find(p=>p.id===selected?.provider_id);
+ if(!provider||!provider.models.some(m=>m.id===selected.model))return null;
+ const {provider:type,base_url,api_key,workspace_id}=provider;
+ return {provider:type,base_url,api_key,workspace_id,model:selected.model};
+}
+document.addEventListener("DOMContentLoaded",()=>{
+ const el=id=>document.getElementById(id),form=el("translationForm"),status=el("translationStatus");
+ let presets=[],jobId=null,timer=null,ready=false,running=false,selectedEpisode=null,lastState=null;
+ const settingsKey="subtitle-translation-settings",roles=["context","translate"];
+ let savedSettings=translationSettingsV2(null),editorId=null,editorModels=[],scanController=null;
+ try{savedSettings=translationSettingsV2(JSON.parse(localStorage.getItem(settingsKey)))}catch{}
+ try{jobId=localStorage.getItem("subtitle-translation-job")}catch{}
+ function message(text,error=false){status.textContent=text;status.classList.toggle("error",error)}
+ async function jsonApi(url,options){const r=await apiFetch(url,options);const data=await r.json();if(!r.ok)throw Error(data.error||"Yêu cầu thất bại.");return data}
+ function send(url,data){return jsonApi(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})}
+ function busy(value){running=value;el("translationInputs").disabled=value;el("translationStart").disabled=value||!ready;el("translationResume").hidden=value||!lastState?.resumable;el("translationResume").disabled=value||!ready;el("translationCancel").hidden=!value;form.setAttribute("aria-busy",String(value))}
+ function openPanel(){if(!el("translationPanel").open)el("translationPanel").showModal()}
+ window.openTranslationSettings=()=>{
+  if(!ready)return;
+  renderProviderChoices(savedSettings.selections);closeProviderEditor();
+  el("translationSettingsStatus").textContent=model("context")&&model("translate")?"Đang dùng lựa chọn đã lưu.":"Thêm provider, rồi chọn và lưu hai model trước khi dịch.";
+  el("translationProviderManager").open=!savedSettings.providers.length;
+  if(el("translationPanel").open)el("translationPanel").close();
+  if(!el("translationSettings").open)el("translationSettings").showModal();
+ };
+ function settingsReady(){if(model("context")&&model("translate"))return true;openTranslationSettings();return false}
+ function selectEpisode(value){selectedEpisode=value;el("translationEpisodeSource").hidden=!value;el("translationFileRow").hidden=!!value;el("translationFile").required=!value;el("translationFile").disabled=!!value;el("translationEpisodeLabel").textContent=value?.label||""}
+ el("translationUseFile").addEventListener("click",()=>selectEpisode(null));
+ window.translateEpisode=async id=>{
+  openPanel();if(!ready){message("Đang tải cấu hình model, hãy thử lại sau.");return}
+  if(running){message("Đang có phiên dịch. Hãy chờ hoàn tất hoặc hủy phiên đang chạy.");return}
+  const row=episodeData.find(x=>x.tvid===id);if(!row?.downloaded){message("Tập chưa có phụ đề gốc.",true);return}
+  selectEpisode({id,label:seriesDisplayName(row)+" · "+episodeLabel(row)});
+  if(!settingsReady()||!form.reportValidity())return;
+  await startTranslation();
+ };
+ window.showTranslationJob=async id=>{
+  openPanel();if(running&&jobId!==id){message("Đang theo dõi phiên dịch hiện tại. Hãy đợi hoàn tất trước khi xem phiên khác.");return}
+  jobId=id;await poll();
+ };
+ window.resumeTranslationJob=async id=>{
+  openPanel();if(running){message("Đang có phiên dịch. Hãy chờ hoàn tất hoặc hủy trước.");return}
+  if(!ready){message("Đang tải cấu hình model, hãy thử lại sau.");return}
+  jobId=id;await poll();
+  if(!lastState||lastState.id!==id||!lastState.resumable){message("Phiên này chưa sẵn sàng để dịch tiếp.",true);return}
+  if(!settingsReady())return;
+  busy(true);clearTimeout(timer);message("Đang khôi phục các batch đã lưu…");
+  try{const state=await send("/api/translation/resume",{id,context_model:model("context"),translation_model:model("translate")});
+   try{localStorage.setItem("subtitle-translation-job",state.id)}catch{}
+   render(state);await poll();
+  }catch(e){busy(false);message(e.message,true)}
+ };
+ el("translationResume").addEventListener("click",()=>resumeTranslationJob(jobId));
+ function currentSelections(){return Object.fromEntries(roles.map(role=>[role,{provider_id:el(role+"Provider").value,model:el(role+"ModelSelect").value}]))}
+ function persistSettings(next){
+  try{localStorage.setItem(settingsKey,JSON.stringify(next));savedSettings=next;return true}
+  catch{el("translationSettingsStatus").textContent="Trình duyệt không cho lưu hoặc đã hết dung lượng. Hãy cho phép lưu dữ liệu trang rồi thử lại.";return false}
+ }
+ function model(role){return translationModelConfig(savedSettings,role)}
+ function fillModels(role,previous=""){
+  const provider=savedSettings.providers.find(p=>p.id===el(role+"Provider").value),select=el(role+"ModelSelect");
+  select.replaceChildren(new Option(provider?.models.length?"Chọn model…":"Chưa có model — thêm trong Quản lý provider",""));
+  for(const item of provider?.models||[])select.add(new Option(item.name===item.id?item.id:item.name+" · "+item.id,item.id));
+  select.value=previous;
+ }
+ function renderProviderChoices(selections=currentSelections()){
+  for(const role of roles){
+   const select=el(role+"Provider");select.replaceChildren(new Option("Chọn provider đã lưu…",""));
+   for(const provider of savedSettings.providers)select.add(new Option(provider.name,provider.id));
+   select.value=selections?.[role]?.provider_id||"";fillModels(role,selections?.[role]?.model||"");
+  }
+  const editorSelect=el("savedProviderEditor"),previous=editorSelect.value;
+  editorSelect.replaceChildren(new Option("Chọn provider để sửa…",""));
+  for(const provider of savedSettings.providers)editorSelect.add(new Option(provider.name,provider.id));
+  editorSelect.value=savedSettings.providers.some(p=>p.id===previous)?previous:"";
+  el("providerEdit").disabled=!editorSelect.value;
+  el("providerManagerTitle").textContent="Quản lý provider ("+savedSettings.providers.length+")";
+ }
+ function cancelScan(){if(scanController)scanController.abort();scanController=null;el("providerScanModels").disabled=false;el("providerScanModels").textContent="Quét model"}
+ function renderEditorModels(){
+  const select=el("providerModelCatalog");select.replaceChildren(new Option(editorModels.length?"Đã lưu "+editorModels.length+" model":"Chưa có model",""));
+  for(const item of editorModels)select.add(new Option(item.name===item.id?item.id:item.name+" · "+item.id,item.id));
+ }
+ function resetEditorModels(){cancelScan();editorModels=[];renderEditorModels();el("providerScanStatus").textContent="Nhập URL và API key, rồi quét model hoặc thêm model ID thủ công."}
+ function providerTypeChanged(){
+  const preset=presets.find(p=>p.id===el("providerType").value);
+  el("providerUrl").value=preset.base_url;el("providerWorkspaceRow").hidden=preset.protocol!=="anthropic";
+  el("providerKey").required=preset.id!=="custom";el("providerWorkspace").value="";
+  resetEditorModels();
+ }
+ function editorConfig(){return {provider:el("providerType").value,base_url:el("providerUrl").value.trim(),api_key:el("providerKey").value.trim(),workspace_id:el("providerWorkspace").value.trim()}}
+ function closeProviderEditor(){cancelScan();el("providerEditor").hidden=true;editorId=null;editorModels=[];el("providerKey").value=""}
+ function openProviderEditor(id){
+  const provider=savedSettings.providers.find(p=>p.id===id);editorId=provider?.id||null;
+  el("providerEditor").reset();el("providerType").value=provider?.provider||"gemini";providerTypeChanged();
+  if(provider){
+   for(const [suffix,key] of [["Name","name"],["Url","base_url"],["Key","api_key"],["Workspace","workspace_id"]])el("provider"+suffix).value=provider[key]||"";
+   editorModels=provider.models.map(m=>({...m}));renderEditorModels();
+   el("providerScanStatus").textContent="Đã lưu "+editorModels.length+" model. Có thể quét lại để cập nhật.";
+  }
+  el("providerDelete").hidden=!provider;el("providerEditorStatus").textContent="";el("providerEditor").hidden=false;el("translationProviderManager").open=true;el("providerName").focus();
+ }
+ async function scanModels(){
+  for(const suffix of ["Url","Key","Workspace"])if(!el("provider"+suffix).reportValidity())return;
+  cancelScan();const controller=new AbortController();scanController=controller;
+  const config=editorConfig(),button=el("providerScanModels"),note=el("providerScanStatus");
+  button.disabled=true;button.textContent="Đang quét…";note.textContent="Đang lấy danh sách model…";
+  const timeout=setTimeout(()=>controller.abort(),50000);
+  try{
+   const data=await jsonApi("/api/translation/models",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(config),signal:controller.signal});
+   if(scanController!==controller)return;
+   // Retain models selected before a provider stopped listing them.
+   const models=new Map(editorModels.map(m=>[m.id,m]));for(const item of data.models)models.set(item.id,item);
+   editorModels=[...models.values()];renderEditorModels();
+   note.textContent=data.models.length?`Tìm thấy ${data.models.length} model. Bấm Lưu provider để dùng lại danh sách.`:"Provider không trả model nào. Hãy thêm model ID thủ công.";
+  }catch(e){if(scanController===controller)note.textContent=e.name==="AbortError"?"Quét quá thời gian chờ. Hãy quét lại hoặc thêm model thủ công.":e.message}
+  finally{clearTimeout(timeout);if(scanController===controller)cancelScan()}
+ }
+ el("providerType").addEventListener("change",providerTypeChanged);
+ for(const suffix of ["Url","Key","Workspace"])el("provider"+suffix).addEventListener("input",resetEditorModels);
+ el("providerScanModels").addEventListener("click",scanModels);
+ el("providerNew").addEventListener("click",()=>openProviderEditor(null));
+ el("providerEdit").addEventListener("click",()=>openProviderEditor(el("savedProviderEditor").value));
+ el("savedProviderEditor").addEventListener("change",()=>{el("providerEdit").disabled=!el("savedProviderEditor").value;closeProviderEditor()});
+ el("providerEditorCancel").addEventListener("click",closeProviderEditor);
+ el("translationSettings").addEventListener("close",closeProviderEditor);
+ el("providerManualModel").addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();el("providerAddModel").click()}});
+ el("providerAddModel").addEventListener("click",()=>{
+  const input=el("providerManualModel"),id=input.value.trim();
+  if(!id||/\s/.test(id)){el("providerEditorStatus").textContent="Model ID không được trống hoặc chứa khoảng trắng.";input.focus();return}
+  if(!editorModels.some(m=>m.id===id))editorModels.push({id,name:id});
+  renderEditorModels();el("providerModelCatalog").value=id;input.value="";el("providerEditorStatus").textContent="Đã thêm model. Bấm Lưu provider để giữ lại.";
+ });
+ el("providerEditor").addEventListener("submit",event=>{
+  event.preventDefault();if(scanController){el("providerEditorStatus").textContent="Đợi quét model hoàn tất trước khi lưu.";return}
+  if(!editorModels.length){el("providerEditorStatus").textContent="Quét hoặc thêm ít nhất một model trước khi lưu provider.";return}
+  const selections=currentSelections(),previous=savedSettings.providers.find(p=>p.id===editorId);
+  const provider={id:editorId||crypto.randomUUID(),name:el("providerName").value.trim(),...editorConfig(),models:editorModels.map(m=>({...m}))};
+  if(!provider.name){el("providerEditorStatus").textContent="Nhập tên gợi nhớ cho provider.";return}
+  const providers=previous?savedSettings.providers.map(p=>p.id===provider.id?provider:p):[...savedSettings.providers,provider];
+  const savedSelections=structuredClone(savedSettings.selections||{});
+  for(const role of roles)if(savedSelections[role]?.provider_id===provider.id&&!provider.models.some(m=>m.id===savedSelections[role].model))delete savedSelections[role];
+  if(!persistSettings({...savedSettings,providers,selections:savedSelections}))return;
+  renderProviderChoices(selections);el("savedProviderEditor").value=provider.id;el("providerEdit").disabled=false;closeProviderEditor();
+  el("translationSettingsStatus").textContent="Đã lưu provider “"+provider.name+"”. Chọn model cho hai bước rồi bấm Lưu lựa chọn.";
+ });
+ el("providerDelete").addEventListener("click",()=>{
+  const provider=savedSettings.providers.find(p=>p.id===editorId);if(!provider||!confirm("Xóa provider “"+provider.name+"” và danh sách model đã lưu?"))return;
+  const selections=currentSelections(),next=structuredClone(savedSettings);next.providers=next.providers.filter(p=>p.id!==provider.id);
+  for(const role of roles)if(next.selections?.[role]?.provider_id===provider.id)delete next.selections[role];
+  if(persistSettings(next)){closeProviderEditor();renderProviderChoices(selections);el("translationSettingsStatus").textContent="Đã xóa provider. Chọn lại nếu provider này đang được dùng."}
+ });
+ async function loadPresets(){
+  const data=await jsonApi("/api/translation/providers");presets=data.providers;jobId=data.active_id||jobId;
+  for(const preset of presets)el("providerType").add(new Option(preset.name,preset.id));
+  for(const [role,title] of [["context","Model hồ sơ / ngữ cảnh"],["translate","Model dịch thuật"]]){
+   const box=document.createElement("fieldset");box.innerHTML=`<legend>${title}</legend>
+    <div class="settingsField"><label for="${role}Provider">Provider đã lưu</label><select id="${role}Provider" required></select></div>
+    <div class="settingsField"><label for="${role}ModelSelect">Model</label><select id="${role}ModelSelect" required></select></div>`;
+   el("translationModels").append(box);el(role+"Provider").addEventListener("change",()=>fillModels(role));
+  }
+  renderProviderChoices(savedSettings.selections);
+  ready=true;el("translationStart").disabled=false;el("translationSaveSettings").disabled=false;el("translationSettingsButton").disabled=false;
+  if(!jobId)message("Chọn tập trong thư viện để dịch bằng cấu hình đã lưu.");
+ }
+ function render(state){
+  lastState=state;
+  const running=!["complete","error","cancelled"].includes(state.stage);busy(running);message(state.message,state.stage==="error");
+  el("translationSaved").hidden=!state.total_batches;
+  el("translationSaved").textContent=state.total_batches?`Đã lưu ${state.saved_batches||0}/${state.total_batches} batch. Dịch tiếp chỉ gọi API cho phần còn thiếu.`:"";
+  selectEpisode(state.episode_id?{id:state.episode_id,label:state.episode_label}:null);
+  updateTranslationEpisode(state);
+  document.querySelectorAll(".translationSteps li").forEach((li,i)=>{if(i+1===state.step)li.setAttribute("aria-current","step");else li.removeAttribute("aria-current")});
+  const progress=el("translationProgress");progress.hidden=!running;
+  if(state.stage==="translation"){progress.max=state.total_batches||1;progress.value=state.completed_batches||0}else progress.removeAttribute("value");
+  document.querySelectorAll("[data-artifact]").forEach(b=>b.hidden=b.dataset.artifact==="memory.json"?!state.memory_available:state.stage!=="complete");
+  el("translationPreviewBox").hidden=state.stage!=="complete";
+  if(state.stage==="complete")el("translationPreview").textContent=(state.preview||[]).map(c=>`${c.id} · ${c.start} → ${c.end}\n${c.text}`).join("\n\n");
+  return running;
+ }
+ async function poll(){
+  clearTimeout(timer);el("translationReconnect").hidden=true;
+  try{if(render(await jsonApi("/api/translation/status?id="+encodeURIComponent(jobId))))timer=setTimeout(poll,1500)}
+  catch(e){message(e.message+" Bạn có thể kiểm tra lại trạng thái.",true);el("translationReconnect").hidden=false}
+ }
+ async function startTranslation(){
+  busy(true);message(selectedEpisode?"Đang lấy phụ đề đã tải của tập…":"Đang đọc file và gửi cấu hình…");clearTimeout(timer);
+  try{
+   let source;
+   if(selectedEpisode)source={tvid:selectedEpisode.id};
+   else{const file=el("translationFile").files[0];if(!file||file.size>6000000)throw Error("Chọn file SRT không quá 6 MB.");source={source:await file.text(),filename:file.name}}
+   const state=await send("/api/translation/start",{...source,context_model:model("context"),translation_model:model("translate")});
+   jobId=state.id;try{localStorage.setItem("subtitle-translation-job",jobId)}catch{}
+   render(state);await poll();
+  }catch(e){busy(false);message(e.message,true);try{const data=await jsonApi("/api/translation/providers");if(data.active_id){jobId=data.active_id;await poll()}}catch{}}
+ }
+ el("translationSettingsForm").addEventListener("submit",event=>{
+  event.preventDefault();const next={...savedSettings,selections:currentSelections()};
+  if(!roles.every(role=>translationModelConfig(next,role))){el("translationSettingsStatus").textContent="Chọn provider và model cho cả hai bước.";return}
+  if(persistSettings(next))el("translationSettings").close();
+ });
+ form.addEventListener("submit",async event=>{event.preventDefault();if(settingsReady())await startTranslation()});
+ el("translationCancel").addEventListener("click",async()=>{el("translationCancel").disabled=true;try{message((await send("/api/translation/cancel",{id:jobId})).message)}catch(e){message(e.message,true)}finally{el("translationCancel").disabled=false}});
+ el("translationReconnect").addEventListener("click",poll);
+ window.downloadTranslation=async(id,name,button)=>{
+  button.disabled=true;try{const r=await apiFetch("/api/translation/artifact?id="+encodeURIComponent(id)+"&name="+encodeURIComponent(name));if(!r.ok){const data=await r.json();throw Error(data.error||"Chưa tải được file.")}
+   const url=URL.createObjectURL(await r.blob()),a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }catch(e){openPanel();message(e.message,true)}finally{button.disabled=false}
+ };
+ document.querySelectorAll("[data-artifact]").forEach(button=>button.addEventListener("click",()=>downloadTranslation(jobId,button.dataset.artifact,button)));
+ loadPresets().then(()=>{if(jobId)poll()}).catch(e=>message("Không tải được provider: "+e.message+" Hãy tải lại trang.",true));
+});
+</script>

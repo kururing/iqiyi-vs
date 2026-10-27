@@ -1,10 +1,9 @@
-/* Player subtitle hooks for iQIYI and Youku in one file; the router at the bottom picks the provider.
-   - iQIYI: register player-provided subtitle tracks and use translated local tracks.
-   - Youku: translate live captions, capture them in the shared subtitle manager and apply Youku layout CSS. */
+/* Capture original tracks; expose completed AI and official iq.com subtitles in iQIYI. */
 (function (root) {
   "use strict";
 
   function iqiyiSubtitleHook() {
+    var HOOK_VERSION = 33;
     var SIDE = "http://127.0.0.1:18766";
     var nativeFetch = root && root.fetch ? root.fetch.bind(root) : null;
     function localFetch(input, options) {
@@ -60,10 +59,10 @@
     }
     ensureToken();
     var TRACK = /^(xml|srt|webvtt|vtt)$/;
-    var VI_LID = 23;
-    var VI_NAME = "Tiếng Việt AI";
     var OFFICIAL_LID = 90023;
     var OFFICIAL_NAME = "Tiếng Việt iq.com";
+    var AI_LID = 90024;
+    var AI_NAME = "Tiếng Việt AI";
     var titles = new Map();
     var albumIds = new Map();
     var registered = new Set();
@@ -76,13 +75,11 @@
     var listPosted = new Set();
     var posting = new Map();
     var registrations = new Map();
-    var translationStates = new Map();
+    var officialStates = new Map();
     var preloadedOfficialTvid = "";
-    var activeViTvid = "";
-    var activeViDisabled = true;
-    var activeAiManaged = true;
+    var activeOfficialTvid = "";
     var activeOfficialAvailable = false;
-    var disabledOptionState = new WeakMap();
+    var activeAiAvailable = false;
     var hiddenOptionState = new WeakMap();
     var menuObserver = null;
     var menuScanTimer = null;
@@ -143,43 +140,31 @@
         if (!response.ok) throw new Error("Subtitle manager HTTP " + response.status);
       });
     }
-    function getTranslationState(tvid) {
-      if (!nativeFetch || !tvid) return Promise.resolve({available:false, translating:true});
-      var cached = translationStates.get(tvid);
+    function getOfficialSubtitleState(tvid) {
+      if (!nativeFetch || !tvid) return Promise.resolve({officialAvailable:false,officialLoading:false,officialError:""});
+      var cached = officialStates.get(tvid);
       if (cached && cached.value && cached.expires > Date.now()) return Promise.resolve(cached.value);
       if (cached && cached.promise) return cached.promise;
-      var url = SIDE + "/api/translation-state?tvid=" + encodeURIComponent(tvid);
+      var url = SIDE + "/api/official-subtitle-state?tvid=" + encodeURIComponent(tvid);
       var job = ensureToken().then(function (token) {
         if (!token) throw new Error("Subtitle manager token is unavailable");
-        return localFetch(url + "&token=" + encodeURIComponent(token));
+        return localFetch(url, {headers:{"X-Iqiyi-Token":token}});
       }).then(function (response) {
-        if (!response.ok) throw new Error("Translation status unavailable");
+        if (!response.ok) throw new Error("Official subtitle status unavailable");
         return response.json();
       }).then(function (state) {
-        var value = {available:state.available === true, translating:state.translating === true,
-          officialAvailable:state.officialAvailable === true, officialLoading:state.officialLoading === true,
-          officialError:String(state.officialError || "")};
-        translationStates.set(tvid, {value:value, expires:Date.now() + 500});
+        var value = {officialAvailable:state.officialAvailable === true,
+          officialLoading:state.officialLoading === true, officialError:String(state.officialError || ""),
+          aiAvailable:state.aiAvailable === true, aiVersion:String(state.aiVersion || "")};
+        officialStates.set(tvid, {value:value, expires:Date.now() + 1000});
         return value;
       }).catch(function () {
-        var value = {available:false, translating:true};
-        translationStates.set(tvid, {value:value, expires:Date.now() + 1000});
+        var value = {officialAvailable:false,officialLoading:false,officialError:""};
+        officialStates.set(tvid, {value:value, expires:Date.now() + 2000});
         return value;
       });
-      translationStates.set(tvid, {promise:job, expires:0});
+      officialStates.set(tvid, {promise:job,expires:0});
       return job;
-    }
-    function primeTranslationStates(ids) {
-      if (!ids.length) return Promise.resolve();
-      // Subtitle availability must not stall playback when the manager is offline.
-      return new Promise(function (resolve) {
-        var timer = setTimeout(resolve, 1500);
-        Promise.all(ids.map(getTranslationState)).then(function () { clearTimeout(timer); resolve(); });
-      });
-    }
-    function isViLabel(value) {
-      return /^(?:tiếng\s*việt(?:\s*(?:ai|\(ai\)))?|vietnamese(?:\s*\(ai\))?|越南语|越南文)$/i.test(
-        String(value || "").replace(/\s+/g, " ").trim());
     }
     function isOfficialLabel(value) {
       return String(value || "").replace(/\s+/g, " ").trim() === OFFICIAL_NAME;
@@ -190,7 +175,7 @@
       // The PC player keeps its SDK and subtitle controller inside Webpack, not window.QySdk.
       var chunks = root && root.webpackChunk_iqiyi_webapp;
       if (!officialRuntimeRequire && chunks && chunks.push !== Array.prototype.push) {
-        chunks.push([["iqiyiViOfficialSubtitle"], {}, function (require) { officialRuntimeRequire = require; }]);
+        chunks.push([["iqiyiViOfficialSubtitle" + HOOK_VERSION], {}, function (require) { officialRuntimeRequire = require; }]);
       }
       if (!officialNativeControl && officialRuntimeRequire && officialRuntimeRequire.m) {
         Object.keys(officialRuntimeRequire.m).some(function (id) {
@@ -207,7 +192,7 @@
                 var tracks = originalList.apply(this, arguments);
                 return Array.isArray(tracks) ? tracks.map(function (track) {
                   if (Number(track.lid) === OFFICIAL_LID) return Object.assign({}, track, {name:OFFICIAL_NAME});
-                  if (Number(track.lid) === VI_LID && activeAiManaged) return Object.assign({}, track, {name:VI_NAME});
+                  if (Number(track.lid) === AI_LID) return Object.assign({}, track, {name:AI_NAME});
                   return track;
                 }) : tracks;
               };
@@ -241,12 +226,14 @@
     function installOfficialSubtitleLayout() {
       var sdk = officialNativeControl && officialNativeControl.subtitleSdk && officialNativeControl.subtitleSdk.sdk;
       var view = sdk && sdk.view;
-      if (!view || view.__iqiyiOfficialLayout || typeof view.getCurrentData !== "function" ||
+      if (!view || view.__iqiyiOfficialLayoutVersion >= HOOK_VERSION || typeof view.getCurrentData !== "function" ||
           typeof view.updateCaptions !== "function") return;
       view.__iqiyiOfficialLayout = true;
+      view.__iqiyiOfficialLayoutVersion = HOOK_VERSION;
       var getCurrent = view.getCurrentData;
       view.getCurrentData = function (data, pts) {
         if (!Array.isArray(data) || !data.length || (!data[0].iqcomRegion && !data[0].viText)) return getCurrent.apply(this, arguments);
+        if (data[0].viText && !activeAiAvailable) return undefined;
         var text = officialRegionText(data, pts, data[0].iqcomRegion ? "bottom" : null);
         return text ? {sub:text} : undefined;
       };
@@ -293,44 +280,6 @@
       }
       return null;
     }
-    function optionForTarget(target) {
-      var node = target && (target.nodeType === 1 ? target : target.parentElement);
-      while (node && node !== root.document.body) {
-        var label = String(node.textContent || "").replace(/\s+/g, " ").trim();
-        if (node.nodeType === 1 && (isViLabel(label) || isOfficialLabel(label))) {
-          var option = subtitleOptionElement(node);
-          if (option) return {element:option, official:isOfficialLabel(label)};
-        }
-        node = node.parentElement;
-      }
-      return null;
-    }
-    function applyDisabledOption(option, disabled, message) {
-      if (!option) return;
-      var previous = disabledOptionState.get(option);
-      if (disabled) {
-        if (!previous) {
-          previous = {aria:option.getAttribute("aria-disabled"), disabled:"disabled" in option ? option.disabled : null,
-            opacity:option.style.opacity, cursor:option.style.cursor, title:option.getAttribute("title")};
-          disabledOptionState.set(option, previous);
-        }
-        option.setAttribute("aria-disabled", "true");
-        if (previous.disabled !== null) option.disabled = true;
-        option.style.opacity = "0.45";
-        option.style.cursor = "not-allowed";
-        if (message) option.setAttribute("title", message);
-        return;
-      }
-      if (!previous) return;
-      if (previous.aria === null) option.removeAttribute("aria-disabled");
-      else option.setAttribute("aria-disabled", previous.aria);
-      if (previous.disabled !== null) option.disabled = previous.disabled;
-      option.style.opacity = previous.opacity;
-      option.style.cursor = previous.cursor;
-      if (previous.title === null) option.removeAttribute("title");
-      else option.setAttribute("title", previous.title);
-      disabledOptionState.delete(option);
-    }
     function applyHiddenOption(option, hidden) {
       if (!option) return;
       if (hidden) {
@@ -349,21 +298,15 @@
     function scanSubtitleMenu() {
       menuScanTimer = null;
       if (!root || !root.document || !root.document.querySelectorAll) return;
-      var candidates = root.document.querySelectorAll("button,[role],li,[class],span,div");
-      candidates.forEach(function (node) {
-        // Reading innerText forces layout and can trigger unrelated HTTP background images.
+      root.document.querySelectorAll("button,[role],li,[class],span,div").forEach(function (node) {
         var label = String(node.textContent || "").replace(/\s+/g, " ").trim();
         if (isOfficialLabel(label)) applyHiddenOption(subtitleOptionElement(node), !activeOfficialAvailable);
-        else if (isViLabel(label)) applyDisabledOption(subtitleOptionElement(node), activeViDisabled, "");
+        if (label === AI_NAME) applyHiddenOption(subtitleOptionElement(node), !activeAiAvailable);
       });
     }
     function scheduleSubtitleMenuScan() {
       if (menuScanTimer !== null || !root || !root.setTimeout) return;
       menuScanTimer = root.setTimeout(scanSubtitleMenu, 80);
-    }
-    function applyActiveSubtitleState(state) {
-      activeViDisabled = activeAiManaged && (!state.available || state.translating);
-      activeOfficialAvailable = state.officialAvailable === true;
     }
     function currentSubtitleTvid() {
       var manager = officialNativeControl && officialNativeControl.videoDataManager;
@@ -371,83 +314,97 @@
       var tvid = String(data && data.tvId || "");
       return /^\d{8,24}$/.test(tvid) ? tvid : "";
     }
-    function retryOfficialSubtitle(tvid, state) {
+    function syncNativeAiTrack(tvid) {
+      var control = officialNativeControl, sdk = control && control.subtitleSdk && control.subtitleSdk.sdk;
+      var store = control && control.store;
+      if (!sdk || !store || typeof store.getProp !== "function" || typeof store.setProp !== "function" ||
+          currentSubtitleTvid() !== String(tvid)) return;
+      var rows = store.getProp("subTitleData");
+      if (!Array.isArray(rows)) return;
+      var url = SIDE + "/subtitle.xml?tvid=" + encodeURIComponent(tvid) + "&source=ai";
+      var existing = rows.find(function (row) { return Number(row.lid) === AI_LID; });
+      // A running player may have loaded its subtitle list before the hook update.
+      // Update its reactive menu and SDK URL table without restarting the video.
+      if (!existing || existing.xml !== url) {
+        var track = Object.assign({}, existing || {}, {lid:AI_LID,main:1,
+          pre:existing ? existing.pre : 0,name:AI_NAME,title:AI_NAME,xml:url});
+        rows = rows.filter(function (row) { return Number(row.lid) !== AI_LID; }).concat([track]);
+        store.setProp("subTitleData", rows);
+      }
+      var normalized = control._getSubTitleList().find(function (row) { return Number(row.lid) === AI_LID; });
+      if (!normalized) return;
+      [sdk.params, sdk.model && sdk.model.params, sdk.view && sdk.view.params].forEach(function (params) {
+        if (!params || !Array.isArray(params.data)) return;
+        var track = params.data.find(function (row) { return Number(row.lid) === AI_LID; });
+        if (!track) params.data.push(Object.assign({}, normalized));
+        else if (track.url !== url) track.url = url;
+      });
+    }
+    function retryLocalSubtitle(tvid, lid, available, version) {
       var control = officialNativeControl;
       var sdk = control && control.subtitleSdk && control.subtitleSdk.sdk;
       var view = sdk && sdk.view;
-      if (!view || !state.officialAvailable || currentSubtitleTvid() !== String(tvid)) return;
-      // The controller retains the user's choice even when the SDK never activated a failed load.
+      if (!view || !available || currentSubtitleTvid() !== String(tvid)) return;
       var tracks = control._getSubTitleList();
       var selected = Array.isArray(tracks) && tracks.some(function (track) {
-        return Number(track.type) === 1 && Number(track.lid) === OFFICIAL_LID && track.status;
+        return Number(track.type) === 1 && Number(track.lid) === lid && track.status;
       });
       if (!selected) return;
-      var loaded = view.model && view.model.data && view.model.data[1] && view.model.data[1][OFFICIAL_LID];
-      var active = view.captionLids && Number(view.captionLids.get(1)) === OFFICIAL_LID;
+      var loaded = view.model && view.model.data && view.model.data[1] && view.model.data[1][lid];
+      if (lid === AI_LID && view.__iqiyiAiVersion !== version) {
+        if (view.model && view.model.data && view.model.data[1]) delete view.model.data[1][lid];
+        view.__iqiyiAiVersion = version;loaded = null;
+      }
+      var active = view.captionLids && Number(view.captionLids.get(1)) === lid;
       if (loaded && active) return;
-      if (view.__iqiyiOfficialRetryTvid === String(tvid) && Date.now() < (view.__iqiyiOfficialRetryAt || 0)) return;
-      // A cold cache can fail the SDK's initial load, including a saved language choice.
-      view.__iqiyiOfficialRetryTvid = String(tvid);
+      var retryKey = String(tvid) + ":" + lid;
+      if (view.__iqiyiOfficialRetryTvid === retryKey && Date.now() < (view.__iqiyiOfficialRetryAt || 0)) return;
+      view.__iqiyiOfficialRetryTvid = retryKey;
       view.__iqiyiOfficialRetryAt = Date.now() + 5000;
-      try { control.openSubTitle(1, OFFICIAL_LID); } catch (_) {}
+      try { control.openSubTitle(1, lid); } catch (_) {}
     }
-    function setActiveViTrack(tvid, managed) {
+    function applyLocalSubtitleState(tvid, state) {
+      activeOfficialAvailable = state.officialAvailable;
+      activeAiAvailable = state.aiAvailable === true;
+      syncNativeAiTrack(tvid);
+      retryLocalSubtitle(tvid, OFFICIAL_LID, activeOfficialAvailable);
+      retryLocalSubtitle(tvid, AI_LID, activeAiAvailable, state.aiVersion);
+      scheduleSubtitleMenuScan();
+    }
+    function setActiveOfficialTrack(tvid) {
       if (!tvid || !root || !root.document) return;
-      // DASH for a prefetched episode must not hide tracks for the video being watched.
       var playing = currentSubtitleTvid();
       if (playing && playing !== String(tvid)) return;
-      activeViTvid = String(tvid);
-      activeAiManaged = managed !== false;
-      activeViDisabled = activeAiManaged;
-      var cached = translationStates.get(activeViTvid);
+      activeOfficialTvid = String(tvid);
+      var cached = officialStates.get(activeOfficialTvid);
       activeOfficialAvailable = !!(cached && cached.value && cached.value.officialAvailable);
+      activeAiAvailable = !!(cached && cached.value && cached.value.aiAvailable);
       scheduleSubtitleMenuScan();
-      getTranslationState(activeViTvid).then(function (state) {
-        if (activeViTvid !== String(tvid)) return;
-        applyActiveSubtitleState(state);
-        retryOfficialSubtitle(tvid, state);
-        scheduleSubtitleMenuScan();
+      getOfficialSubtitleState(activeOfficialTvid).then(function (state) {
+        if (activeOfficialTvid !== String(tvid)) return;
+        applyLocalSubtitleState(tvid, state);
       });
     }
-    function refreshActiveViTrack() {
+    function refreshOfficialSubtitle() {
       installOfficialSubtitleName();
       var playing = currentSubtitleTvid();
-      if (playing && playing !== activeViTvid) {
-        var tracks = officialNativeControl._getSubTitleList();
-        var vi = Array.isArray(tracks) && tracks.find(function (track) { return Number(track.lid) === VI_LID; });
-        setActiveViTrack(playing, !vi || String(vi.url || "").indexOf(SIDE + "/subtitle.xml?") === 0);
-        return;
-      }
-      if (!activeViTvid) return;
-      var tvid = activeViTvid;
-      getTranslationState(tvid).then(function (state) {
-        if (activeViTvid !== tvid) return;
-        applyActiveSubtitleState(state);
-        retryOfficialSubtitle(tvid, state);
-        scheduleSubtitleMenuScan();
+      if (!playing) return;
+      if (playing !== activeOfficialTvid) { setActiveOfficialTrack(playing); return; }
+      getOfficialSubtitleState(playing).then(function (state) {
+        if (activeOfficialTvid !== playing) return;
+        applyLocalSubtitleState(playing, state);
       });
     }
-    function installSubtitleMenuGuard() {
+    function installOfficialSubtitleGuard() {
       var doc = root && root.document;
-      if (!doc || !doc.addEventListener || doc.__iqiyiViMenuGuard) return;
-      doc.__iqiyiViMenuGuard = true;
-      function blockUnavailableSelection(event) {
-        if (!activeViTvid) return;
-        if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
-        var option = optionForTarget(event.target);
-        if (!option || option.official || !activeViDisabled) return;
-        event.preventDefault();
-        event.stopPropagation();
-        if (event.stopImmediatePropagation) event.stopImmediatePropagation();
-      }
-      ["pointerdown", "click", "keydown"].forEach(function (type) {
-        doc.addEventListener(type, blockUnavailableSelection, true);
-      });
+      if (!doc || !doc.addEventListener || doc.__iqiyiLocalSubtitleGuardVersion >= HOOK_VERSION) return;
+      doc.__iqiyiOfficialSubtitleGuard = true;
+      doc.__iqiyiLocalSubtitleGuardVersion = HOOK_VERSION;
       if (root.MutationObserver && doc.documentElement) {
         menuObserver = new root.MutationObserver(scheduleSubtitleMenuScan);
         menuObserver.observe(doc.documentElement, {childList:true, subtree:true});
       }
-      if (root.setInterval) root.setInterval(refreshActiveViTrack, 1000);
+      if (root.setInterval) root.setInterval(refreshOfficialSubtitle, 1000);
     }
     function installSubtitleStyle() {
       var doc = root.document;
@@ -559,27 +516,17 @@
     function prepareTracks(items, context) {
       installOfficialSubtitleName();
       var chinese = items.find(function (item) { return item && String(item.lid) === "1"; });
-      var preferred = chinese || items.find(function (item) { return item && String(item.lid) !== String(VI_LID) && trackUrl(item); });
+      var preferred = chinese || items.find(function (item) { return item && trackUrl(item); });
       var sourceTracks = items.filter(function (item) { return item && trackUrl(item) &&
         !(typeof item.xml === "string" && item.xml.indexOf(SIDE + "/subtitle.xml?") === 0); }).map(function (item) {
-        var key = trackUrl(item);
-        var url = absolute(item[key], context.prefix);
-        if (item === preferred) sourceByUrl.set(url, {tvid:context.tvid, format:key});
-        return {lid:String(item.lid || ""), name:String(item.name || item.title || ""), url:url, format:key};
+        var key = trackUrl(item), url = absolute(item[key], context.prefix);
+        if (item === preferred) sourceByUrl.set(url, {tvid:context.tvid,format:key});
+        return {lid:String(item.lid || ""),name:String(item.name || item.title || ""),url:url,format:key};
       });
       if (context.tvid) {
         var registration = {tvid:context.tvid,title:context.title,albumId:context.albumId,tracks:sourceTracks};
         registrations.set(context.tvid, postOnce(JSON.stringify(registration), "/api/register", registration, registered));
       }
-      var viTrack = {
-        lid: VI_LID,
-        pre: 0,
-        name: VI_NAME,
-        title: VI_NAME,
-        // This read-only route is origin-checked by the local manager; avoid a token race
-        // when iQIYI requests the injected track before the token fetch has completed.
-        xml: SIDE + "/subtitle.xml?tvid=" + encodeURIComponent(context.tvid)
-      };
       var output = items.filter(function (item) { return !item || typeof item.xml !== "string" || item.xml.indexOf(SIDE + "/subtitle.xml?") !== 0; })
         .map(function (item) {
           if (!item || typeof item !== "object") return item;
@@ -590,48 +537,16 @@
           return copy;
         });
       if (!context.tvid) return output;
-      output.push({lid:OFFICIAL_LID, main:1, pre:0, name:OFFICIAL_NAME, title:OFFICIAL_NAME,
-        xml:SIDE + "/subtitle.xml?tvid=" + encodeURIComponent(context.tvid) + "&source=iqcom"});
-      if (output.some(function (item) { return item && String(item.lid) === String(VI_LID); })) {
-        setActiveViTrack(context.tvid, false);
-        return output;
+      if (!output.some(function (item) { return item && Number(item.lid) === OFFICIAL_LID; })) {
+        output.push({lid:OFFICIAL_LID,main:1,pre:0,name:OFFICIAL_NAME,title:OFFICIAL_NAME,
+          xml:SIDE + "/subtitle.xml?tvid=" + encodeURIComponent(context.tvid) + "&source=iqcom"});
       }
-      var translation = translationStates.get(String(context.tvid));
-      if (!translation || !translation.value) {
-        // Prime the status cache; keep the track non-default until availability is confirmed.
-        getTranslationState(String(context.tvid));
+      if (!output.some(function (item) { return item && Number(item.lid) === AI_LID; })) {
+        output.push({lid:AI_LID,main:1,pre:0,name:AI_NAME,title:AI_NAME,
+          xml:SIDE + "/subtitle.xml?tvid=" + encodeURIComponent(context.tvid) + "&source=ai"});
       }
-      var available = !!(translation && translation.value && translation.value.available);
-      // Keep a disabled placeholder in the player track list so subtitles translated
-      // after playback starts can become selectable without reloading the episode.
-      setActiveViTrack(context.tvid);
-      var index = output.findIndex(function (item) { return item && String(item.lid) === "1"; });
-      if (available) viTrack.main = 1;
-      output.splice(index < 0 ? output.length : index + 1, 0, viTrack);
+      setActiveOfficialTrack(context.tvid);
       return output;
-    }
-    function trackTvids(body) {
-      var found = new Set();
-      function scan(value, context, depth) {
-        if (depth > 32) return;
-        var parsed = decode(value);
-        if (parsed !== value) { scan(parsed, context, depth + 1); return; }
-        if (!value || typeof value !== "object") return;
-        if (Array.isArray(value)) {
-          if (isTrackArray(value) && context.tvid) found.add(context.tvid);
-          value.forEach(function (item) { scan(item, context, depth + 1); });
-          return;
-        }
-        context = identity(value, context);
-        if (context.tvid && value.program && !Array.isArray(value.program) &&
-            Array.isArray(value.program.video) && value.program.stl == null) found.add(context.tvid);
-        Object.keys(value).forEach(function (key) {
-          if (key === "stl" && Array.isArray(value[key]) && !value[key].length && context.tvid) found.add(context.tvid);
-          scan(value[key], context, depth + 1);
-        });
-      }
-      scan(body, {tvid:"", title:"", albumId:"", prefix:""}, 0);
-      return Array.from(found);
     }
     function rewrite(body) {
       try { registerEpisodeLists(decode(body)); } catch (_) {}
@@ -753,7 +668,7 @@
         var ready = postOnce(JSON.stringify(data), "/api/album/register", data, listPosted);
         group.forEach(function (episode) {
           var track = episode.tracks.find(function (item) { return item.lid === "1"; }) ||
-            episode.tracks.find(function (item) { return item.lid !== String(VI_LID); });
+            episode.tracks.find(function (item) { return item.lid !== "90023"; });
           if (!track) return;
           sourceByUrl.set(track.url,{tvid:episode.tvid,format:track.format,ready:ready});
           if (!queued.has(track.url)) { queued.add(track.url); sourceQueue.push(track); }
@@ -784,7 +699,7 @@
       if (!/^\d{1,20}$/.test(tvid) || !/^\d{1,24}$/.test(albumId)) return;
       if (preloadedOfficialTvid !== tvid) {
         preloadedOfficialTvid = tvid;
-        getTranslationState(tvid).catch(function () {});
+        getOfficialSubtitleState(tvid).catch(function () {});
       }
       var album = info.album || {};
       var title = String(info.tvName || info.entityTitle || info.name || info.title || album.albumName || album.name || "");
@@ -796,11 +711,11 @@
       postOnce(JSON.stringify(data), "/api/register", data, registered);
     }
     installSubtitleStyle();
-    if (root.__iqiyiSubtitleEngine) return;
+    if (root.__iqiyiSubtitleEngine && root.__iqiyiSubtitleEngine.version >= HOOK_VERSION) return;
     syncWebEpisode();
     if (iqPlayer && root.setInterval) root.setInterval(syncWebEpisode, 3000);
-    installSubtitleMenuGuard();
-    root.__iqiyiSubtitleEngine = {version: 28, rewrite: rewrite, titles: titles};
+    installOfficialSubtitleGuard();
+    root.__iqiyiSubtitleEngine = {version: HOOK_VERSION, rewrite: rewrite, titles: titles};
 
     // The accelerator assigns encoded DASH metadata directly, bypassing fetch/XHR/JSONP.
     function rewriteAccelerator(value) {
@@ -839,12 +754,8 @@
       if (typeof callback !== "function" || jsonpCallbacks.has(callback)) return;
       var wrapped = function () {
         var self = this, args = Array.prototype.slice.call(arguments);
-        var ids = trackTvids(args[0]);
-        if (!ids.length) return callback.apply(self, args);
-        return primeTranslationStates(ids).then(function () {
-          args[0] = rewrite(args[0]);
-          return callback.apply(self, args);
-        });
+        args[0] = rewrite(args[0]);
+        return callback.apply(self, args);
       };
       jsonpCallbacks.add(wrapped);
       root[name] = wrapped;
@@ -874,14 +785,11 @@
           var type = response.headers.get("content-type") || "";
           if (/video|audio|image|octet-stream|mpegurl|xml/.test(type)) return response;
           return response.clone().text().then(function (text) {
-            var ids = trackTvids(text);
-            return primeTranslationStates(ids).then(function () {
-              var body = rewrite(text);
-              if (body === text) return response;
-              var headers = new Headers(response.headers);
-              headers.delete("content-length"); headers.delete("content-encoding");
-              return new Response(body, {status: response.status, statusText: response.statusText, headers: headers});
-            });
+            var body = rewrite(text);
+            if (body === text) return response;
+            var headers = new Headers(response.headers);
+            headers.delete("content-length"); headers.delete("content-encoding");
+            return new Response(body, {status: response.status, statusText: response.statusText, headers: headers});
           }).catch(function () { return response; });
         });
       };
@@ -891,6 +799,7 @@
       var cache = new WeakMap();
       if (proto.open && proto.send && proto.addEventListener) {
         var nativeOpen = proto.open, nativeSend = proto.send;
+        var nativeSetRequestHeader = proto.setRequestHeader;
         var nativeAbort = proto.abort;
         function cancelRelay(xhr) {
           var relay = xhr.__iqiyiSubtitleRelay;
@@ -901,11 +810,26 @@
         }
         proto.open = function () {
           cancelRelay(this);
+          this.__iqiyiSubtitleAuthSent = false;
           this.__iqiyiSubtitleRequest = (this.__iqiyiSubtitleRequest || 0) + 1;
           this.__iqiyiSubtitleAsync = arguments[2] !== false;
           this.__iqiyiSubtitleSourceUrl = requestUrl(arguments[1]);
           return nativeOpen.apply(this, arguments);
         };
+        if (nativeSetRequestHeader && !proto.__iqiyiSubtitleHeaderGuard) {
+          proto.__iqiyiSubtitleHeaderGuard = true;
+          proto.setRequestHeader = function (name, value) {
+            var url = this.__iqiyiSubtitleSourceUrl || "";
+            if (String(name).toLowerCase() === "x-iqiyi-token" &&
+                (url === SIDE + "/subtitle.xml" || url.indexOf(SIDE + "/subtitle.xml?") === 0)) {
+              // Legacy hooks remain underneath during a live upgrade. Repeated
+              // setRequestHeader calls append values, producing an invalid token.
+              if (this.__iqiyiSubtitleAuthSent) return;
+              this.__iqiyiSubtitleAuthSent = true;
+            }
+            return nativeSetRequestHeader.apply(this, arguments);
+          };
+        }
         if (nativeAbort) proto.abort = function () {
           cancelRelay(this);
           this.__iqiyiSubtitleRequest = (this.__iqiyiSubtitleRequest || 0) + 1;
@@ -1020,7 +944,7 @@
       if (!style.isConnected) parent.appendChild(style);
     }
     installLayout();
-    var VERSION = 5;
+    var VERSION = 6;
     if (root.__youkuViSubtitleVersion === VERSION) {
       if (root.__youkuViSubtitleRefresh) root.__youkuViSubtitleRefresh();
       return;
@@ -1032,14 +956,12 @@
 
     var API = root.__youkuViApi || "http://127.0.0.1:18766";
     var TOKEN = root.__youkuViToken || "";
-    var CACHE_KEY = "__youkuViSubtitleCacheV1";
-    var CACHE = {}, QUEUE = [], PENDING = {}, ACTIVE = false;
+    // Remove cached output from the retired live-caption translator.
+    try { localStorage.removeItem("__youkuViSubtitleCacheV1"); } catch (_) {}
     var REGISTERED = {}, REGISTERING = {}, CAPTURED = {}, captureContext = null, captureBuffer = [], captureTimer = 0;
     var captureUpload = Promise.resolve();
-    var currentContext = null, current = "", lastSeen = 0, lastFullScan = 0, lastRegister = 0, showingManaged = false;
-    var lastManagerFetch = 0, managerTrack = [], managerTrackKey = "", box;
+    var currentContext = null, lastFullScan = 0, lastRegister = 0;
     var stopped = false;
-    try { CACHE = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}"); } catch (_) {}
 
     function cjk(text) { return (String(text || "").match(/[\u3400-\u9fff]/g) || []).length; }
     function clean(text) {
@@ -1210,108 +1132,17 @@
       }
       return null;
     }
-    function parseSrt(raw) {
-      var stamp = function (value) {
-        var parts = value.trim().match(/^(\d+):(\d{2}):(\d{2})[,.](\d{3})$/);
-        return parts ? ((Number(parts[1]) * 60 + Number(parts[2])) * 60 + Number(parts[3])) * 1000 + Number(parts[4]) : NaN;
-      };
-      return String(raw || "").replace(/^\uFEFF/, "").split(/\r?\n\s*\r?\n/).map(function (block) {
-        var lines = block.trim().split(/\r?\n/), index = lines.findIndex(function (line) { return line.indexOf("-->") >= 0; });
-        if (index < 0) return null;
-        var times = lines[index].split("-->");
-        return normalizeCue({start: stamp(times[0]), end: stamp(times[1]), text: lines.slice(index + 1).join("\n")});
-      }).filter(Boolean);
-    }
-    function pollManagedTrack(context) {
-      if (!TOKEN || !context || Date.now() - lastManagerFetch < 4000 || !root.fetch) return;
-      lastManagerFetch = Date.now();
-      root.fetch(API + "/api/file?tvid=" + encodeURIComponent(context.tvid), {headers: {"X-Iqiyi-Token": TOKEN}})
-        .then(function (response) { return response.ok ? response.text() : ""; })
-        .then(function (raw) {
-          if (currentContext && currentContext.tvid === context.tvid) {
-            managerTrack = parseSrt(raw); managerTrackKey = context.tvid;
-          }
-        }).catch(function () {});
-    }
-    function managedCueAt(time) {
-      if (time === null || !managerTrack.length) return "";
-      for (var i = 0; i < managerTrack.length; i++) {
-        if (time >= managerTrack[i].start && time < managerTrack[i].end) return managerTrack[i].text;
-      }
-      return "";
-    }
-    function save() {
-      try {
-        var keys = Object.keys(CACHE);
-        while (keys.length > 1200) delete CACHE[keys.shift()];
-        localStorage.setItem(CACHE_KEY, JSON.stringify(CACHE));
-      } catch (_) {}
-    }
-    function overlay() {
-      if (box && box.isConnected) return box;
-      box = document.createElement("div");
-      box.id = "youku-vi-subtitle";
-      box.setAttribute("aria-live", "polite");
-      box.style.cssText = "position:fixed;z-index:2147483646;left:50%;bottom:11%;transform:translateX(-50%);" +
-        "max-width:86vw;color:#fff;font:700 clamp(24px,5vw,48px)/1.25 Arial,Helvetica,sans-serif;text-align:center;" +
-        "-webkit-text-stroke:2.2px #111;paint-order:stroke fill;text-shadow:0 2px 4px #000;" +
-        "pointer-events:none;white-space:pre-line;display:none";
-      (document.body || document.documentElement).appendChild(box);
-      return box;
-    }
-    function show(text) {
-      if (stopped) return;
-      var target = overlay();
-      target.textContent = text;
-      target.style.display = text ? "block" : "none";
-    }
-    function translate(text) {
-      text = String(text || "").trim();
-      if (!text || cjk(text) < 1 || text.length > 180 || PENDING[text]) return;
-      if (CACHE[text]) { if (text === current) show(CACHE[text]); return; }
-      PENDING[text] = true;
-      QUEUE.push(text);
-      pump();
-    }
-    function pump() {
-      if (ACTIVE || !QUEUE.length || !root.fetch) return;
-      ACTIVE = true;
-      var batch = [], url = "https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=zh-CN&tl=vi";
-      while (QUEUE.length && batch.length < 8) {
-        var next = QUEUE[0], part = "&q=" + encodeURIComponent(next);
-        if (batch.length && url.length + part.length > 5000) break;
-        batch.push(QUEUE.shift()); url += part;
-      }
-      Promise.race([root.fetch(url), new Promise(function (_, reject) {
-        setTimeout(function () { reject(new Error("timeout")); }, 8000);
-      })]).then(function (response) {
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        return response.json();
-      }).then(function (data) {
-        batch.forEach(function (source, index) {
-          var result = data && data[index];
-          if (result && !cjk(result)) CACHE[source] = result;
-          delete PENDING[source];
-          if (source === current && CACHE[source]) show(CACHE[source]);
-        });
-        save();
-      }).catch(function () {
-        batch.forEach(function (source) { delete PENDING[source]; });
-      }).then(function () { ACTIVE = false; setTimeout(pump, 250); });
-    }
     function tick() {
       installLayout();
       var context = pageContext();
       if (!context) {
-        if (currentContext) {
-          flushCapture(); currentContext = null; current = ""; managerTrack = []; showingManaged = false; show("");
-        }
+        if (currentContext) { flushCapture(); currentContext = null; captureContext = null; CAPTURED = {}; }
         return;
       }
       if (!currentContext || context.tvid !== currentContext.tvid) {
         flushCapture();
-        currentContext = context; current = ""; managerTrack = []; managerTrackKey = context.tvid; showingManaged = false; show("");
-        captureContext = context; captureBuffer = []; CAPTURED = {}; lastRegister = 0; lastManagerFetch = 0;
+        currentContext = context; captureContext = context; CAPTURED = {};
+        captureBuffer = []; lastRegister = 0; lastFullScan = 0;
       } else currentContext = context;
       if (Date.now() - lastRegister > 12000) {
         lastRegister = Date.now(); ensureRegistered(context);
@@ -1321,37 +1152,19 @@
         var full = fullTrackCues();
         if (full.length) queueCapture(context, full);
       }
-      pollManagedTrack(context);
-      var cue = visibleCue(), managed = managedCueAt(playbackTime());
-      if (cue) {
-        lastSeen = Date.now();
-        if (cue.text !== current) {
-          current = cue.text;
-          queueCapture(context, [cue]);
-          if (CACHE[cue.text]) show(CACHE[cue.text]);
-          else { show(""); translate(cue.text); }
-        }
-      }
-      if (managed) { lastSeen = Date.now(); showingManaged = true; show(managed); }
-      else if (showingManaged) {
-        showingManaged = false;
-        if (cue && CACHE[cue.text]) show(CACHE[cue.text]);
-        else { show(""); if (cue) translate(cue.text); }
-      } else if (!cue && Date.now() - lastSeen > 700 && box) { current = ""; show(""); }
+      var cue = visibleCue();
+      if (cue) queueCapture(context, [cue]);
     }
     root.__youkuViSubtitleStatus = function () {
-      return {visible: !!(box && box.style.display !== "none"), cached: Object.keys(CACHE).length,
-        captured: Object.keys(CAPTURED).length, managed: managerTrack.length, registered: !!(currentContext && REGISTERED[currentContext.tvid])};
+      return {captured:Object.keys(CAPTURED).length,registered:!!(currentContext && REGISTERED[currentContext.tvid])};
     };
-    root.__youkuViSubtitleRefresh = function () {
-      if (box) { var text = box.textContent; box.remove(); box = null; show(text); }
-    };
+    root.__youkuViSubtitleRefresh = installLayout;
     var tickTimer = setInterval(tick, 250);
     root.__youkuViSubtitleStop = function () {
       stopped = true;
       clearInterval(tickTimer);
+      if (captureTimer) { clearTimeout(captureTimer); captureTimer = 0; }
       flushCapture();
-      if (box) box.remove();
       root.__youkuViSubtitle = false;
       root.__youkuViSubtitleVersion = 0;
     };

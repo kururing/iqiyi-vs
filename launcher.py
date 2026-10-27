@@ -53,7 +53,7 @@ def manager_busy() -> bool:
         status = health()
         return not status or status.get("busy") is not False
     except (OSError, RuntimeError, ValueError):
-        return True  # Unknown state must protect an active translation.
+        return True  # Unknown state must protect active subtitle work.
 
 
 def stop_processes(processes) -> None:
@@ -70,13 +70,13 @@ def stop_processes(processes) -> None:
 
 
 def stop_previous_run(player: str, legacy_scripts: set[str], keep_manager: bool = False) -> bool:
-    """Stop the old watcher/manager of one player; False when a translation is still running."""
+    """Stop the old watcher/manager of one player; False while subtitle work is active."""
     related = list(script_processes({"watch-players.py"}, player))
     related.extend(script_processes(legacy_scripts | {"subtitle_app.py"}))
     managers = [process for process in related if "subtitle_app.py" in process.command_line.lower()]
     if managers and not keep_manager and manager_busy():
-        print(f"App phụ đề đang dịch hoặc chưa xác nhận được trạng thái. "
-              f"Chờ dịch xong rồi chạy lại launcher {player}.")
+        print(f"App phụ đề đang xử lý dữ liệu hoặc chưa xác nhận được trạng thái. "
+              f"Chờ xử lý xong rồi chạy lại launcher {player}.")
         return False
     stop_processes([process for process in related if not keep_manager or process not in managers])
     return True
