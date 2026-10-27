@@ -305,10 +305,10 @@ def pipeline(cues, config, folder, update, cancel, client=request_json):
         return model
 
     context_model, translation_model = runtime_model("context_model"), runtime_model("translation_model")
-    if (context_model["provider"] == "gemini"
-            and context_model["model"].removeprefix("models/") in ("gemini-3.8-flash", "gemini-3.5-flash-lite")):
-        # Low reduces 3.8 latency and gives 3.5 Lite more reasoning than its minimal default.
-        context_model["_reasoning_effort"] = "low"
+    for model, effort in ((context_model, "high"), (translation_model, "medium")):
+        if (model["provider"] == "gemini"
+                and model["model"].removeprefix("models/") in ("gemini-3.8-flash", "gemini-3.5-flash-lite")):
+            model["_reasoning_effort"] = effort
     translated = {}
     pending = []
     for index, chunk in enumerate(chunks):
