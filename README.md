@@ -90,6 +90,8 @@ Trong app quản lý, vào **Thông báo** và chọn **Chấp nhận** để th
 
 ## Tiện ích Chrome / Edge
 
+`ext/content.js` và `ext/sub-hook.js` là nguồn JavaScript dùng chung cho tiện ích và desktop. Sửa trực tiếp hai file này; installer/watcher tạo các bản script cần thiết trong thư mục iQIYI, còn bản build đóng gói nguồn từ `ext/`.
+
 1. Mở `chrome://extensions` hoặc `edge://extensions`.
 2. Bật **Chế độ dành cho nhà phát triển**.
 3. Chọn **Tải tiện ích đã giải nén** và trỏ tới thư mục `ext/`.

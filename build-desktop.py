@@ -17,7 +17,7 @@ SOURCES = (
     "iqiyi_common.py", "windows_runtime.py", "cdp.py",
     "iqcom_requests.py", "iqcom_session.py", "proxy_support.py",
     "translation_ai.py", "translation_srt.py", "translation_pipeline.py", "translation_ui.html",
-    "ui-engine.js", "lwa-vi.js", "sub-hook.js", "README.md", "requirements.txt",
+    "README.md", "requirements.txt",
 )
 EXTENSION = ("manifest.json", "content.js", "sub-hook.js", "proxy.js", "https-rules.json",
              "iqcom-bootstrap.js", "iqcom-session.js", "session-bridge.js", "local-api.js", "local-api-worker.js")

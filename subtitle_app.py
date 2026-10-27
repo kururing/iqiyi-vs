@@ -6,7 +6,6 @@ import copy
 import difflib
 import gzip
 import hashlib
-import http.client
 import json
 import os
 import re
@@ -546,6 +545,23 @@ def sync_current_player() -> None:
     folder = episode_dir(tvid)
     folder.mkdir(parents=True, exist_ok=True)
     save_episode(tvid, item)
+
+
+def localize_ui_texts(texts: list[str]) -> list[str]:
+    """Translate UI through the fast service and cache; never call the subtitle AI."""
+    def load_fast():
+        body = urlencode([("q", text) for text in texts]).encode()
+        request = urllib.request.Request(
+            "https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=zh-CN&tl=vi",
+            data=body, headers={"Content-Type": "application/x-www-form-urlencoded"}, method="POST")
+        with pooled_open(request, timeout=6) as response:
+            rows = json.loads(read_public_metadata(response))
+        if (not isinstance(rows, list) or len(rows) != len(texts) or
+                any(not isinstance(row, str) or not row.strip() or len(row) > 8000 or
+                    re.search(r"[\u3400-\u9fff]", row) for row in rows)):
+            raise ValueError("Dịch nhanh chưa trả đủ nội dung tiếng Việt; sẽ thử lại.")
+        return rows
+    return UI_FAST_CACHE.run(tuple(texts), load_fast, ttl=86400, error_ttl=2)
 
 
 def normalize_track(url: str) -> str:
@@ -1745,7 +1761,6 @@ function render(data){
    const shown=rows;visibleAlbums++;
    const list=albumLists[String(first.albumId||"")]||{},total=list.stage==="ready"?list.total:Math.max(rows.length,...rows.map(x=>Number(x.albumTotal)||0));
    const sourceCount=rows.filter(x=>x.downloaded).length;
-   const needDownload=rows.filter(x=>!x.downloaded&&x.provider!=="youku").length;
    const open=albumIsOpen(key),listId="episode-list-"+String(first.albumId||first.tvid).replace(/[^a-z0-9_-]/gi,"-");
    const selected=shown.find(x=>x.tvid===selectedEpisodes.get(key))||shown[0];
    const grid=open?shown.map(x=>{const state=episodeState(x);return "<button id='episode-"+esc(x.tvid)+"' class='episodeChip "+state.style+"' aria-pressed='"+(x===selected)+"' aria-label='"+esc(episodeLabel(x)+": "+state.label)+"' title='"+esc(episodeLabel(x)+": "+state.label)+"' onclick=\"selectEpisode("+jsArg(key)+","+jsArg(x.tvid)+")\"><span>"+esc(orderOf(x)||"?")+"</span><small>"+esc(state.short)+"</small></button>"}).join(""):"";
@@ -1771,7 +1786,7 @@ function render(data){
  else if(focusedControl)Array.from(itemsNode.querySelectorAll("button,summary,a")).find(node=>node.tagName===focusedControl.tag&&node.getAttribute("onclick")===focusedControl.action&&node.closest(".menu")?.dataset.menuKey===focusedControl.menu)?.focus({preventScroll:true});
  window.scrollTo(0,scrollY);
 }
-async function refresh(force){if(refreshBusy){refreshPending=refreshPending||!!force;return}refreshBusy=true;try{const r=await apiFetch("/api/episodes"),payload=await r.json();if(!r.ok)throw Error(payload.error||"Không tải được thư viện.");const data=payload.episodes||[];if(refreshError&&statusNode.textContent===refreshError)statusNode.textContent="";refreshError="";albumLists=payload.albums||{};discoveries=payload.discoveries||[];renderDiscoveries();iqiyiSynced=!!(payload.session&&payload.session.synced);iqiyiSources=payload.session?.sources||{};updateIqcomStatus(payload.iqcomSession||{});episodeData=data;updateProviderChrome(data);const signature=JSON.stringify([albumLists,data.map(x=>[x.tvid,x.provider,x.title,x.albumTitle,x.albumTitleVi,x.albumId,x.albumTotal,x.cues,x.downloadAvailable,x.downloadProgress,x.translation])]);if(force||signature!==lastRenderSignature){lastRenderSignature=signature;render(data);renderMovieSearchResults()}}catch(e){refreshError=safeStatusText(e.message,"Không kết nối được app quản lý.");statusNode.textContent=refreshError}finally{refreshBusy=false;if(refreshPending){refreshPending=false;queueMicrotask(()=>refresh(true))}}}
+async function refresh(force){if(refreshBusy){refreshPending=refreshPending||!!force;return}refreshBusy=true;try{const r=await apiFetch("/api/episodes"),payload=await r.json();if(!r.ok)throw Error(payload.error||"Không tải được thư viện.");const data=payload.episodes||[];if(refreshError&&statusNode.textContent===refreshError)statusNode.textContent="";refreshError="";albumLists=payload.albums||{};discoveries=payload.discoveries||[];renderDiscoveries();iqiyiSynced=!!(payload.session&&payload.session.synced);iqiyiSources=payload.session?.sources||{};updateIqcomStatus(payload.iqcomSession||{});episodeData=data;const signature=JSON.stringify([albumLists,data.map(x=>[x.tvid,x.provider,x.title,x.albumTitle,x.albumTitleVi,x.albumId,x.albumTotal,x.cues,x.downloadAvailable,x.downloadProgress,x.translation])]);if(force||signature!==lastRenderSignature){lastRenderSignature=signature;render(data);renderMovieSearchResults()}else updateProviderChrome(data)}catch(e){refreshError=safeStatusText(e.message,"Không kết nối được app quản lý.");statusNode.textContent=refreshError}finally{refreshBusy=false;if(refreshPending){refreshPending=false;queueMicrotask(()=>refresh(true))}}}
 function refreshVisible(){if(!document.hidden)refresh(false)}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh(false)});
 refreshAppLocalization();refresh(true);setInterval(refreshVisible,5000);
@@ -2333,7 +2348,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(400, {"error": str(exc)[:500]})
         except Exception as exc:
             message = str(exc)
-            message = f"Tải phụ đề thất bại: {type(exc).__name__}: {message}"
+            action = "Việt hóa giao diện" if route == "/api/localize-remaining" else "Tải phụ đề"
+            message = f"{action} thất bại: {type(exc).__name__}: {message}"
             self.send_json(502, {"error": message[:500]})
 
 

@@ -18,7 +18,7 @@ import cdp
 from iqiyi_common import (
     SIGNED_LWA_HTML, api_token, atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
     lwa_backup_dir, patch_subtitle_tag, patch_ui_tag, python_executable, subtitle_hook,
-    subtitle_manager_alive, update_lwa_ini_flags, player_token,
+    subtitle_manager_alive, player_token,
 )
 from windows_runtime import create_named_mutex
 
@@ -27,13 +27,12 @@ ROOT = Path(__file__).resolve().parent
 APP_PORT = 18766
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
-LWA_JS = ROOT / "lwa-vi.js"
-SUB_HOOK_JS = ROOT / "sub-hook.js"
+UI_ENGINE = ROOT / "ext" / "content.js"
+SUB_HOOK_JS = ROOT / "ext" / "sub-hook.js"
 WRAPPER_APP = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs/iQIYI/resources/app"
 WRAPPER_SUB_HOOK = WRAPPER_APP / "iqiyi-vi-subtitle.js"
 BACKUP_LWA = ROOT / "backup-lwa"
 APPDATA_LWA = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "localwebapp"
-PPSTREAM_INI = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "LStyle" / "PPStream.ini"
 WATCH_LOCK_FILE = None
 MANAGER_PROCESS = None
 LAST_MANAGER_CHECK = 0.0
@@ -76,9 +75,9 @@ def write_if_changed(path: Path, data: str | bytes) -> None:
 
 
 def patch_lwa() -> None:
-    if (ROOT / "watch-iqiyi-vi.disabled").exists() or not LWA_JS.exists():
+    if (ROOT / "watch-iqiyi-vi.disabled").exists() or not UI_ENGINE.exists():
         return
-    payload = LWA_JS.read_bytes()
+    payload = UI_ENGINE.read_bytes()
     hook = subtitle_hook(ROOT) if SUB_HOOK_JS.exists() else None
     for webapp in find_lwa_dirs():
         write_if_changed(webapp / "lwa-vi.js", payload)
@@ -114,25 +113,9 @@ def sync_wrapper_hook() -> None:
             return
         if patched:
             try:
-                write_if_changed(WRAPPER_SUB_HOOK, LWA_JS.read_bytes() + b"\n" + subtitle_hook(ROOT))
+                write_if_changed(WRAPPER_SUB_HOOK, UI_ENGINE.read_bytes() + b"\n" + subtitle_hook(ROOT))
             except OSError:
                 pass
-
-
-def persist_ini() -> None:
-    if (ROOT / "watch-iqiyi-vi.disabled").exists() or not PPSTREAM_INI.exists():
-        return
-    try:
-        raw = PPSTREAM_INI.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return
-    new = update_lwa_ini_flags(raw)
-    if new == raw:
-        return
-    try:
-        atomic_write(PPSTREAM_INI, new)
-    except OSError:
-        pass
 
 
 def start_manager() -> None:
@@ -165,7 +148,7 @@ def inject_runtime() -> None:
         endpoint = urlsplit(address)
         if endpoint.scheme != "ws" or endpoint.hostname != "127.0.0.1" or endpoint.port != 9223:
             raise ValueError("Unexpected WebView debugger endpoint")
-        script = ("window.__iqiyiViTokenPending = true;\n" + LWA_JS.read_text(encoding="utf-8")
+        script = ("window.__iqiyiViTokenPending = true;\n" + UI_ENGINE.read_text(encoding="utf-8")
                   + "\n" + subtitle_hook(ROOT).decode("utf-8"))
         revision = revision_of(script)
         script += "\nwindow.__iqiyiRuntimeVi = " + json.dumps(revision) + ";"
@@ -204,7 +187,7 @@ def inject_runtime() -> None:
             continue
         key = target["webSocketDebuggerUrl"]
         active.add(key)
-        script = ("window.__iqiyiViTokenPending = true;\n" + LWA_JS.read_text(encoding="utf-8")
+        script = ("window.__iqiyiViTokenPending = true;\n" + UI_ENGINE.read_text(encoding="utf-8")
                   + "\n" + subtitle_hook(ROOT).decode("utf-8"))
         revision = revision_of(script)
         try:
@@ -272,7 +255,7 @@ def log(message: str) -> None:
 
 
 def read_scripts() -> list[str]:
-    engine = (ROOT / "ui-engine.js").read_text(encoding="utf-8")
+    engine = UI_ENGINE.read_text(encoding="utf-8")
     engine = (engine.replace("iqiyiVi", "youkuVi").replace("iqiyi-vi", "youku-vi")
               .replace("subtitleContainer|caption-main", "subtitleContainer|caption-main|kui-subtitle|youku-vi-subtitle"))
     manager_config = "window.__youkuViApi = 'http://127.0.0.1:18766'; window.__youkuViToken = " + json.dumps(player_token(api_token(ROOT))) + ";\n"

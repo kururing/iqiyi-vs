@@ -175,11 +175,6 @@ def subtitle_manager_alive(port: int = 18766) -> bool:
         return False
 
 
-def update_lwa_ini_flags(raw: str) -> str:
-    """Legacy compatibility: localization now preserves signing and update settings."""
-    return raw
-
-
 def restore_lwa_ini_flags(current: str, backup: str) -> str:
     """Undo only installer-managed legacy keys, preserving current unrelated preferences."""
     for key in LWA_INI_FLAGS:
@@ -196,7 +191,7 @@ def subtitle_hook(root: Path) -> bytes:
     prefix = ("window.__iqiyiViToken = " + json.dumps(player_token(api_token(root))) + ";\n"
               "window.__iqiyiViTokenPending = false;\n"
               "if (window.__iqiyiViReload) window.__iqiyiViReload();\n")
-    return prefix.encode("utf-8") + (root / "sub-hook.js").read_bytes()
+    return prefix.encode("utf-8") + (root / "ext" / "sub-hook.js").read_bytes()
 
 
 def patch_subtitle_tag(text: str, hook: bytes | None) -> str:

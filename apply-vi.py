@@ -9,7 +9,6 @@ import re
 import shutil
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 if os.name == "nt":
@@ -18,7 +17,7 @@ if os.name == "nt":
 from iqiyi_common import (
     SIGNED_LWA_HTML, atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
     lwa_backup_dir, patch_subtitle_tag, patch_ui_tag, python_executable, restore_lwa_ini_flags,
-    subtitle_hook, update_lwa_ini_flags,
+    subtitle_hook,
 )
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -37,16 +36,14 @@ ATTR_RE = re.compile(
     re.DOTALL,
 )
 # Text node giua hai the (trang HTML tinh nhu net/VodOtherErr_White.html khong nap
-# duoc ui-engine.js nen phai sua thang noi dung file).
+# duoc ext/content.js nen phai sua thang noi dung file).
 TEXT_NODE_RE = re.compile(r">([^<>]+)<")
 CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 
 APPDATA_LWA = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "localwebapp"
 PPSTREAM_INI = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "LStyle" / "PPStream.ini"
 
-LWA_JS = ROOT / "lwa-vi.js"
-LWA_ENGINE = ROOT / "ui-engine.js"
-SCRIPT_TAG = '<script src="./lwa-vi.js"></script>'
+UI_ENGINE = ROOT / "ext" / "content.js"
 WRAPPER_APP = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs/iQIYI/resources/app"
 
 
@@ -87,22 +84,11 @@ def find_lwa_dirs() -> list[Path]:
 
 def load_prepared_ui() -> dict[str, str]:
     """Use only the prepared UI copy embedded in the current engine."""
-    engine = LWA_ENGINE.read_text(encoding="utf-8")
+    engine = UI_ENGINE.read_text(encoding="utf-8")
     match = re.search(r"var FIXED_COPY = (\{.*?\});", engine, re.DOTALL)
     if not match:
-        raise ValueError("Khong tim thay nhan Viet soan san trong ui-engine.js")
+        raise ValueError("Khong tim thay nhan Viet soan san trong ext/content.js")
     return json.loads(match.group(1))
-
-
-def build_lwa_js() -> str:
-    return LWA_ENGINE.read_text(encoding="utf-8")
-
-
-def sync_extension_sources() -> None:
-    """Sync the DOM engine and subtitle hook without legacy dictionary assets."""
-    extension = ROOT / "ext"
-    atomic_write(extension / "content.js", LWA_ENGINE.read_text(encoding="utf-8"))
-    atomic_write(extension / "sub-hook.js", (ROOT / "sub-hook.js").read_text(encoding="utf-8"))
 
 
 def backup_file(base: Path, dest_root: Path, rel: Path) -> None:
@@ -356,28 +342,6 @@ def read_text(path: Path) -> tuple[str, str]:
     return data.decode("utf-8", errors="ignore"), "utf-8"
 
 
-def disable_lwa_sign() -> None:
-    if not PPSTREAM_INI.exists():
-        return
-    last_error: OSError | None = None
-    for _ in range(8):
-        try:
-            raw = PPSTREAM_INI.read_text(encoding="utf-8", errors="ignore")
-            new = update_lwa_ini_flags(raw)
-            if new != raw:
-                bak = ROOT / "backup-ppstream.ini"
-                if not bak.exists():
-                    bak.write_text(raw, encoding="utf-8")
-                PPSTREAM_INI.write_text(new, encoding="utf-8")
-                print("Da tat chu ky + update goi web (PPStream.ini).")
-            return
-        except OSError as exc:
-            last_error = exc
-            time.sleep(0.5)
-    if last_error:
-        print("Khong ghi duoc PPStream.ini:", last_error)
-
-
 def restore_lwa_sign() -> None:
     bak = ROOT / "backup-ppstream.ini"
     if bak.exists() and PPSTREAM_INI.exists():
@@ -461,7 +425,7 @@ def patch_wrapper_app(app_dir: Path = WRAPPER_APP) -> bool:
     if not main.is_file():
         return False
     hook_dest = app_dir / "iqiyi-vi-subtitle.js"
-    atomic_write(hook_dest, build_lwa_js().encode("utf-8") + b"\n" + subtitle_hook(ROOT))
+    atomic_write(hook_dest, UI_ENGINE.read_bytes() + b"\n" + subtitle_hook(ROOT))
     raw = main.read_text(encoding="utf-8")
     marker = "// IQIYI-VI EARLY SUBTITLE HOOK"
     if marker in raw:
@@ -518,7 +482,7 @@ def apply_skin(skin: Path, mapping: dict[str, str]) -> tuple[int, int, int]:
             skipped += 1
             continue
         new, n = patch_text(raw, mapping)
-        # Trang HTML tĩnh không nạp được ui-engine.js thì phải sửa thẳng text node.
+        # Trang HTML tĩnh không nạp được ext/content.js thì phải sửa thẳng text node.
         if path.suffix.casefold() == ".html":
             patched_nodes, n_nodes = patch_text_nodes(new, mapping)
             if n_nodes:
@@ -567,15 +531,9 @@ def _main() -> int:
     lwa_only = "--lwa" in sys.argv
     mapping = load_prepared_ui() if not restore else {}
     if not restore and not mapping:
-        print("Khong co nhan Viet soan san trong ui-engine.js.")
+        print("Khong co nhan Viet soan san trong ext/content.js.")
         return 1
-    payload = ""
-    if mapping:
-        payload = build_lwa_js()
-        atomic_write(LWA_JS, payload)
-        sync_extension_sources()
-    elif LWA_JS.exists():
-        payload = LWA_JS.read_text(encoding="utf-8")
+    payload = UI_ENGINE.read_text(encoding="utf-8") if mapping else ""
 
     if restore:
         try:
@@ -628,7 +586,7 @@ def _main() -> int:
     lwa_dirs = find_lwa_dirs()
     lwa_n = 0
     if not payload:
-        print("Thieu lwa-vi.js")
+        print("Thieu noi dung ext/content.js")
     else:
         if not lwa_dirs:
             print("Khong tim thay goi web LWA.")
