@@ -13,14 +13,16 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parent
 SOURCES = (
-    "desktop.py", "launcher.py", "apply-vi.py", "watch-players.py", "subtitle_app.py",
-    "iqiyi_common.py", "windows_runtime.py", "cdp.py",
-    "iqcom_requests.py", "iqcom_session.py", "proxy_support.py",
+    "desktop.py", "manager_window.py", "launcher.py", "apply-vi.py", "watch-players.py", "subtitle_app.py",
+    "iqiyi_common.py", "windows_runtime.py", "cdp.py", "app_integration.py",
+    "iqcom_requests.py", "iqcom_session.py", "iqcom_audio.py", "proxy_support.py",
     "translation_ai.py", "translation_srt.py", "translation_pipeline.py", "translation_ui.html",
     "README.md", "requirements.txt",
+    "assets/iqiyi-logo.svg", "assets/iqiyi.ico",
 )
 EXTENSION = ("manifest.json", "content.js", "sub-hook.js", "proxy.js", "https-rules.json",
-             "iqcom-bootstrap.js", "iqcom-session.js", "session-bridge.js", "local-api.js", "local-api-worker.js")
+             "iqcom-bootstrap.js", "iqcom-session.js", "session-bridge.js", "local-api.js", "local-api-worker.js",
+             "public-api-worker.js", "audio-worker.js", "audio-player.html", "audio-player.js")
 
 
 def build(output: Path):
@@ -34,8 +36,12 @@ def build(output: Path):
     base = Path(sys.base_prefix)
     if not all((base / name).is_file() for name in ("python.exe", "pythonw.exe")):
         raise RuntimeError("Cần bản CPython Windows đầy đủ để đóng gói runtime.")
+    missing = [name for name in (*SOURCES, *("ext/" + item for item in EXTENSION)) if not (ROOT / name).is_file()]
+    if missing:
+        raise FileNotFoundError("Thiếu mã nguồn đóng gói: " + ", ".join(missing))
     output.mkdir(parents=True)
     for name in SOURCES:
+        (output / name).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / name, output / name)
     (output / "ext").mkdir()
     for name in EXTENSION:
@@ -54,9 +60,10 @@ def build(output: Path):
     (runtime / (version + "._pth")).write_text(
         "Lib\nDLLs\nLib/site-packages\n..\nimport site\n", encoding="utf-8")
     subprocess.run([sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "--no-compile",
-                    "--only-binary=:all:", "--target", str(runtime / "Lib/site-packages"),
+                    "--only-binary=:all:", "--no-binary=proxy-tools", "--target", str(runtime / "Lib/site-packages"),
                     "-r", str(ROOT / "requirements.txt")], check=True)
     subprocess.run([str(compiler), "/nologo", "/target:winexe", "/platform:x64", "/optimize+",
+                    "/win32icon:" + str(ROOT / "assets/iqiyi.ico"),
                     "/reference:System.Windows.Forms.dll", "/out:" + str(output / "IQIYI-VI.exe"),
                     str(ROOT / "packaging/DesktopLauncher.cs")], check=True)
     subprocess.run([str(runtime / "python.exe"), str(output / "desktop.py"), "--check"],

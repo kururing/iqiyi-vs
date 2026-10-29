@@ -1,5 +1,6 @@
 """Run with Python from the checkout; the refresh check also requires Node.js."""
 import importlib.util
+import json
 from pathlib import Path
 import re
 import shutil
@@ -33,15 +34,26 @@ def check_assets():
         webapp.mkdir()
         signed = b"<html><head></head><body>signed</body></html>"
         (webapp / "index.html").write_bytes(signed)
+        for name in ("harmonyos.html", "player_harmonyos.html", "future_platform.html"):
+            (webapp / name).write_bytes(signed)
+        (webapp / "localwebapp.files.json").write_text(
+            json.dumps({"files":[{"src":"./future_platform.html","sign":"vendor-signature"}]}),
+            encoding="utf-8-sig")
         (webapp / "about.html").write_bytes(b"<html><head></head><body>about</body></html>")
         with (patch.object(common, "api_token", return_value="cleanup-test-token"),
               patch.multiple(installer, ROOT=root, UI_ENGINE=engine, BACKUP_LWA=root / "backups"),
               patch.multiple(watcher, ROOT=root, UI_ENGINE=engine,
                              SUB_HOOK_JS=root / "ext" / "sub-hook.js", BACKUP_LWA=root / "backups"),
-              patch.object(watcher, "api_token", return_value="cleanup-test-token"),
               patch.object(watcher, "find_lwa_dirs", return_value=[webapp])):
             assert installer.load_prepared_ui(), "Installer must read the shared UI dictionary"
             installer.inject_lwa_dir(webapp, engine.read_text(encoding="utf-8"))
+            for name in ("harmonyos.html", "player_harmonyos.html", "future_platform.html"):
+                assert (webapp / name).read_bytes() == signed, name
+            originals = common.lwa_backup_dir(root / "backups", webapp)
+            originals.mkdir(parents=True, exist_ok=True)
+            for name in ("harmonyos.html", "player_harmonyos.html", "future_platform.html"):
+                (originals / name).write_bytes(signed)
+                (webapp / name).write_bytes(signed + b'<script src="./lwa-vi.js"></script>')
             assert (webapp / "lwa-vi.js").read_bytes() == engine.read_bytes()
             assert (webapp / "sub-hook.js").read_bytes() == common.subtitle_hook(root)
             # Updating only the canonical source must update the installed copy.
@@ -50,12 +62,12 @@ def check_assets():
             watcher.patch_lwa()
             assert (webapp / "lwa-vi.js").read_bytes() == engine.read_bytes()
             assert (webapp / "index.html").read_bytes() == signed
+            for name in ("harmonyos.html", "player_harmonyos.html", "future_platform.html"):
+                assert (webapp / name).read_bytes() == signed, "Repair signed page: " + name
             page = (webapp / "about.html").read_text(encoding="utf-8")
             assert page.count('src="./lwa-vi.js?') == page.count('src="./sub-hook.js?') == 1
-            scripts = watcher.read_scripts()
-            assert "window.__youkuViCleanupProbe = true;" in scripts[0]
-            assert "window.__iqiyiViCleanupProbe" not in scripts[0]
-            assert scripts[1].endswith((root / "ext" / "sub-hook.js").read_text(encoding="utf-8"))
+            (webapp / "localwebapp.files.json").write_text("invalid manifest", encoding="utf-8")
+            assert "about.html" in common.signed_lwa_html(webapp), "Unreadable manifests must preserve pages"
         assert common.restore_lwa_ini_flags(
             "user_setting=9\nlwa_disable_update=1\n", "user_setting=1\nlwa_disable_update=0\n"
         ) == "user_setting=9\nlwa_disable_update=0\n"

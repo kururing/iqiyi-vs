@@ -3,7 +3,7 @@
   "use strict";
 
   function iqiyiSubtitleHook() {
-    var HOOK_VERSION = 33;
+    var HOOK_VERSION = 47;
     var SIDE = "http://127.0.0.1:18766";
     var nativeFetch = root && root.fetch ? root.fetch.bind(root) : null;
     function localFetch(input, options) {
@@ -98,17 +98,17 @@
           var cookies = {};
           String(root.document.cookie || "").split(";").forEach(function (part) {
             var pair = part.trim().split("="), name = pair.shift();
-            try { cookies[name] = decodeURIComponent(pair.join("=")); } catch (_) {}
+            try { cookies[name] = decodeURIComponent(pair.join("=")); } catch {}
           });
           var user = {};
-          try { user = JSON.parse(cookies.P00002 || "{}"); } catch (_) {}
+          try { user = JSON.parse(cookies.P00002 || "{}"); } catch {}
           var uid = cookies.P00003 || user && user.uid || "";
           var auth = cookies.P00001 || "";
           // An incomplete cookie pair cannot supply an authenticated subtitle request.
           result = {authcookie: /^\d{1,24}$/.test(String(uid)) ? auth : "", uid: uid,
             deviceId: cookies.QC005 || "", dfp: (cookies.__dfp || "").split("@")[0]};
         }
-      } catch (_) { syncPlayerSession.pending = false; return; }
+      } catch { syncPlayerSession.pending = false; return; }
       Promise.resolve(result && result.cache || result).then(function (info) {
         if (!info || typeof info !== "object" || !Object.keys(info).length) return;
         var appService = root.QySdk && root.QySdk.AppService;
@@ -198,7 +198,7 @@
               };
               return true;
             });
-          } catch (_) { return false; }
+          } catch { return false; }
         });
       }
       installOfficialSubtitleLayout();
@@ -355,13 +355,18 @@
         if (view.model && view.model.data && view.model.data[1]) delete view.model.data[1][lid];
         view.__iqiyiAiVersion = version;loaded = null;
       }
+      // A preload may have cached the empty document returned before the track was ready.
+      if (Array.isArray(loaded) && !loaded.length) {
+        delete view.model.data[1][lid];
+        loaded = null;
+      }
       var active = view.captionLids && Number(view.captionLids.get(1)) === lid;
       if (loaded && active) return;
       var retryKey = String(tvid) + ":" + lid;
       if (view.__iqiyiOfficialRetryTvid === retryKey && Date.now() < (view.__iqiyiOfficialRetryAt || 0)) return;
       view.__iqiyiOfficialRetryTvid = retryKey;
       view.__iqiyiOfficialRetryAt = Date.now() + 5000;
-      try { control.openSubTitle(1, lid); } catch (_) {}
+      try { control.openSubTitle(1, lid); } catch {}
     }
     function applyLocalSubtitleState(tvid, state) {
       activeOfficialAvailable = state.officialAvailable;
@@ -394,6 +399,396 @@
         if (activeOfficialTvid !== playing) return;
         applyLocalSubtitleState(playing, state);
       });
+    }
+    function installIqcomAudio() {
+      if (!root.Audio || !root.setInterval) return;
+      if (root.__iqiyiAudioEngine) root.__iqiyiAudioEngine.dispose();
+      var stopped = false, settings = {enabled:false}, sound = null, stream = "", tvid = "";
+      var controller = null, provider = null, optionStore = null, originals = null, muted = false, desiredMute = false, desiredVolume = 50;
+      var pending = false, polling = false, failed = "", lastPoll = 0, lastMessage = "";
+      var position = -1, positionAt = 0, lastBridgeScan = 0, lastContact = Date.now();
+      var webVideo = null, webMuted = null, webOwnMute = null, webVolumeChanged = null, frameUrl = "", frameJob = null;
+      var menuPatches = [], menuInstances = new Set(), menuScanAt = 0, uiSaving = false, uiError = "", connectionError = "", uiSignature = "";
+      var tipController = null, tipScanAt = 0, pendingNotice = "";
+      var audioNoticeKey = "iqiyi_vi_audio_status";
+      function flushAudioNotice() {
+        if (!pendingNotice || stopped || !officialRuntimeRequire) return;
+        if (!tipController && Date.now() - tipScanAt >= 5000) {
+          tipScanAt = Date.now();
+          Object.keys(officialRuntimeRequire.m).some(function (id) {
+            var code = String(officialRuntimeRequire.m[id]);
+            if (code.indexOf("timersClose") < 0 || code.indexOf("_getTip(") < 0 || code.indexOf("showTip(") < 0) return false;
+            try {
+              return Object.values(officialRuntimeRequire(id)).some(function (value) {
+                if (!value || typeof value.showTip !== "function" || typeof value.hideTip !== "function" || typeof value.tipList !== "function") return false;
+                tipController = value;
+                return true;
+              });
+            } catch { return false; }
+          });
+        }
+        try {
+          if (!tipController || !tipController.tipList()) return;
+          // Use the same default group, renderer and duration as subtitle-switch tips.
+          tipController.showTip(audioNoticeKey, {
+            attr:{key:audioNoticeKey,group:"default",close_time:4,priority:1},
+            desc:[{type:1,text:"Âm thanh: ",bold:true,color:"#FFFFFF"},{type:1,text:pendingNotice,color:"#FFFFFF"}]
+          });
+          pendingNotice = "";
+        } catch {}
+      }
+      function clearAudioNotice() {
+        pendingNotice = "";
+        try { if (tipController) tipController.hideTip(audioNoticeKey); } catch {}
+      }
+      function refreshAudioMenus() {
+        var signature = JSON.stringify([settings.enabled,lastMessage,uiSaving,uiError,connectionError]);
+        if (signature === uiSignature) return;
+        uiSignature = signature;
+        menuInstances.forEach(function (menu) { menu.forceUpdate(); });
+      }
+      function saveAudioSettings(enabled) {
+        if (uiSaving) return;
+        uiSaving = true; uiError = ""; refreshAudioMenus();
+        (iqPlayer ? Promise.resolve("") : ensureToken()).then(function (token) {
+          if (!token && !iqPlayer) throw Error("Chưa kết nối dịch vụ âm thanh. Thử mở lại iQIYI.");
+          return localFetch(SIDE + "/api/audio-settings", {method:"POST",signal:AbortSignal.timeout(5000),
+            headers:{"Content-Type":"application/json","X-Iqiyi-Token":token},
+            body:JSON.stringify({enabled:enabled})});
+        }).then(function (response) {
+          return response.json().then(function (data) { if (!response.ok) throw Error(data.error || "Không lưu được âm thanh."); return data; });
+        }).then(function (state) {
+          if (stopped) return;
+          settings = state; failed = ""; lastPoll = 0; lastMessage = ""; lastContact = Date.now();
+          if (!state.enabled) stopSound();
+          report(state.enabled ? "Đang tìm âm thanh Việt trên iq.com…" : "Đã chuyển sang tiếng gốc.");
+        }).catch(function (error) {
+          if (stopped) return;
+          uiError = iqPlayer ? error.message || "Không lưu được lựa chọn âm thanh. Tải lại tiện ích và trang phim." : "Không lưu được âm thanh. Dịch vụ phụ đề chưa sẵn sàng; thử mở lại iQIYI.";
+          report(uiError);
+        })
+          .finally(function () { uiSaving = false; if (!stopped) refreshAudioMenus(); });
+      }
+      function installAudioMenu() {
+        if (menuPatches.length || !officialRuntimeRequire || Date.now() - menuScanAt < 5000) return;
+        menuScanAt = Date.now();
+        Object.keys(officialRuntimeRequire.m).some(function (id) {
+          var code = String(officialRuntimeRequire.m[id]);
+          if (code.indexOf("getAiScopeEntity") < 0 || code.indexOf("renderMain") < 0 || code.indexOf("secondPageContainer") < 0) return false;
+          try {
+            return Object.values(officialRuntimeRequire(id)).some(function (Menu) {
+              if (typeof Menu !== "function" || !Menu.prototype || typeof Menu.prototype.render !== "function") return false;
+              var proto = Menu.prototype, render = proto.render, unmount = proto.componentWillUnmount;
+              function patchedRender() {
+                var menu = this, main = this.renderMain;
+                menuInstances.add(menu);
+                this.renderMain = function () {
+                  var rows = main.apply(menu, arguments);
+                  var option = {
+                    title:"Âm thanh",
+                    data:function () { return [{id:"original",title:"Tiếng gốc"},{id:"vietnamese",title:"Tiếng Việt iq.com"}]; },
+                    optionValue:function () { return settings.enabled ? "Tiếng Việt iq.com" : "Tiếng gốc"; },
+                    tips:function () { return uiSaving ? "Đang chuyển âm thanh…" : uiError || connectionError ||
+                      (settings.enabled ? lastMessage || "Tự dùng tiếng gốc nếu tập chưa có tiếng Việt." : "Đang dùng tiếng gốc."); },
+                    secondPage:{onItemClick:function (track) { saveAudioSettings(track.id === "vietnamese"); }}
+                  };
+                  return [].concat(rows, [menu.generateSettingOption(option, !uiSaving, "iqcomAudio")]);
+                };
+                try { return render.apply(this, arguments); }
+                finally { this.renderMain = main; }
+              }
+              function patchedUnmount() { menuInstances.delete(this); if (unmount) return unmount.apply(this, arguments); }
+              proto.render = patchedRender; proto.componentWillUnmount = patchedUnmount;
+              menuPatches.push(function () {
+                if (proto.render === patchedRender) proto.render = render;
+                if (proto.componentWillUnmount === patchedUnmount) { if (unmount) proto.componentWillUnmount = unmount; else delete proto.componentWillUnmount; }
+              });
+              return true;
+            });
+          } catch { return false; }
+        });
+      }
+      function getWebVideo() {
+        return root.document.querySelector("video.inner-video") || root.document.querySelector(".iqp-player video") || root.document.querySelector("video");
+      }
+      function WebAudio() {
+        var self = this, data = {paused:true,currentTime:0,readyState:0,seeking:false}, updated = Date.now();
+        var frame = root.document.createElement("iframe"), channel = new root.MessageChannel(), ready = false;
+        var queue = [], listeners = {}, requests = new Map(), nextId = 0, source = "", volume = 1, mute = false, rate = 1;
+        var timer = root.setTimeout(function () { if (!ready) (listeners.error || []).forEach(function (listener) { listener(); }); }, 10000);
+        frame.hidden = true; frame.allow = "autoplay"; frame.src = frameUrl; frame.title = "Âm thanh Việt iq.com";
+        function send(message) { if (ready) channel.port1.postMessage(message); else queue.push(message); }
+        channel.port1.onmessage = function (event) {
+          var message = event.data;
+          if (message.ready) { ready = true; root.clearTimeout(timer); queue.splice(0).forEach(send); }
+          if (message.state) { data = message.state; updated = Date.now(); }
+          if (message.requestId && requests.has(message.requestId)) {
+            var request = requests.get(message.requestId); requests.delete(message.requestId);
+            if (message.error) request.reject(Object.assign(new Error(message.error.message), {name:message.error.name})); else request.resolve();
+          }
+          (listeners[message.event] || []).forEach(function (listener) { listener(); });
+        };
+        frame.addEventListener("load", function () {
+          frame.contentWindow.postMessage({type:"iqiyi-audio-connect"}, frameUrl.replace(/\/audio-player\.html$/, ""), [channel.port2]);
+        }, {once:true});
+        Object.defineProperties(this, {
+          src:{get:function () { return source; },set:function (value) { source = value; }},
+          paused:{get:function () { return data.paused; }}, readyState:{get:function () { return data.readyState; }}, seeking:{get:function () { return data.seeking; }},
+          currentTime:{get:function () { return data.currentTime + (!data.paused && !data.seeking ? Math.min(1,(Date.now()-updated)/1000)*rate : 0); },
+            set:function (value) { data.currentTime = value; data.seeking = true; updated = Date.now(); send({type:"seek",time:value}); }},
+          muted:{get:function () { return mute; },set:function (value) { if (mute !== value) { mute = value; send({type:"config",muted:value}); } }},
+          volume:{get:function () { return volume; },set:function (value) { if (volume !== value) { volume = value; send({type:"config",volume:value}); } }},
+          playbackRate:{get:function () { return rate; },set:function (value) { if (rate !== value) { rate = value; send({type:"config",rate:value}); } }}
+        });
+        this.addEventListener = function (event, listener) { (listeners[event] || (listeners[event] = [])).push(listener); };
+        this.removeAttribute = function () { source = ""; };
+        this.load = function () { send({type:"load",src:source}); };
+        this.pause = function () { data.paused = true; send({type:"pause"}); };
+        this.play = function () { return new Promise(function (resolve,reject) { var id = ++nextId; requests.set(id,{resolve:resolve,reject:reject}); send({type:"play",requestId:id}); }); };
+        this.dispose = function () { root.clearTimeout(timer); self.pause(); channel.port1.close(); channel.port2.close(); frame.remove(); requests.forEach(function (request) { request.reject(new Error("Audio stopped")); }); requests.clear(); };
+        root.document.documentElement.appendChild(frame);
+      }
+      function report(message) {
+        if (stopped || message === lastMessage) return;
+        lastMessage = message;
+        pendingNotice = message;
+        flushAudioNotice();
+        refreshAudioMenus();
+        if (!iqPlayer && tvid) post("/api/audio-playback", {tvid:tvid,message:message}).catch(function () {});
+      }
+      function restore() {
+        if (iqPlayer) { if (muted && webMuted) webMuted.set.call(webVideo, desiredMute); muted = false; return; }
+        if (!muted || !originals) return;
+        muted = false;
+        originals.volume.call(controller, desiredVolume);
+        originals.mute.call(controller, desiredMute);
+      }
+      function hush() {
+        if (iqPlayer) { if (webMuted && !muted) webMuted.set.call(webVideo, true); muted = true; return; }
+        if (!originals || muted) return;
+        originals.mute.call(controller, true);
+        // Preserve the user's mute control; only the native soundtrack is muted.
+        controller.mute().set(desiredMute);
+        muted = true;
+      }
+      function stopSound() {
+        pending = false;
+        if (sound) { sound.pause(); sound.removeAttribute("src"); sound.load(); if (sound.dispose) sound.dispose(); sound = null; }
+        restore();
+        if (webMuted) {
+          if (webOwnMute) Object.defineProperty(webVideo,"muted",webOwnMute); else delete webVideo.muted;
+          ["volumechange","play","pause","seeking","seeked","ratechange","waiting","ended"].forEach(function (event) { webVideo.removeEventListener(event,webVolumeChanged); });
+          webMuted = null; webVolumeChanged = null;
+        }
+        if (originals) {
+          if (originals.ownMute) controller.setMute = originals.mute; else delete controller.setMute;
+          if (originals.ownVolume) controller.setVolume = originals.volume; else delete controller.setVolume;
+          if (originals.ownStoreSet) controller.store.setProp = originals.storeSet; else delete controller.store.setProp;
+          originals = null;
+        }
+        stream = "";
+      }
+      function bridge() {
+        if (iqPlayer) return !!getWebVideo();
+        if (controller && provider && provider.videoPlayerInstance) return true;
+        if (!officialRuntimeRequire || Date.now() - lastBridgeScan < 5000) return false;
+        lastBridgeScan = Date.now();
+        Object.keys(officialRuntimeRequire.m).forEach(function (id) {
+          var code = String(officialRuntimeRequire.m[id]);
+          if (code.indexOf("xplayerProgressTouch") >= 0) {
+            try {
+              var ui = officialRuntimeRequire(id).M_;
+              if (ui && typeof ui.getProp === "function") optionStore = ui;
+            } catch {}
+          }
+          if (code.indexOf("videoPlayerInstance=void 0") < 0 &&
+              !(code.indexOf("setMute(") >= 0 && code.indexOf("volume(){") >= 0)) return;
+          try {
+            Object.values(officialRuntimeRequire(id)).forEach(function (value) {
+              if (value && value.videoPlayerInstance && value.videoPlayerInstance.innerData) {
+                provider = value;
+                // The current SDK exposes its inherited controller through the mounted player.
+                // Its factory no longer contains the volume method bodies used by older builds.
+                var supplementary = value.playerSupplementary;
+                if (supplementary && typeof supplementary.setMute === "function" &&
+                    typeof supplementary.setVolume === "function" && typeof supplementary.mute === "function" &&
+                    typeof supplementary.volume === "function" && supplementary.store) controller = supplementary;
+              }
+              if (value && typeof value === "object" && typeof value.setMute === "function" &&
+                  typeof value.setVolume === "function" && typeof value.mute === "function" &&
+                  typeof value.volume === "function" && !value.bridge) controller = value;
+            });
+          } catch {}
+        });
+        return !!(controller && provider);
+      }
+      function bindVolume() {
+        if (iqPlayer) {
+          webVideo = getWebVideo(); desiredMute = webVideo.muted; desiredVolume = webVideo.volume * 100;
+          webOwnMute = Object.getOwnPropertyDescriptor(webVideo,"muted");
+          webMuted = Object.getOwnPropertyDescriptor(root.HTMLMediaElement.prototype,"muted");
+          Object.defineProperty(webVideo,"muted", {configurable:true,get:function () { return desiredMute; },set:function (value) {
+            desiredMute = !!value; webMuted.set.call(this,muted ? true : desiredMute); if (sound) sound.muted = desiredMute;
+          }});
+          webVolumeChanged = function () { desiredVolume = webVideo.volume * 100; if (sound) sound.volume = webVideo.volume; tick(); };
+          ["volumechange","play","pause","seeking","seeked","ratechange","waiting","ended"].forEach(function (event) { webVideo.addEventListener(event,webVolumeChanged); });
+          return;
+        }
+        desiredMute = !!controller.mute().get();
+        desiredVolume = Number(controller.volume().get());
+        if (!Number.isFinite(desiredVolume)) desiredVolume = 50;
+        originals = {mute:controller.setMute,volume:controller.setVolume,
+          storeSet:controller.store.setProp,ownStoreSet:Object.prototype.hasOwnProperty.call(controller.store,"setProp"),
+          ownMute:Object.prototype.hasOwnProperty.call(controller,"setMute"),
+          ownVolume:Object.prototype.hasOwnProperty.call(controller,"setVolume")};
+        controller.store.setProp = function (key, value) {
+          var args = Array.prototype.slice.call(arguments);
+          // Native IPC echoes physical mute later; the visible control represents the user's choice.
+          if (key === "mute") args[1] = desiredMute;
+          if (key === "volume" && Number.isFinite(Number(value))) {
+            desiredVolume = Number(value);
+            if (sound) sound.volume = Math.max(0, Math.min(1, desiredVolume / 100));
+          }
+          return originals.storeSet.apply(this, args);
+        };
+        controller.setMute = function (value) {
+          desiredMute = !!value;
+          originals.mute.call(this, muted ? true : desiredMute);
+          if (muted) this.mute().set(desiredMute);
+          if (sound) sound.muted = desiredMute;
+        };
+        controller.setVolume = function (value) {
+          desiredVolume = Number(value);
+          originals.volume.call(this, value);
+          if (muted) { originals.mute.call(this, true); this.mute().set(desiredMute); }
+          if (sound) sound.volume = Math.max(0, Math.min(1, desiredVolume / 100));
+        };
+      }
+      function createSound(state, token) {
+        if (iqPlayer && !frameUrl) {
+          if (!frameJob) frameJob = localFetch(SIDE + "/api/audio-frame").then(function (response) { return response.json(); }).then(function (config) {
+            if (!/^chrome-extension:\/\/[a-p]{32}\/audio-player\.html$/.test(config.url)) throw Error("Invalid extension audio frame");
+            frameUrl = config.url;
+            if (!stopped && settings.stream === state.stream) createSound(state,token);
+          }).catch(function () { report("Tải lại tiện ích Việt hóa và trang phim để bật âm thanh Việt trên web."); }).finally(function () { frameJob = null; });
+          return;
+        }
+        stopSound();
+        if (!bridge()) { report("Đang kết nối với bộ phát âm thanh iQIYI…"); return; }
+        bindVolume();
+        stream = state.stream;
+        sound = iqPlayer ? new WebAudio() : new root.Audio();
+        sound.preload = "metadata";
+        sound.muted = true;
+        var current = sound;
+        current.src = iqPlayer ? frameUrl.replace(/\/audio-player\.html$/, "/audio-stream.mp4") + "?tvid=" + encodeURIComponent(tvid) + "&stream=" + encodeURIComponent(stream) :
+          SIDE + "/audio.mp4?tvid=" + encodeURIComponent(tvid) + "&stream=" + encodeURIComponent(stream) + "&token=" + encodeURIComponent(token);
+        current.addEventListener("waiting", function () {
+          if (sound !== current) return;
+          current.muted = true; restore(); report("Đang đệm âm thanh Việt; tạm dùng tiếng gốc.");
+        });
+        current.addEventListener("error", function () {
+          if (sound !== current) return;
+          failed = stream; stopSound(); report("Không phát được âm thanh Việt; đã trả lại tiếng gốc. Tắt rồi bật lại để thử.");
+        });
+        current.load();
+        report("Đã chọn tiếng Việt iq.com.");
+      }
+      function playSound() {
+        var current = sound;
+        if (!current || pending) return;
+        if (current.seeking) { current.muted = true; restore(); return; }
+        if (!current.paused && current.readyState >= 3) {
+          hush(); current.muted = desiredMute;
+          report("Đang dùng âm thanh Việt iq.com · Tập " + settings.episode);
+          return;
+        }
+        pending = true;
+        Promise.resolve(current.play()).then(function () {
+          if (sound !== current || stopped || !settings.enabled) { current.pause(); return; }
+          if (current.readyState < 3 || current.seeking) { restore(); return; }
+          hush(); current.volume = Math.max(0, Math.min(1, desiredVolume / 100)); current.muted = desiredMute;
+          report("Đang dùng âm thanh Việt iq.com · Tập " + settings.episode);
+        }).catch(function (error) {
+          if (sound !== current) return;
+          current.muted = true; restore();
+          report(error && error.name === "NotAllowedError" ? "Bấm vào player để cho phép phát âm thanh Việt." : "Không phát được âm thanh Việt; tạm dùng tiếng gốc.");
+        }).finally(function () { if (sound === current) pending = false; });
+      }
+      function tick() {
+        if (stopped) return;
+        installAudioMenu();
+        var info = iqPlayer && webEpisodeInfo();
+        var playing = currentSubtitleTvid() || (iqPlayer ? String(info && (info.tvId || info.tvid) || "") : "");
+        if (iqPlayer && sound && getWebVideo() !== webVideo) stopSound();
+        if (playing !== tvid) { clearAudioNotice(); stopSound(); tvid = playing; failed = ""; position = -1; lastPoll = 0; lastMessage = ""; settings = {enabled:false}; }
+        flushAudioNotice();
+        if (Date.now() - lastContact > 10000) { stopSound(); settings = {enabled:false}; }
+        if (Date.now() - lastPoll > 2000 && !polling) {
+          polling = true; lastPoll = Date.now();
+          var requested = tvid;
+          (iqPlayer ? Promise.resolve("") : ensureToken()).then(function (token) {
+            if (!token && !iqPlayer) throw Error("No player token");
+            return localFetch(SIDE + "/api/audio-state" + (requested ? "?tvid=" + encodeURIComponent(requested) : ""),
+              {headers:{"X-Iqiyi-Token":token},signal:AbortSignal.timeout(5000)}).then(function (r) {
+              if (!r.ok) throw Error("Audio manager unavailable"); return r.json();
+            }).then(function (state) {
+              if (requested !== tvid || stopped) return;
+              lastContact = Date.now(); settings = state; connectionError = "";
+              refreshAudioMenus();
+              if (!state.enabled || !state.available) {
+                stopSound();
+                if (!state.enabled) failed = "";
+                if (state.enabled) report(state.loading ? "Đang tìm âm thanh Việt trên iq.com…" : state.error || "Tập này chưa có âm thanh Việt.");
+              } else if (state.stream !== stream && state.stream !== failed) createSound(state, token);
+            });
+          }).catch(function () {
+            if (stopped || requested !== tvid) return;
+            stopSound();
+            connectionError = iqPlayer ? "Chưa kết nối được tiện ích âm thanh. Tải lại tiện ích và trang phim." : "Dịch vụ âm thanh chưa sẵn sàng; đang dùng tiếng gốc.";
+            if (settings.enabled) report(connectionError);
+            refreshAudioMenus();
+          }).finally(function () { polling = false; });
+        }
+        if (!sound || !settings.enabled || !bridge()) return;
+        var player = iqPlayer ? webVideo : provider.videoPlayerInstance;
+        var store = !iqPlayer && player.innerData.store;
+        var state = iqPlayer ? (!player.paused && !player.ended && player.readyState >= 2 ? "play" : "pause") : player.videoPlayState;
+        var time = Number(iqPlayer ? player.currentTime : player.curTime);
+        var subtitleView = officialNativeControl && officialNativeControl.subtitleSdk && officialNativeControl.subtitleSdk.sdk && officialNativeControl.subtitleSdk.sdk.view;
+        var precise = subtitleView && Number(subtitleView.currentPts) / 1000;
+        if (!iqPlayer && Number.isFinite(precise) && Math.abs(precise - time) < 2) time = precise;
+        var total = Number(iqPlayer ? player.duration : player.totalTime);
+        var speed = iqPlayer ? player.playbackRate : optionStore && Number(optionStore.getProp("videoOptionSelectspeed")) / 100;
+        if (!Number.isFinite(speed) || speed <= 0 || speed > 4) speed = 1;
+        if (time !== position) { position = time; positionAt = Date.now(); }
+        var active = (state === "play" || state === "playing") && !(iqPlayer ? player.seeking : store.getProp("seeking")) &&
+          Number.isFinite(time) && total > 0 && Date.now() - positionAt < 2000;
+        if (iqPlayer && Math.abs(total - (Number(settings.duration) + Number(settings.shiftSeconds || 0))) > 10) active = false;
+        var target = time - Number(settings.shiftSeconds || 0);
+        if (!active || target < 0 || target >= Number(settings.duration)) {
+          sound.pause(); sound.muted = true; restore(); return;
+        }
+        if (!iqPlayer) target += Math.min(0.75, (Date.now() - positionAt) / 1000) * speed;
+        sound.playbackRate = speed;
+        if (Math.abs(sound.currentTime - target) > 0.65) {
+          sound.muted = true; restore();
+          try { sound.currentTime = target; } catch { return; }
+        }
+        playSound();
+      }
+      function gesture() { if (sound && settings.enabled) tick(); }
+      var timer = root.setInterval(tick, 200);
+      root.document.addEventListener("pointerdown", gesture);
+      root.__iqiyiAudioEngine = {status:function () {
+        return {tvid:tvid,enabled:!!settings.enabled,sourceReady:!!sound,mutedOriginal:muted,
+          time:sound && sound.currentTime,paused:!sound || sound.paused,volume:sound && sound.volume,
+          muted:sound && sound.muted,rate:sound && sound.playbackRate,message:lastMessage};
+      },dispose:function () {
+        stopped = true; clearAudioNotice(); root.clearInterval(timer); stopSound(); root.document.removeEventListener("pointerdown", gesture);
+        menuPatches.forEach(function (undo) { undo(); }); menuInstances.clear();
+      }};
+      root.addEventListener("pagehide", root.__iqiyiAudioEngine.dispose, {once:true});
     }
     function installOfficialSubtitleGuard() {
       var doc = root && root.document;
@@ -451,7 +846,7 @@
 
     function decode(value) {
       if (typeof value !== "string" || !/^[\s]*[\[{\"]/.test(value)) return value;
-      try { return JSON.parse(value); } catch (_) { return value; }
+      try { return JSON.parse(value); } catch { return value; }
     }
     function numberedSeriesTitle(value) {
       var match = String(value || "").match(/^(.+?)\s*第\s*\d+\s*集|^(.+?)\s+(?:episode|ep)\s*\d+/i);
@@ -549,7 +944,7 @@
       return output;
     }
     function rewrite(body) {
-      try { registerEpisodeLists(decode(body)); } catch (_) {}
+      try { registerEpisodeLists(decode(body)); } catch {}
       var changes = 0;
       function visit(value, context, depth) {
         if (depth > 32) return value;
@@ -687,12 +1082,15 @@
     var iqPlayer = /(^|\.)iqiyi\.com$/i.test(root.location.hostname) && /(?:\/play\/|\/v_[^/]+\.html?$)/i.test(root.location.pathname);
     if (!nativePlayer && !iqPlayer) return;
     // Web pages can expose the active video before any intercepted subtitle request.
-    function syncWebEpisode() {
-      if (!iqPlayer) return;
+    function webEpisodeInfo() {
       var page = root.Q && root.Q.PageInfo;
       var stage = root.playbackPageStageStatus;
       var accelerated = stage && stage._accData || root.QiyiPlayerProphetData;
-      var info = accelerated && accelerated.videoInfo || page && page.playPageInfo;
+      return accelerated && accelerated.videoInfo || page && page.playPageInfo;
+    }
+    function syncWebEpisode() {
+      if (!iqPlayer) return;
+      var info = webEpisodeInfo();
       if (!info || typeof info !== "object") return;
       var tvid = String(info.tvId || info.tvid || "");
       var albumId = String(info.albumId || info.album_id || "");
@@ -715,6 +1113,7 @@
     syncWebEpisode();
     if (iqPlayer && root.setInterval) root.setInterval(syncWebEpisode, 3000);
     installOfficialSubtitleGuard();
+    installIqcomAudio();
     root.__iqiyiSubtitleEngine = {version: HOOK_VERSION, rewrite: rewrite, titles: titles};
 
     // The accelerator assigns encoded DASH metadata directly, bypassing fetch/XHR/JSONP.
@@ -727,7 +1126,7 @@
         if (next === parsed) return value;
         var encoded = JSON.stringify(next).split("").map(function (ch) { return String.fromCharCode(ch.charCodeAt(0) ^ 90); }).join("");
         return Object.assign({}, value, {ev:encoded});
-      } catch (_) { return value; }
+      } catch { return value; }
     }
     if (iqPlayer) {
       var bootstrapDescriptor = Object.getOwnPropertyDescriptor(root, "QiyiPlayerProphetData");
@@ -746,7 +1145,7 @@
     function hookJsonp(script) {
       if (!script || script.tagName !== "SCRIPT" || !script.src) return;
       var url;
-      try { url = new URL(script.src, root.location.href); } catch (_) { return; }
+      try { url = new URL(script.src, root.location.href); } catch { return; }
       if (!/(^|\.)iqiyi\.com$/i.test(url.hostname)) return;
       var name = url.searchParams.get("callback") || url.searchParams.get("cb");
       if (!name || !/^[A-Za-z_$][\w$]*$/.test(name)) return;
@@ -844,7 +1243,7 @@
               var value = xhr.responseText;
               if (typeof value !== "string" && value && root.XMLSerializer) value = new root.XMLSerializer().serializeToString(value);
               captureSource(url, value).catch(function(){});
-            } catch (_) {}
+            } catch {}
           }, {once:true});
           var localUrl = xhr.__iqiyiSubtitleSourceUrl;
           if (localUrl === SIDE + "/subtitle.xml" || localUrl.indexOf(SIDE + "/subtitle.xml?") === 0) {
@@ -922,258 +1321,5 @@
     }
   }
 
-  function youkuSubtitleHook() {
-    if (!root) return;
-    var LAYOUT_STYLE_ID = "youku-vi-layout";
-    var LAYOUT_CSS =
-      '#ykPlayer [com="watermark"]{display:none!important;}' +
-      ".leftnav_nav_mark{display:flex!important;align-items:center!important;height:48px!important;max-height:48px!important;overflow:hidden!important}" +
-      ".leftnav_nav_mark>span{display:block!important;max-width:100%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}" +
-      "[class*=pack_mark_],[class*=pack_mark_]>span{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}" +
-      ".kui-subtitle-subtitle-container,.kui-subtitle-subtitle-container *{" +
-      "font-family:Arial,Helvetica,sans-serif!important;font-weight:700!important;color:#fff!important;" +
-      "-webkit-text-stroke:2.2px #111!important;paint-order:stroke fill;" +
-      "text-shadow:0 1px 1px #111,1px 0 1px #111,-1px 0 1px #111,0 -1px 1px #111,0 2px 4px #000!important;}";
-    function installLayout() {
-      var doc = root.document;
-      var parent = doc && (doc.head || doc.documentElement || doc.body);
-      if (!parent || !doc.createElement) return;
-      var style = (doc.getElementById && doc.getElementById(LAYOUT_STYLE_ID)) || doc.createElement("style");
-      style.id = LAYOUT_STYLE_ID;
-      if (style.textContent !== LAYOUT_CSS) style.textContent = LAYOUT_CSS;
-      if (!style.isConnected) parent.appendChild(style);
-    }
-    installLayout();
-    var VERSION = 6;
-    if (root.__youkuViSubtitleVersion === VERSION) {
-      if (root.__youkuViSubtitleRefresh) root.__youkuViSubtitleRefresh();
-      return;
-    }
-    if (root.__youkuViSubtitleStop) root.__youkuViSubtitleStop();
-    else if (root.__youkuViSubtitle) throw new Error("Restart Youku to update the legacy subtitle hook");
-    root.__youkuViSubtitle = true;
-    root.__youkuViSubtitleVersion = VERSION;
-
-    var API = root.__youkuViApi || "http://127.0.0.1:18766";
-    var TOKEN = root.__youkuViToken || "";
-    // Remove cached output from the retired live-caption translator.
-    try { localStorage.removeItem("__youkuViSubtitleCacheV1"); } catch (_) {}
-    var REGISTERED = {}, REGISTERING = {}, CAPTURED = {}, captureContext = null, captureBuffer = [], captureTimer = 0;
-    var captureUpload = Promise.resolve();
-    var currentContext = null, lastFullScan = 0, lastRegister = 0;
-    var stopped = false;
-
-    function cjk(text) { return (String(text || "").match(/[\u3400-\u9fff]/g) || []).length; }
-    function clean(text) {
-      return String(text || "").replace(/<br\s*\/?\s*>/gi, "\n").replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim();
-    }
-    function hash(value) {
-      var result = 2166136261;
-      for (var i = 0; i < value.length; i++) { result ^= value.charCodeAt(i); result = Math.imul(result, 16777619); }
-      return (result >>> 0).toString(36);
-    }
-    function pageContext() {
-      var url;
-      try { url = new URL(location.href); } catch (_) { return null; }
-      var titleNode = document.querySelector("meta[property='og:title']");
-      var title = clean(titleNode && titleNode.content || document.title || "Phim Youku")
-        .replace(/\s*[-_|—]\s*(?:优酷|Youku).*$/i, "").trim() || "Phim Youku";
-      var match = url.pathname.match(/id_([^/?#.&]+)/i);
-      var videoId = match && match[1] || url.searchParams.get("vid") || url.searchParams.get("videoId") || "";
-      var nativeInfo = null;
-      if (url.protocol === "client:" && url.pathname === "/video" && root.videoPlayer && root.videoPlayer.getPlayerInfo) {
-        try { nativeInfo = root.videoPlayer.getPlayerInfo(); } catch (_) {}
-      }
-      videoId = videoId || nativeInfo && (nativeInfo.vidEncoded || nativeInfo.vid) || "";
-      if (!videoId) return null;
-      videoId = String(videoId).replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 90) || hash(url.href);
-      var orderMatch = title.match(/第\s*(\d+)\s*集|(?:episode|ep)\s*(\d+)|s\d+\s*e(\d+)/i);
-      var order = orderMatch ? Number(orderMatch[1] || orderMatch[2] || orderMatch[3]) : 0;
-      var series = orderMatch ? title.replace(orderMatch[0], "").trim() : title;
-      series = series.replace(/[\s:：,，|—-]+$/, "").trim() || title;
-      var album = nativeInfo && (nativeInfo.showEncodedId || nativeInfo.showId) || "";
-      ["showid", "albumid", "showId", "albumId"].some(function (key) {
-        album = album || url.searchParams.get(key) || ""; return !!album;
-      });
-      var showMatch = url.pathname.match(/show\/id_([^/?#.&]+)/i);
-      album = album || (showMatch && showMatch[1]) || ("title-" + hash(series.toLowerCase()));
-      album = String(album).replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 90) || hash(series);
-      return {tvid: "yk-" + videoId, provider: "youku", title: title, albumTitle: series,
-        albumId: "yk-" + album, order: order, pageUrl: url.origin + url.pathname};
-    }
-    function managerPost(route, payload) {
-      if (!TOKEN || !root.fetch) return Promise.reject(new Error("manager unavailable"));
-      return root.fetch(API + route, {method: "POST", headers: {"Content-Type": "application/json", "X-Iqiyi-Token": TOKEN},
-        body: JSON.stringify(payload)}).then(function (response) {
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        return response.json();
-      });
-    }
-    function ensureRegistered(context) {
-      if (!TOKEN || REGISTERED[context.tvid]) return Promise.resolve(true);
-      if (REGISTERING[context.tvid]) return REGISTERING[context.tvid];
-      REGISTERING[context.tvid] = managerPost("/api/register", context).then(function () {
-        REGISTERED[context.tvid] = true; return true;
-      }).catch(function () { return false; }).then(function (ok) {
-        delete REGISTERING[context.tvid]; return ok;
-      });
-      return REGISTERING[context.tvid];
-    }
-    function formatTime(ms) {
-      var hours = Math.floor(ms / 3600000), minutes = Math.floor(ms / 60000) % 60;
-      var seconds = Math.floor(ms / 1000) % 60, millis = Math.floor(ms % 1000);
-      return String(hours).padStart(2, "0") + ":" + String(minutes).padStart(2, "0") + ":" +
-        String(seconds).padStart(2, "0") + "," + String(millis).padStart(3, "0");
-    }
-    function toSrt(cues) {
-      return cues.map(function (cue, index) {
-        return (index + 1) + "\n" + formatTime(cue.start) + " --> " + formatTime(cue.end) + "\n" + cue.text;
-      }).join("\n\n") + "\n";
-    }
-    function normalizeCue(cue) {
-      var text = clean(cue && cue.text), start = Math.max(0, Math.round(Number(cue && cue.start) || 0));
-      var end = Math.round(Number(cue && cue.end) || 0);
-      return text && text.length <= 1000 && end > start ? {start: start, end: end, text: text} : null;
-    }
-    function flushCapture() {
-      if (captureTimer) { clearTimeout(captureTimer); captureTimer = 0; }
-      if (!captureBuffer.length || !captureContext) return;
-      // Detach every batch before the player can replace the episode context.
-      var context = captureContext;
-      while (captureBuffer.length) enqueueCapture(context, captureBuffer.splice(0, 200));
-    }
-    function enqueueCapture(context, batch) {
-      var payload = {tvid: context.tvid, format: "srt", raw: toSrt(batch), append: true};
-      function send() {
-        return ensureRegistered(context).then(function (ready) {
-          if (!ready) throw new Error("manager unavailable");
-          return managerPost("/api/capture", payload);
-        }).catch(function () {
-          if (!stopped) return new Promise(function (resolve) { setTimeout(resolve, 5000); }).then(send);
-        });
-      }
-      captureUpload = captureUpload.then(send);
-    }
-    function queueCapture(context, cues) {
-      if (!TOKEN || !context || !cues || !cues.length) return;
-      if (captureContext && captureContext.tvid !== context.tvid) {
-        flushCapture(); CAPTURED = {};
-      }
-      captureContext = context;
-      cues.slice(0, 20000).forEach(function (rawCue) {
-        var cue = normalizeCue(rawCue);
-        if (!cue || !cjk(cue.text)) return;
-        var key = cue.start + ":" + cue.end + ":" + cue.text;
-        if (CAPTURED[key]) return;
-        CAPTURED[key] = true;
-        captureBuffer.push(cue);
-      });
-      if (captureBuffer.length >= 200) flushCapture();
-      else if (captureBuffer.length && !captureTimer) captureTimer = setTimeout(function () { captureTimer = 0; flushCapture(); }, 1200);
-    }
-    function fullTrackCues() {
-      var videos = document.querySelectorAll("video"), best = [], bestScore = 0;
-      for (var i = 0; i < videos.length; i++) {
-        var tracks = videos[i].textTracks;
-        if (!tracks) continue;
-        for (var j = 0; j < tracks.length; j++) {
-          var source = tracks[j].cues, candidate = [], score = 0;
-          if (!source || source.length > 20000) continue;
-          for (var k = 0; k < source.length; k++) {
-            var cue = normalizeCue({start: source[k].startTime * 1000, end: source[k].endTime * 1000, text: source[k].text});
-            if (cue && cjk(cue.text)) { candidate.push(cue); score += cjk(cue.text); }
-          }
-          if (candidate.length && score > bestScore) { best = candidate; bestScore = score; }
-        }
-      }
-      return best;
-    }
-    function activeCue() {
-      var videos = document.querySelectorAll("video");
-      for (var i = 0; i < videos.length; i++) {
-        var tracks = videos[i].textTracks;
-        if (!tracks) continue;
-        for (var j = 0; j < tracks.length; j++) {
-          var cues = tracks[j].activeCues;
-          if (!cues) continue;
-          for (var k = 0; k < cues.length; k++) {
-            var cue = normalizeCue({start: cues[k].startTime * 1000, end: cues[k].endTime * 1000, text: cues[k].text});
-            if (cue && cjk(cue.text)) return cue;
-          }
-        }
-      }
-      return null;
-    }
-    function visibleCue() {
-      var cue = activeCue();
-      if (cue) return cue;
-      var nodes = document.querySelectorAll(".kui-subtitle-subtitle-container, .caption-main, [data-testid='subtitle']");
-      var best = "";
-      for (var i = 0; i < nodes.length; i++) {
-        var el = nodes[i], rect = el.getBoundingClientRect();
-        if (!rect.width || rect.bottom < innerHeight * .55 || rect.top > innerHeight * .98) continue;
-        var text = clean(el.innerText || el.textContent || "");
-        if (text.length <= 180 && cjk(text) > cjk(best)) best = text;
-      }
-      if (!best) return null;
-      var now = playbackTime();
-      if (now === null) return {text: best};
-      return normalizeCue({start: Math.max(0, Math.floor((now - 500) / 100) * 100), end: Math.ceil((now + 2200) / 100) * 100, text: best});
-    }
-    function playbackTime() {
-      var video = document.querySelector("video");
-      if (video && isFinite(video.currentTime)) return Math.max(0, video.currentTime * 1000);
-      var player = root.videoPlayer;
-      if (player && typeof player.getCurrentTime === "function") {
-        try {
-          var time = player.getCurrentTime();
-          if (typeof time === "number" && isFinite(time)) return Math.max(0, time * 1000);
-        } catch (_) {}
-      }
-      return null;
-    }
-    function tick() {
-      installLayout();
-      var context = pageContext();
-      if (!context) {
-        if (currentContext) { flushCapture(); currentContext = null; captureContext = null; CAPTURED = {}; }
-        return;
-      }
-      if (!currentContext || context.tvid !== currentContext.tvid) {
-        flushCapture();
-        currentContext = context; captureContext = context; CAPTURED = {};
-        captureBuffer = []; lastRegister = 0; lastFullScan = 0;
-      } else currentContext = context;
-      if (Date.now() - lastRegister > 12000) {
-        lastRegister = Date.now(); ensureRegistered(context);
-      }
-      if (Date.now() - lastFullScan > 2500) {
-        lastFullScan = Date.now();
-        var full = fullTrackCues();
-        if (full.length) queueCapture(context, full);
-      }
-      var cue = visibleCue();
-      if (cue) queueCapture(context, [cue]);
-    }
-    root.__youkuViSubtitleStatus = function () {
-      return {captured:Object.keys(CAPTURED).length,registered:!!(currentContext && REGISTERED[currentContext.tvid])};
-    };
-    root.__youkuViSubtitleRefresh = installLayout;
-    var tickTimer = setInterval(tick, 250);
-    root.__youkuViSubtitleStop = function () {
-      stopped = true;
-      clearInterval(tickTimer);
-      if (captureTimer) { clearTimeout(captureTimer); captureTimer = 0; }
-      flushCapture();
-      root.__youkuViSubtitle = false;
-      root.__youkuViSubtitleVersion = 0;
-    };
-  }
-
-  // Native Youku pages expose location as a global, iQIYI test/wrapper pages through window.
-  var place = root && root.location || (typeof location !== "undefined" ? location : null);
-  var host = String(place && place.hostname || ""), href = String(place && place.href || "");
-  var isYouku = /(^|\.)youku\.com$/i.test(host) ||
-    /^(?:https?|client):\/\/[^\/?#]*youku\.com(?:[:\/?#]|$)/i.test(href);
-  (isYouku ? youkuSubtitleHook : iqiyiSubtitleHook)();
+  iqiyiSubtitleHook();
 })(typeof window === "undefined" ? null : window);

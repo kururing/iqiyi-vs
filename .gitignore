@@ -1,6 +1,7 @@
 # --- Python ---
 __pycache__/
 *.py[cod]
+.ruff_cache/
 .venv/
 venv/
 dist/
@@ -16,6 +17,7 @@ subtitles/international/
 
 # Transient caches and per-run snapshots
 .tmp/
+graphify-out/
 ext/_metadata/
 live-vietsub-cache.json
 vi-live.json

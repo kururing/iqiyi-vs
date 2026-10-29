@@ -2,8 +2,8 @@
 const LOCAL_PLAYER_ORIGIN = "http://127.0.0.1:18766";
 const LOCAL_PLAYER_ROUTES = {
   GET: new Set(["/health", "/api/extension-token", "/api/international-title", "/api/international-actor", "/api/international-search",
-    "/api/official-subtitle-state", "/subtitle.xml"]),
-  POST: new Set(["/api/session", "/api/register", "/api/album/register", "/api/capture", "/api/localize-remaining"])
+    "/api/official-subtitle-state", "/api/audio-state", "/api/audio-frame", "/subtitle.xml"]),
+  POST: new Set(["/api/session", "/api/register", "/api/album/register", "/api/capture", "/api/localize-remaining", "/api/audio-playback", "/api/audio-settings"])
 };
 const localPlayerRequests = new Map();
 
@@ -17,6 +17,15 @@ async function localPlayerRequest(message, signal) {
       (method === "GET" && message.body != null) ||
       (message.body != null && (typeof message.body !== "string" || message.body.length > 2000000))) {
     throw Error("Yêu cầu phụ đề không được phép.");
+  }
+  if (["/api/localize-remaining", "/api/international-title", "/api/international-actor", "/api/international-search"].includes(url.pathname)) {
+    return publicLocalizationRequest(url, message, signal);
+  }
+  if (url.pathname === "/api/audio-frame") {
+    return {status:200,headers:{"Content-Type":"application/json"},body:JSON.stringify({url:chrome.runtime.getURL("audio-player.html")})};
+  }
+  if (["/api/audio-state", "/api/audio-settings", "/api/audio-playback"].includes(url.pathname)) {
+    return url.pathname === "/api/audio-playback" ? audioJson({ok:true}) : browserAudioRequest(url, message);
   }
   const configResponse = await fetch(chrome.runtime.getURL("proxy-token.json"), {cache: "no-store", signal})
     .catch(error => {
@@ -51,7 +60,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     const origin = new URL(sender.origin || sender.url);
     if (sender.id !== chrome.runtime.id || origin.protocol !== "https:" || origin.port ||
         !(origin.hostname === "iqiyi.com" || origin.hostname.endsWith(".iqiyi.com"))) return;
-  } catch (_) { return; }
+  } catch { return; }
   if (message.requestId != null && (typeof message.requestId !== "string" || message.requestId.length > 80)) return;
   // Scope cancellation to the originating document, including separate tabs/frames.
   const key = JSON.stringify([sender.tab?.id, sender.frameId, sender.documentId, message.requestId ?? crypto.randomUUID()]);

@@ -3,10 +3,13 @@ import atexit
 from concurrent.futures import Future
 from contextlib import contextmanager
 from functools import wraps
+import gzip
+import http.client
 import threading
 import time
 import urllib.error
 import urllib.request
+import zlib
 from urllib.parse import urljoin, urlsplit
 
 import urllib3
@@ -15,6 +18,33 @@ import urllib3
 # No cookie jar or system proxy: each request supplies only its own credentials.
 HTTP_POOL = urllib3.PoolManager(num_pools=8, maxsize=6, block=True)
 atexit.register(HTTP_POOL.clear)
+
+
+def read_response(response, limit):
+    """Read a bounded body completely; never accept a short HTTP/gzip response."""
+    encoding = response.headers.get("Content-Encoding", "").strip().lower()
+    if encoding not in ("", "identity", "gzip"):
+        raise OSError("Kiểu nén phản hồi chưa được hỗ trợ; hãy thử lại.")
+    stream = gzip.GzipFile(fileobj=response) if encoding == "gzip" else response
+    raw = bytearray()
+    try:
+        while len(raw) <= limit:
+            part = stream.read(limit + 1 - len(raw))
+            if not part:
+                break
+            raw.extend(part)
+    except (http.client.HTTPException, EOFError, zlib.error, gzip.BadGzipFile) as exc:
+        raise OSError("Phản hồi tải về bị gián đoạn hoặc dữ liệu nén bị lỗi; hãy thử lại.") from exc
+    finally:
+        if stream is not response:
+            stream.close()
+    if len(raw) > limit:
+        raise ValueError("Dữ liệu phản hồi quá lớn.")
+    length = response.headers.get("Content-Length")
+    if encoding != "gzip" and length is not None:
+        if not length.isdecimal() or len(raw) != int(length):
+            raise OSError("Phản hồi tải về chưa đủ dữ liệu; hãy thử lại.")
+    return bytes(raw)
 
 
 @contextmanager

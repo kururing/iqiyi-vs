@@ -1,17 +1,22 @@
-# iQIYI / Youku Việt hóa
+# iQIYI Việt hóa
 
-Việt hóa giao diện iQIYI và Youku; quản lý phụ đề gốc tải từ player, phụ đề Việt chính thức trên iq.com và dịch file SRT sang tiếng Việt bằng hai model AI tùy chọn.
+Việt hóa giao diện iQIYI; quản lý phụ đề gốc tải từ player, phụ đề Việt chính thức trên iq.com và dịch file SRT sang tiếng Việt bằng hai model AI tùy chọn.
 
 - Quản lý phim, tập và phụ đề gốc tại [trang quản lý](http://127.0.0.1:18766/).
-- Phim mới thêm/chấp nhận nằm trên cùng; thứ tự được giữ khi mở lại app. Ô **Tìm phim trong thư viện** lọc ngay theo tên Việt (có hoặc không dấu) và tên gốc trong nền tảng đang chọn.
+- Trong app iQIYI, bấm biểu tượng **iQIYI – Quản lý phụ đề** ở cụm công cụ góc dưới bên phải (cùng Điểm danh, Làm mới và Trợ giúp) để mở cửa sổ quản lý riêng. Sau khi cài tích hợp một lần, mở iQIYI bình thường sẽ tự chạy dịch vụ nền; cửa sổ quản lý chỉ mở khi bạn bấm biểu tượng.
+- Phim mới thêm/chấp nhận nằm trên cùng; thứ tự được giữ khi mở lại app. Ô **Tìm phim trong thư viện** lọc ngay theo tên Việt (có hoặc không dấu) và tên gốc.
+- Thư viện hiển thị ảnh bìa phim từ metadata iQIYI bên cạnh tên phim; ảnh tải nền và có khung dự phòng khi thiếu ảnh hoặc kết nối lỗi.
 - Xem phụ đề gốc đã lưu hoặc chọn track Việt chính thức của iq.com trong player khi tập có cung cấp.
+- Trong player iQIYI **desktop hoặc web**, mở **Cài đặt (bánh răng) → Âm thanh** và chọn **Tiếng gốc** hoặc **Tiếng Việt iq.com**, giống menu phụ đề. Lựa chọn lưu tự động; player tự căn thời gian, đồng bộ tua/dừng/âm lượng/tốc độ và dùng tiếng gốc khi thiếu track hoặc phát lỗi. **Trên web, tiện ích từ bản 1.2.66 tự lấy và phát âm thanh, không cần app quản lý chạy.** Tải lại tiện ích rồi tải lại trang phim sau khi cập nhật. Nếu cần metadata từ player iq.com, tiện ích tạm mở một tab nền đã tắt tiếng rồi tự đóng; tập VIP vẫn cần đăng nhập iq.com có quyền xem. Player desktop tiếp tục dùng dịch vụ chạy nền của app quản lý. Trạng thái tìm luồng, phát, đệm, lỗi và chuyển về tiếng gốc hiển thị ngay trên player bằng cùng kiểu thông báo phụ đề, tự ẩn sau 4 giây.
 - Trong player iQIYI, chọn **Tiếng Việt AI** khi tập đã dịch và kiểm định xong. Track lấy đúng bản dịch đã liên kết với tập; không xuất bản dịch dở hoặc bản có nguồn đã thay đổi. Hook iQIYI tự nâng cấp trong cửa sổ đang phát, cập nhật cả menu và URL table của SDK; không cần đóng video. Nếu menu phụ đề đang mở, đóng rồi mở lại menu. Trên web, tải lại trang để nạp script của tiện ích mới. Các lần dịch hoàn tất sau đó được cập nhật tự động.
 - Việt hóa giao diện có sẵn; không cần khóa API.
-- Cấu hình AI qua nút **Cài đặt dịch**, rồi bấm **Dịch** tại tập trong thư viện; cần API key của provider đã chọn.
+- Cấu hình AI qua **Cài đặt → Model & provider**, rồi bấm **Dịch** tại tập trong thư viện; cần API key của provider đã chọn.
 
 ## Quy trình dịch SRT bằng AI
 
-**Lưu nhiều provider:** vào **Cài đặt dịch → Quản lý provider → Thêm provider**, đặt tên gợi nhớ, chọn mẫu, nhập URL và API key. Bấm **Quét model** rồi **Lưu provider** để giữ cả danh sách model; có thể thêm model ID thủ công. Có thể lưu nhiều tài khoản cùng một hãng. Sửa provider không ảnh hưởng các tài khoản khác. Đổi mẫu, URL, key hoặc Workspace sẽ xóa danh sách model đang sửa để tránh dùng catalog của kết nối cũ; các model đã chọn vẫn được giữ khi chỉ quét lại cùng kết nối. Backend gọi `/models`, không lưu key hoặc trả key về giao diện. Quét chỉ lấy danh mục, không gửi phụ đề hay chạy dịch.
+Màn hình chính tập trung vào tìm phim và chọn tập. Bấm vào hàng phim (ảnh bìa hoặc tên phim) để mở/thu danh sách tập. **Cài đặt** chứa cấu hình model, kết nối iq.com/proxy, Việt hóa iQIYI và thống kê. Menu **···** của tập chứa xem phụ đề gốc, tải SRT Việt, dịch lại và xóa phụ đề. Cửa sổ dịch hiện tên phim/tập đã chọn, không có phần chọn nguồn hay đổi file; bản dịch hoàn tất được mở xem trước ngay. Có thể xem bản dịch của tập khác khi một tập đang dịch nền; tiến độ và file tải luôn theo đúng tập đang xem.
+
+**Lưu nhiều provider:** vào **Cài đặt dịch → Quản lý provider → Thêm provider**, đặt tên gợi nhớ, chọn mẫu, nhập URL và API key. Bấm **Quét model** rồi **Lưu provider** để giữ cả danh sách model. Có thể lưu nhiều tài khoản cùng một hãng. Sửa provider không ảnh hưởng các tài khoản khác. Đổi mẫu, URL, key hoặc Workspace sẽ xóa danh sách model đang sửa để tránh dùng catalog của kết nối cũ; các model đã chọn vẫn được giữ khi chỉ quét lại cùng kết nối. Backend gọi `/models`, không lưu key hoặc trả key về giao diện. Quét chỉ lấy danh mục, không gửi phụ đề hay chạy dịch.
 
 Preset **Google Gemini** dùng `https://generativelanguage.googleapis.com/v1beta/openai` với API key của Google AI Studio; hỗ trợ cả quét model và dịch qua giao thức tương thích OpenAI. Xem [tài liệu Gemini](https://ai.google.dev/gemini-api/docs/openai/#list-models).
 
@@ -31,7 +36,7 @@ HTTP 429 có thông báo riêng về giới hạn/hạn mức. Các batch dùng 
 4. **QC:** ngắt dòng tại khoảng trắng, ưu tiên dấu câu/liên từ; mặc định 40 ký tự/dòng, tối đa 2 dòng. Câu không vừa được gửi lại model để rút gọn theo nghĩa. Nếu vẫn không đạt, phiên dịch báo lỗi và không cho xuất SRT.
 5. **Xuất:** ghép đúng thứ tự, kiểm tra SRT một lần nữa; tải `translated.srt`, `memory.json`, `qc.json` và xem trước 30 câu đầu.
 
-Prompt ngữ cảnh yêu cầu căn cứ trong đoạn SRT, thống nhất tên Hán–Việt, phân biệt tên riêng/chức danh và chọn một cặp xưng hô mặc định cho từng chiều quan hệ. Prompt dịch chỉ áp dụng ma trận khi xác định được người nói/người nghe; khi thiếu căn cứ, ưu tiên lược đại từ tự nhiên hoặc giữ danh xưng có trong câu gốc. Khi rút gọn, phải giữ phủ định, điều kiện, số liệu, ý nghĩa và sắc thái; không chuyển nội dung sang câu khác. Các quy tắc này hướng dẫn model; QC tự động vẫn chỉ kiểm tra cấu trúc và độ dài. Sau khi đổi prompt, khởi động lại dịch vụ; **Dịch tiếp** giữ hồ sơ/batch cũ, **Dịch từ đầu** tạo hồ sơ mới.
+Prompt ngữ cảnh yêu cầu căn cứ trong đoạn SRT, thống nhất tên Hán–Việt, phân biệt tên riêng/chức danh và chọn một cặp xưng hô mặc định cho từng chiều quan hệ. Prompt dịch chỉ áp dụng ma trận khi xác định được người nói/người nghe; khi thiếu căn cứ, ưu tiên lược đại từ tự nhiên hoặc giữ danh xưng có trong câu gốc. Cả hai prompt yêu cầu từ ngữ và xưng hô phù hợp với thời đại, bối cảnh, thân phận, quan hệ và mức độ thân mật; giữ nhất quán trong mọi batch, kể cả cảnh gia đình và lúc rút gọn. Dùng nguyên tắc chung, không áp đặt danh sách từ thay thế; lời thoại cổ trang tự nhiên vẫn phải giữ văn phong phù hợp bối cảnh. Khi rút gọn, phải giữ phủ định, điều kiện, số liệu, ý nghĩa và sắc thái; không chuyển nội dung sang câu khác. Các quy tắc này hướng dẫn model; QC tự động vẫn chỉ kiểm tra cấu trúc và độ dài. Sau khi đổi prompt, khởi động lại dịch vụ; **Dịch tiếp** giữ hồ sơ/batch cũ, **Dịch từ đầu** tạo hồ sơ mới.
 
 Thông số cố định tại backend: `PIPELINE_DEFAULTS` trong `translation_pipeline.py` dùng batch 35 câu, overlap 3 câu, mẫu ngữ cảnh 120 câu, 4 batch đồng thời và 40 ký tự/dòng, tối đa 2 dòng. `MODEL_MAX_TOKENS` trong `translation_ai.py` đặt 8192 token đầu ra cho mỗi model. Giao diện không gửi các thông số này; backend bỏ qua giá trị ghi đè từ request. SRT phải có ID tăng dần (không bắt buộc liên tục); timestamp giữ nguyên, kể cả khoảng chồng lấn giữa các câu. Giới hạn file là 2 triệu ký tự/10.000 câu. Câu quá dài và JSON lỗi có thể phát sinh thêm lượt API. QC kiểm tra cấu trúc và độ dài; chất lượng nghĩa/xưng hô vẫn cần người xem duyệt.
 
@@ -41,19 +46,28 @@ Mỗi lần chỉ chạy một file, các batch bên trong chạy song song. Ti�
 
 Định dạng API tham khảo: [OpenAI Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create), [Anthropic Messages](https://platform.claude.com/docs/en/api/overview), [Qwen tương thích OpenAI](https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope).
 
+Trong thư viện, bấm **Hồ sơ dịch** ở từng phim để đọc `memory.json` ngay trong app: thể loại/bối cảnh, nhân vật, cách xưng hô theo từng chiều, thuật ngữ và phong cách dịch. Chọn tập để xem đúng hồ sơ của lần dịch tương ứng; nút xuất hiện khả dụng sau bước phân tích ngữ cảnh, kể cả khi phiên dịch chưa hoàn tất. Cửa sổ tiến độ cũng có **Xem hồ sơ / ngữ cảnh**. Hồ sơ cũ vẫn đọc được; mục **Xem JSON gốc** cho phép đối chiếu trực tiếp mà không tải file về.
+
 ## Bản desktop webapp cho Windows
 
 Trong thư viện, tên Việt được lấy từ metadata iq.com đã đối chiếu đúng phim; tên gốc hiển thị bên dưới. Luồng phụ đề iq.com phục vụ trực tiếp player: `/api/official-subtitle-state` lấy trạng thái, backend gọi iq.com và căn thời gian theo cuối video, rồi `/subtitle.xml?source=iqcom&tvid=...` trả XML cho track **Tiếng Việt iq.com**. Đăng nhập iq.com trong trình duyệt đã cài tiện ích rồi bấm **Kiểm tra iq.com** để đồng bộ phiên khi tập yêu cầu quyền xem. Phụ đề iq.com được giữ trong cache của dịch vụ, không có chức năng tải iq.com thành file trong webapp. Tải lại thư viện không khởi chạy yêu cầu phụ đề cho toàn bộ các tập.
 
 Giải nén toàn bộ gói `IQIYI-VI-Windows-x64.zip` vào thư mục có quyền ghi, rồi mở **IQIYI-VI.exe**. Bản này kèm Python và các thư viện cần thiết; không cần cài Python hay chạy terminal. Cần Windows 10/11 x64 và Edge hoặc Chrome.
 
+Luồng cài đặt này được đóng gói cùng mã nguồn và áp dụng trên máy người dùng:
+
+1. Mở **IQIYI-VI.exe → Cài đặt → Tích hợp iQIYI → Cài đặt một lần**.
+2. Cho phép quyền Administrator nếu Windows yêu cầu. Cấu hình vẫn được lưu cho tài khoản người bấm Cài đặt, kể cả khi nhập thông tin của một tài khoản quản trị khác.
+3. Những lần sau mở iQIYI bằng biểu tượng gốc. Watcher tự khởi động khi đăng nhập Windows và chỉ bật dịch vụ quản lý khi iQIYI được mở; bấm biểu tượng iQIYI ở góc dưới bên phải để mở cửa sổ quản lý.
+
+Đường dẫn Python, watcher và thư mục app được xác định từ vị trí giải nén hiện tại. Gói phát hành không chứa Registry, đường dẫn cài đặt hay trạng thái đã cài của máy phát triển. **Gỡ tích hợp** phục hồi cấu hình của đúng tài khoản đã cài; không ghi đè những giá trị người dùng đã sửa sau đó.
+
 Phụ đề, cài đặt, token và bản sao lưu được lưu cạnh file `.exe`. Gói tải về không chứa thư viện phim hay phiên đăng nhập của người tạo bản build. Không đặt app trong `Program Files` hoặc chạy trực tiếp từ trong file ZIP.
 
 Đóng cửa sổ vẫn giữ dịch vụ phụ đề chạy để phục vụ player. Các lệnh tùy chọn:
 
 ```powershell
-.\IQIYI-VI.exe iqiyi    # Mở iQIYI cùng webapp
-.\IQIYI-VI.exe youku    # Mở Youku cùng webapp
+.\IQIYI-VI.exe iqiyi    # Mở iQIYI cùng dịch vụ nền
 .\IQIYI-VI.exe restore  # Khôi phục giao diện gốc
 .\IQIYI-VI.exe stop     # Dừng dịch vụ
 ```
@@ -68,9 +82,11 @@ python build-desktop.py
 
 Kết quả nằm trong `dist/IQIYI-VI-Windows-x64/` và file ZIP cạnh thư mục này. Script từ chối ghi đè thư mục đã có để bảo vệ dữ liệu; dùng `--output` để chọn tên khác. Chạy `IQIYI-VI.exe --check` để kiểm tra gói mà không mở player hoặc thư viện.
 
+Kiểm tra riêng luồng cài đặt dùng chung bằng `python tests/check_portable_install.py`. Kiểm tra này lấy đúng danh sách file của bản build, chạy từ một thư mục sạch có tên Unicode và khoảng trắng, mô phỏng việc đổi tài khoản khi nâng quyền, rồi kiểm tra cài lại và gỡ cài đặt. Không sửa Registry hay khởi động dịch vụ thật.
+
 ## Cài đặt từ mã nguồn
 
-Yêu cầu Windows 10/11, Python 3.10 trở lên, iQIYI desktop hoặc Youku.
+Yêu cầu Windows 10/11, Python 3.10 trở lên, iQIYI desktop.
 
 ```powershell
 python -m venv .venv
@@ -78,24 +94,45 @@ python -m venv .venv
 .\.venv\Scripts\python.exe launcher.py iqiyi
 ```
 
-Mở iQIYI qua launcher để bộ Việt hóa được gắn trước khi trang bắt đầu chạy. Ô tìm kiếm hỗ trợ tên phim Việt có dấu hoặc không dấu. Bộ Việt hóa đối chiếu tên đã biết và danh mục iq.com; chỉ đổi sang tên gốc khi khớp duy nhất một phim. Nhập một phần tên hoặc tên gõ sai nhẹ rồi bấm Tìm/Enter để xem tối đa 5 gợi ý.
+Lần đầu sau khi giải nén gói Windows, mở **IQIYI-VI.exe** trực tiếp để vào quản lý; bước này chưa cần tích hợp hay biểu tượng trong iQIYI. Bấm **Cài đặt một lần** trên màn hình đầu, hoặc vào **Cài đặt → Tích hợp iQIYI**. Chạy từ mã nguồn thì dùng `python desktop.py` sau khi cài requirements.
+
+Windows có thể hỏi quyền Administrator ở lần cài tích hợp này. Sau đó mở iQIYI bằng biểu tượng gốc như bình thường; dịch vụ quản lý phụ đề tự chạy nền, không phải cài lại hay mở launcher. Watcher được đăng ký tự khởi động khi đăng nhập Windows. **Gỡ tích hợp** khôi phục giao diện và cấu hình kết nối đã thay đổi. Giữ thư mục app quản lý ở nguyên vị trí đã cài. Cửa sổ quản lý dùng WebView2 Runtime (có sẵn cùng iQIYI/Windows); đóng cửa sổ vẫn giữ dịch vụ nền.
+
+Ô tìm kiếm hỗ trợ tên phim Việt có dấu hoặc không dấu. Bộ Việt hóa đối chiếu tên đã biết và danh mục iq.com; chỉ đổi sang tên gốc khi khớp duy nhất một phim. Nhập từ 3 ký tự để xem tối đa 5 gợi ý từ iq.com ngay dưới ô tìm kiếm, không cần bấm Tìm; hỗ trợ tên Việt có/không dấu và lỗi gõ nhẹ. Gợi ý cập nhật sau khi ngừng gõ khoảng 300 ms, giữ con trỏ trong ô nhập. Dùng phím mũi tên hoặc bấm vào gợi ý để tìm đúng tên gốc; Escape đóng danh sách.
 
 Thay `iqiyi` bằng:
 
-- `youku`: mở Youku.
-- `open-manager`: chỉ mở app quản lý phụ đề.
+- `open-manager`: mở app quản lý phụ đề; nếu cửa sổ đã mở thì đưa cửa sổ đó lên trước. Nút quản lý trong iQIYI cũng dùng cùng cách này.
 - `restore`: khôi phục giao diện iQIYI gốc.
 
-Trong app quản lý, vào **Thông báo** và chọn **Chấp nhận** để thêm phim mới vào thư viện. Chọn tập để tải hoặc xem phụ đề gốc đã lưu.
+Trong app quản lý, vào **Thông báo** và chọn **Chấp nhận** để thêm phim mới vào thư viện. Chọn tập để tải hoặc xem phụ đề gốc đã lưu. Nếu menu native còn nhãn cũ, chọn **Cài đặt → Tích hợp iQIYI → Cập nhật Việt hóa**, rồi đóng và mở lại iQIYI.
+
+Nút **Kiểm tra iq.com** trong cửa sổ desktop mở phần Kết nối trong trình duyệt để tiện ích chọn đúng phiên iq.com của trình duyệt đó. Sau khi kết nối, cửa sổ desktop nhận trạng thái và dùng lại phiên đã chọn.
 
 ## Tiện ích Chrome / Edge
 
+Bản 1.2.63 mở rộng menu **Tải lên**, Việt hóa nhãn và ảnh ưu đãi trong **Ví tiền**, đồng thời sửa giới hạn độ rộng cũ khiến thẻ ưu đãi co hẹp và chữ xếp dọc. Tải lại tiện ích rồi tải lại trang iQIYI để nhận thay đổi.
+
 `ext/content.js` và `ext/sub-hook.js` là nguồn JavaScript dùng chung cho tiện ích và desktop. Sửa trực tiếp hai file này; installer/watcher tạo các bản script cần thiết trong thư mục iQIYI, còn bản build đóng gói nguồn từ `ext/`.
+
+Các trang HTML có trong `localwebapp.files.json` được giữ nguyên chữ ký của iQIYI, gồm cả các trang HarmonyOS. Watcher khôi phục bản gốc cùng phiên bản nếu bản Việt hóa cũ đã sửa các trang này, tránh lỗi chữ ký khiến app tự mở bộ cài cập nhật. Việt hóa trên các trang đó được gắn khi chạy.
+
+Tên phim và nghệ sĩ được ưu tiên tra bản Việt từ iq.com, kể cả các thẻ chỉ có tên mà không có mã phim. Khi không tìm được hoặc tra cứu lỗi, giao diện vẫn dùng dịch máy; nếu lần tra sau có tên chính thức, tên đó sẽ thay bản dịch máy. Menu kênh mở rộng tự chia cột và giãn chiều cao để nhãn tiếng Việt không đè lên nhau.
+
+Tên phim/nghệ sĩ chờ kết quả iq.com trước; chỉ dùng dịch máy khi không tìm thấy hoặc yêu cầu tra cứu lỗi/quá hạn 10 giây sau khi bắt đầu gửi. Tên chính thức đã tra được được lưu trong 1 giờ để dùng ngay ở lần mở trang sau. Nội dung trên màn hình được dịch trước nội dung đã cuộn qua; mỗi lượt xử lý tối đa 8 nhãn ngắn. Tiêu đề và mô tả trên card tự xuống dòng, không giới hạn số dòng; hàng card tự giãn chiều cao để tránh cắt chữ và chồng nội dung.
+
+Nếu dịch vụ trả thiếu dòng hoặc còn chữ Trung, nhóm lỗi được tách nhỏ để các mục dịch được vẫn hiển thị. Mục chưa dịch được sẽ thử lại riêng, giãn dần từ 5 giây đến tối đa 5 phút; không làm nghẽn các nội dung khác và không lưu kết quả lỗi vào bộ nhớ dịch.
+
+Thông báo cố định của player được Việt hóa ngay trên máy, gồm xem thử theo chất lượng/gói VIP, quảng cáo, âm thanh, mạng và lỗi phát. Các mẫu ghép có số giây, chất lượng, ngày còn lại hoặc loại hội viên cũng được xử lý trực tiếp.
+
+Tiêu đề tab và trang trong app dùng cùng bộ Việt hóa, tự cập nhật khi chuyển trang hoặc đổi tập. Tiêu đề phim ưu tiên tên Việt chính thức, sau đó dùng dịch máy nếu không tra được.
 
 1. Mở `chrome://extensions` hoặc `edge://extensions`.
 2. Bật **Chế độ dành cho nhà phát triển**.
 3. Chọn **Tải tiện ích đã giải nén** và trỏ tới thư mục `ext/`.
 4. Tải lại trang iQIYI để dùng bộ Việt hóa giao diện và phụ đề Việt chính thức nếu có.
+
+Từ bản 1.2.48, tiện ích tự Việt hóa giao diện, tra tên phim/diễn viên và tìm phim theo tên Việt mà không cần mở app quản lý. Tiện ích gọi trực tiếp dịch vụ dịch nhanh và danh mục công khai iq.com; không cần token của app cho các chức năng này. Phụ đề Việt chính thức, phụ đề AI, lưu phụ đề và đồng bộ thư viện vẫn cần dịch vụ app quản lý chạy.
 
 Để lấy phụ đề Việt chính thức từ iq.com, đăng nhập iq.com trên trình duyệt đã cài tiện ích, rồi bấm **Kiểm tra iq.com** trong app quản lý. Tài khoản cần có quyền xem tập đó; không phải tập nào cũng có track Việt.
 
@@ -106,9 +143,9 @@ Chrome/Edge mới: dùng tiện ích từ bản 1.2.37 trở lên. Các yêu c�
 ## Lưu ý
 
 - Phụ đề chưa tải giữ nguyên trạng thái gốc. Dịch AI chỉ chạy khi bạn nhập file và bấm **Bắt đầu dịch**.
-- Sau khi cập nhật, tải lại tiện ích và trang web; mở lại ứng dụng bằng launcher.
+- Sau khi cập nhật, tải lại tiện ích và trang web; mở lại iQIYI bình thường.
 - Nút **Proxy** trong app quản lý áp dụng cho player iQIYI. Đổi proxy sẽ mở lại iQIYI và có thể ngắt video đang xem; giữ app quản lý chạy khi dùng proxy.
 - Giữ `backup-skin/` và `backup-lwa/` để có thể khôi phục giao diện gốc.
 - Không chia sẻ `.iqiyi-vi-token`, `ext/proxy-token.json` hoặc `.local/` vì có thể chứa token và phiên đăng nhập. Phụ đề được lưu tại `subtitles/library/`.
 
-Dự án dành cho mục đích cá nhân, không liên kết với iQIYI / Youku và không phân phối phụ đề hay tài nguyên thương mại. Sử dụng theo điều khoản của từng nền tảng.
+Dự án dành cho mục đích cá nhân, không liên kết với iQIYI và không phân phối phụ đề hay tài nguyên thương mại. Sử dụng theo điều khoản của từng nền tảng.

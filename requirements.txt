@@ -2,3 +2,5 @@
 # The AI client uses urllib. Playwright reads subtitles with the synced iq.com session in the background.
 playwright>=1.49,<2
 urllib3>=2.6.3,<3
+# Native manager window with WebView2 and custom iQIYI-style window controls.
+pywebview>=6.2.1,<7

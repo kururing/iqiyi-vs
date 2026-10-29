@@ -39,6 +39,10 @@ thriller, etc. Distinguish confirmed clues from tentative classification; say
 Historical dialogue should sound natural, not uniformly ornate; modern dialogue
 should not acquire fashionable slang absent from the source. Preserve differences
 between court speech, family intimacy, peer banter, hostility and narration.
+Make translation_style guide diction and forms of address appropriate to the supported
+era, social setting, status, relationships and degree of intimacy. Apply the register
+consistently across formal, informal and family scenes, without inventing relations
+or making every character equally formal. Natural dialogue must still fit its setting.
 
 [CHARACTERS AND CANONICAL NAMES]
 Extract identifiable characters actually named or unambiguously designated here.
@@ -151,6 +155,14 @@ Use idiomatic Vietnamese word order and spoken rhythm, not Chinese sentence stru
 Follow translation_style while retaining each speaker's formality and attitude.
 Use Hán-Việt terms where the setting needs them without making every sentence archaic;
 avoid modern slang in period scenes unless the source deliberately uses that contrast.
+Choose vocabulary, self-reference, address and kinship terms that fit the established
+era, social setting, status, relationships and intimacy in each exchange. Maintain
+that register in every batch, including informal family scenes and task="shorten".
+For historical scenes, naturalness means fluent period-appropriate Vietnamese;
+do not drift into present-day conversational address or diction merely to sound casual.
+Preserve distinctions between speakers without inventing rank, kinship or gender,
+mechanically replacing words, or making dialogue needlessly ornate. Use modern forms
+in modern settings; preserve deliberate stylistic contrasts only when source-supported.
 Preserve meaningful hesitation, interruptions and ellipses; do not add filler, redundant
 particles or ornamental wording. Translate audible/interjection text and meaningful
 on-screen text present in cues; do not drop a cue because it is not ordinary dialogue.
@@ -172,7 +184,8 @@ Every item has exactly id, time and text. Copy integer id and the entire time st
 unchanged. Only text may change. Do not output context, memory, confidence or notes.
 Use valid JSON escaping for quotes and line breaks (\\n inside a string); no literal
 unescaped newlines inside JSON strings, markdown fences, wrapper object or commentary.
-Silently check every cue for faithful meaning, consistent names/pronouns, line length,
+Silently check every cue for faithful meaning, consistent names/pronouns, setting-appropriate
+diction and family/social address (including after shortening), line length,
 matching IDs/times and valid JSON before returning the array.
 
 [FORMAT EXAMPLE]
@@ -463,7 +476,7 @@ class TranslationJobs:
                 return None
             state = self.status(reference["id"])
             return {key: state.get(key) for key in ("id", "stage", "message", "step", "resumable",
-                                                    "saved_batches", "total_batches", "retry_at")}
+                                                    "saved_batches", "total_batches", "retry_at", "memory_available")}
         except (OSError, ValueError, KeyError, TypeError):
             return None
 

@@ -13,11 +13,15 @@ import threading
 import time
 import urllib.error
 import urllib.request
-import webbrowser
+
+from iqiyi_common import atomic_write, installation_lock
+from windows_runtime import focus_app_window
 
 ROOT = Path(__file__).resolve().parent
 URL = "http://127.0.0.1:18766/"
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+MANAGER_TITLES = ("iQIYI – Quản lý phụ đề", "Quản lý phụ đề")
+WINDOW_LOCK = threading.Lock()
 
 
 def health():
@@ -60,35 +64,59 @@ def ensure_manager() -> bool:
 
 
 def open_window():
-    candidates = [Path(os.environ[name]) / suffix
-                  for name in ("ProgramFiles(x86)", "ProgramFiles", "LOCALAPPDATA")
-                  if os.environ.get(name)
-                  for suffix in ("Microsoft/Edge/Application/msedge.exe", "Google/Chrome/Application/chrome.exe")]
-    browser = next((path for path in candidates if path.is_file()), None)
-    if browser:
-        subprocess.Popen([
-            str(browser), "--app=" + URL, "--window-size=1280,850", "--no-first-run",
-            "--no-default-browser-check",
-        ], cwd=ROOT)
-    elif not webbrowser.open(URL):
-        raise RuntimeError("Không tìm thấy trình duyệt. Cài Microsoft Edge hoặc mở " + URL)
+    local = ROOT / ".local"
+    local.mkdir(exist_ok=True)
+    # Serialize API threads and separate launcher processes, including the time
+    # between starting the browser and its first visible window.
+    with WINDOW_LOCK, installation_lock(local, "manager-window.lock"):
+        pending = local / "manager-window-pending"
+        if focus_app_window(MANAGER_TITLES, ROOT / "manager_window.py"):
+            pending.unlink(missing_ok=True)
+            return
+        try:
+            age = time.time() - float(pending.read_text(encoding="ascii"))
+            if 0 <= age < 15:
+                return
+        except (FileNotFoundError, ValueError):
+            pass
+        process = _launch_window()
+        atomic_write(pending, str(time.time()))
+        for _ in range(50):
+            time.sleep(0.1)
+            if focus_app_window(MANAGER_TITLES, ROOT / "manager_window.py"):
+                pending.unlink(missing_ok=True)
+                return
+            if process is not None and process.poll() is not None:
+                pending.unlink(missing_ok=True)
+                raise RuntimeError("Không mở được cửa sổ quản lý. Xem .local/manager-window.log; cài đủ requirements.txt và WebView2 Runtime.")
+
+
+def _launch_window():
+    from iqiyi_common import python_executable
+    with (ROOT / ".local" / "manager-window.log").open("a", encoding="utf-8") as log:
+        return subprocess.Popen(
+            [str(python_executable(ROOT, background=True)), str(ROOT / "manager_window.py")],
+            cwd=ROOT, stdout=log, stderr=log, creationflags=NO_WINDOW,
+        )
 
 
 def check_bundle():
     """A read-only smoke check on an ephemeral port; never opens the user's library."""
-    import ssl
-    import sqlite3
     import urllib3
-    import playwright.sync_api
     import subtitle_app as app
+    import app_integration
+    import manager_window
     from iqiyi_common import python_executable
 
     assert all((ROOT / "ext" / name).is_file() for name in ("content.js", "sub-hook.js")), "Missing player scripts"
     assert (ROOT / "apply-vi.py").is_file() and (ROOT / "watch-players.py").is_file()
+    assert Path(app_integration.__file__).resolve().parent == ROOT.resolve(), "Missing packaged integration module"
+    assert Path(manager_window.__file__).resolve().parent == ROOT.resolve(), "Missing packaged manager window"
+    assert all((ROOT / "assets" / name).is_file() for name in ("iqiyi-logo.svg", "iqiyi.ico")), "Missing app branding"
     # These are real child interpreters, including the one used by elevated apply/restore.
     for background in (False, True):
         subprocess.run([str(python_executable(ROOT, background)), "-c",
-                        "import ssl, ctypes, sqlite3, urllib3, playwright.sync_api, subtitle_app"],
+                        "import ssl, ctypes, sqlite3, urllib3, playwright.sync_api, subtitle_app, webview, manager_window"],
                        check=True, cwd=ROOT, creationflags=NO_WINDOW, timeout=30)
     server = app.SubtitleHTTPServer(("127.0.0.1", 0), app.Handler)
     server.api_token = "package-smoke-check"
@@ -110,8 +138,8 @@ def check_bundle():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="iQIYI / Youku Việt hóa — desktop webapp")
-    parser.add_argument("action", nargs="?", default="open", choices=("open", "iqiyi", "youku", "restore", "stop"))
+    parser = argparse.ArgumentParser(description="iQIYI Việt hóa — desktop webapp")
+    parser.add_argument("action", nargs="?", default="open", choices=("open", "iqiyi", "restore", "stop"))
     parser.add_argument("--check", action="store_true", help="Kiểm tra gói app mà không mở player hay thư viện")
     args = parser.parse_args()
     if args.check:
@@ -129,10 +157,11 @@ def main():
         launcher.stop_processes(processes)
         return 0
     ensure_manager()
-    if args.action in ("iqiyi", "youku"):
-        result = getattr(launcher, "launch_" + args.action)(open_ui=False)
+    if args.action == "iqiyi":
+        result = launcher.launch_iqiyi(open_ui=False)
         if result:
             raise RuntimeError("Không mở được player. Xem .local/desktop.log trong thư mục app.")
+        return 0  # The manager window opens on demand from iQIYI's tool cluster.
     elif args.action == "restore":
         if launcher.run_apply(restore=True):
             raise RuntimeError("Không khôi phục được giao diện. Xem .local/desktop.log.")

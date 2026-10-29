@@ -11,7 +11,7 @@ window.addEventListener("message", event => {
     runtime.sendMessage({type: "iqcom-session-check"}, result => {
       reply(runtime.lastError || !result ? unavailable : result);
     });
-  } catch (_) {
+  } catch {
     // Reloading the extension invalidates content scripts in already open pages.
     reply(unavailable);
   }

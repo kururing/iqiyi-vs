@@ -5,6 +5,7 @@ import ctypes
 import os
 import subprocess
 from ctypes import wintypes
+from pathlib import Path
 from typing import NamedTuple
 
 
@@ -13,6 +14,75 @@ class Process(NamedTuple):
     name: str
     path: str
     command_line: str
+
+
+def focus_app_window(titles: tuple[str, ...], script: Path | None = None) -> bool:
+    """Restore the manager host or its legacy browser window without reloading."""
+    if os.name != "nt":
+        return False
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    user32.EnumWindows.argtypes = [callback_type, wintypes.LPARAM]
+    user32.IsWindowVisible.argtypes = [wintypes.HWND]
+    user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
+    user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+    user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+    user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+    user32.GetForegroundWindow.restype = wintypes.HWND
+    user32.IsIconic.argtypes = [wintypes.HWND]
+    user32.ShowWindowAsync.argtypes = [wintypes.HWND, ctypes.c_int]
+    user32.BringWindowToTop.argtypes = [wintypes.HWND]
+    user32.SetForegroundWindow.argtypes = [wintypes.HWND]
+    user32.AttachThreadInput.argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.BOOL]
+    user32.PeekMessageW.argtypes = [ctypes.POINTER(wintypes.MSG), wintypes.HWND,
+                                   wintypes.UINT, wintypes.UINT, wintypes.UINT]
+    kernel32.GetCurrentThreadId.restype = wintypes.DWORD
+    owner_pids = set()
+    for process in list_processes(include_command_line=script is not None):
+        if process.name.lower() in {"msedge.exe", "chrome.exe", "firefox.exe"}:
+            owner_pids.add(process.pid)
+        elif script is not None and process.name.lower() in {"python.exe", "pythonw.exe"}:
+            args = command_line_args(process.command_line)
+            if len(args) > 1 and Path(args[1]).resolve() == script.resolve():
+                owner_pids.add(process.pid)
+    found = []
+
+    @callback_type
+    def visit(hwnd, _):
+        if not user32.IsWindowVisible(hwnd):
+            return True
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value not in owner_pids:
+            return True
+        title = ctypes.create_unicode_buffer(user32.GetWindowTextLengthW(hwnd) + 1)
+        user32.GetWindowTextW(hwnd, title, len(title))
+        if any(title.value == name or title.value.startswith(name + " - ") for name in titles):
+            found.append(hwnd)
+            return False
+        return True
+
+    user32.EnumWindows(visit, 0)
+    if not found:
+        return False
+    hwnd = found[0]
+    user32.ShowWindowAsync(hwnd, 9 if user32.IsIconic(hwnd) else 5)  # SW_RESTORE / SW_SHOW
+    # The HTTP request runs on a background thread. Share the foreground input
+    # queue briefly so a click in iQIYI can activate the manager window.
+    user32.PeekMessageW(ctypes.byref(wintypes.MSG()), None, 0, 0, 0)
+    current = kernel32.GetCurrentThreadId()
+    foreground = user32.GetWindowThreadProcessId(user32.GetForegroundWindow(), None)
+    attached = foreground != current and user32.AttachThreadInput(current, foreground, True)
+    try:
+        user32.BringWindowToTop(hwnd)
+        user32.SetForegroundWindow(hwnd)
+    finally:
+        if attached:
+            user32.AttachThreadInput(current, foreground, False)
+    # Finding the window is sufficient: a foreground restriction must never
+    # cause a second copy to be opened.
+    return True
 
 
 def command_line_args(command: str) -> list[str]:
@@ -128,7 +198,7 @@ def _remote_command_line(kernel32, ntdll, handle) -> str:
     return raw.decode("utf-16-le", errors="replace") if raw else ""
 
 
-def list_processes(include_command_line: bool = True) -> list[Process]:
+def list_processes(include_command_line: bool = True, *, command_names: set[str] | None = None) -> list[Process]:
     """Return accessible process paths and command lines using Toolhelp/NT APIs."""
     if os.name != "nt":
         return []
@@ -163,7 +233,7 @@ def list_processes(include_command_line: bool = True) -> list[Process]:
         entry.dwSize = ctypes.sizeof(entry)
         ok = kernel32.Process32FirstW(snapshot, ctypes.byref(entry))
         while ok:
-            needs_command = include_command_line and entry.szExeFile.lower() in {"python.exe", "pythonw.exe"}
+            needs_command = include_command_line and entry.szExeFile.lower() in (command_names or {"python.exe", "pythonw.exe"})
             handle = kernel32.OpenProcess(0x0410 if needs_command else 0x1000,
                                           False, entry.th32ProcessID)
             if not handle and needs_command:
@@ -182,6 +252,25 @@ def list_processes(include_command_line: bool = True) -> list[Process]:
     finally:
         kernel32.CloseHandle(snapshot)
     return processes
+
+
+def stop_background_browsers(profile: Path) -> None:
+    """Stop only headless Edge/Chrome using this manager's exact private profile."""
+    for process in list_processes(command_names={"msedge.exe", "chrome.exe"}):
+        if process.name.lower() not in {"msedge.exe", "chrome.exe"}:
+            continue
+        args = command_line_args(process.command_line)
+        if "--remote-debugging-pipe" not in args or any(arg.startswith("--type=") for arg in args):
+            continue
+        if not any(arg == "--headless" or arg.startswith("--headless=") for arg in args):
+            continue
+        for index, arg in enumerate(args):
+            value = (arg.split("=", 1)[1] if arg.startswith("--user-data-dir=") else
+                     args[index + 1] if arg == "--user-data-dir" and index + 1 < len(args) else "")
+            if value and Path(value).is_absolute() and Path(value).resolve() == profile.resolve():
+                if not terminate_process(process.pid):
+                    raise RuntimeError("Không đóng được trình duyệt nền của app quản lý.")
+                break
 
 
 def terminate_process(pid: int, timeout: float = 10) -> bool:

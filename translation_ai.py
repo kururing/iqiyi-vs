@@ -13,6 +13,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlencode, urlsplit
 from email.utils import parsedate_to_datetime
+from iqcom_requests import read_response
 
 PRESETS = [
     {"id": "openai", "name": "OpenAI", "base_url": "https://api.openai.com/v1", "protocol": "openai"},
@@ -120,7 +121,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def provider_headers(config: dict) -> dict:
-    headers = {"Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json", "User-Agent": "IQIYI-VI/1.0"}
     if config["protocol"] == "anthropic":
         headers.update({"x-api-key": config["api_key"], "anthropic-version": "2023-06-01"})
         if config["workspace_id"]:
@@ -144,10 +145,10 @@ def list_models(value: object) -> list[dict]:
         url = config["base_url"] + "/models" + ("?" + urlencode(query) if query else "")
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            raise ProviderError("Quét model quá thời gian chờ. Hãy thử lại hoặc nhập model thủ công.")
+            raise ProviderError("Quét model quá thời gian chờ. Hãy thử lại.")
         try:
             with opener.open(urllib.request.Request(url, headers=headers), timeout=min(15, remaining)) as response:
-                raw = response.read(2_000_001)
+                raw = read_response(response, 2_000_000)
             if len(raw) > 2_000_000:
                 raise ValueError
             data = json.loads(raw)
@@ -171,13 +172,13 @@ def list_models(value: object) -> list[dict]:
         except urllib.error.HTTPError as exc:
             code = exc.code
             exc.close()
-            hint = "Provider không hỗ trợ danh sách model tại URL này; có thể nhập model thủ công." if code in (404, 405) else "Kiểm tra API key, Base URL, workspace và hạn mức rồi quét lại."
+            hint = "Provider không hỗ trợ danh sách model tại URL này. Kiểm tra Base URL và quét lại." if code in (404, 405) else "Kiểm tra API key, Base URL, workspace và hạn mức rồi quét lại."
             raise ProviderError(f"Quét model thất bại (HTTP {code}). {hint}") from None
         except OSError:
             raise ProviderError("Không kết nối được provider hoặc hết thời gian chờ. Kiểm tra Base URL và thử lại.") from None
         except (ValueError, TypeError, AttributeError, KeyError):
-            raise ProviderError("Provider trả danh sách model không hợp lệ. Kiểm tra Base URL hoặc nhập model thủ công.") from None
-    raise ProviderError("Danh sách model có quá nhiều trang. Hãy nhập model thủ công.")
+            raise ProviderError("Provider trả danh sách model không hợp lệ. Kiểm tra Base URL và quét lại.") from None
+    raise ProviderError("Danh sách model có quá nhiều trang. Hãy kiểm tra Base URL của provider.")
 
 
 def read_api_response(request, cancel):
@@ -198,8 +199,8 @@ def read_api_response(request, cancel):
             connection.request("POST", url.path or "/", body=request.data,
                                headers={name.title(): value for name, value in request.header_items()})
             with connection.getresponse() as response:
-                limit = 16000 if response.status == 429 else 2_000_001
-                raw = response.read(limit) if response.status < 300 or response.status == 429 else b""
+                raw = (read_response(response, 2_000_000) if response.status < 300 else
+                       response.read(16000) if response.status == 429 else b"")
                 if response.status >= 300:
                     raise urllib.error.HTTPError(request.full_url, response.status, response.reason,
                                                  response.headers, io.BytesIO(raw))
@@ -299,5 +300,7 @@ def request_json(config: dict, system: str, payload: dict, cancel) -> object:
             raise ValueError("Phản hồi không đúng định dạng API đã chọn.") from None
         except json.JSONDecodeError:
             raise ValueError("Model trả JSON không hợp lệ.") from None
+        except UnicodeError:
+            raise ValueError("API trả dữ liệu UTF-8 bị thiếu hoặc không hợp lệ; hãy thử lại.") from None
         if cancel.wait(delay):
             raise Cancelled("Đã hủy dịch.")

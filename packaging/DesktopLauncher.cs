@@ -11,9 +11,9 @@ internal static class DesktopLauncher
         try
         {
             var root = AppDomain.CurrentDomain.BaseDirectory;
-            var allowed = new[] { "open", "iqiyi", "youku", "restore", "stop", "--check" };
+            var allowed = new[] { "open", "iqiyi", "restore", "stop", "--check" };
             if (args.Length > 1 || (args.Length == 1 && Array.IndexOf(allowed, args[0]) < 0))
-                throw new ArgumentException("Thao tác hợp lệ: open, iqiyi, youku, restore, stop, --check.");
+                throw new ArgumentException("Thao tác hợp lệ: open, iqiyi, restore, stop, --check.");
             var python = Path.Combine(root, "runtime", "pythonw.exe");
             var script = Path.Combine(root, "desktop.py");
             if (!File.Exists(python) || !File.Exists(script))

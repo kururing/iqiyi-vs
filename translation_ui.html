@@ -1,40 +1,50 @@
 <style>
 #translationPanel,#translationSettings{width:min(880px,calc(100vw - 28px))}
 #translationSettings input,#translationSettings select{min-height:44px;min-width:0;max-width:100%}
-#translationSettings fieldset{min-width:0;margin:10px 0;padding:14px;border:1px solid var(--line);border-radius:10px}
+#translationSettings fieldset{min-width:0;margin:10px 0;padding:0;border:0}
 #translationSettings legend{padding:0 6px;font-weight:650}
 #translationSettings button{min-height:44px;white-space:normal}
 #translationSettings [hidden]{display:none!important}
 .translationModels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .modelScanActions{display:flex;flex-wrap:wrap;gap:8px}.modelScanStatus{min-height:20px;overflow-wrap:anywhere}
-.providerToolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.providerToolbar select{flex:1;min-width:150px!important;border:1px solid #465162;border-radius:7px;padding:8px 10px;background:#11151b;color:var(--text)}.providerToolbar input{flex:1;min-width:160px!important;width:auto}
-#translationProviderManager{margin:16px 0;border-top:1px solid var(--line);padding-top:12px}#translationProviderManager>summary{cursor:pointer;min-height:44px;font-weight:650;padding:8px 0}
-#providerEditor{border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:12px}.providerFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.providerFields .settingsField{min-width:0}
+.providerToolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.providerToolbar select{flex:1;min-width:150px!important}.providerToolbar input{flex:1;min-width:160px!important;width:auto}
+#translationProviderManager{margin:20px 0;border-top:1px solid var(--line);padding-top:12px}#translationProviderManager>summary{cursor:pointer;min-height:44px;font-weight:600;padding:8px 0}
+#providerEditor{border-top:1px solid var(--line);padding-top:16px;margin-top:16px}.providerFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.providerFields .settingsField{min-width:0;align-content:start}
 @media(max-width:760px){.providerFields{grid-template-columns:1fr}}
-#translationPanel fieldset{min-width:0;margin:10px 0;padding:14px;border:1px solid var(--line);border-radius:10px}
-#translationPanel legend{padding:0 6px;font-weight:650}
-#translationPanel .settingsField{margin:10px 0}
-#translationPanel input,#translationPanel select{min-height:44px;min-width:0;max-width:100%}
 #translationPanel button{min-height:44px;white-space:normal}
-.translationSteps{display:flex;gap:10px;flex-wrap:wrap;padding:0;list-style:none;counter-reset:steps}
-.translationSteps li{counter-increment:steps;padding:7px 10px;border-radius:6px;color:var(--muted);border:1px solid var(--line)}
+.translationSteps{display:flex;gap:12px;flex-wrap:wrap;padding:0;list-style:none;counter-reset:steps;font-size:13px}
+.translationSteps li{counter-increment:steps;padding:4px 0;color:var(--muted)}
 .translationSteps li:before{content:counter(steps) '. ';font-weight:700}
-.translationSteps li[aria-current=step]{color:var(--text);border-color:var(--focus);background:var(--panel2)}
+.translationSteps li[aria-current=step]{color:var(--text);font-weight:600}
+.translationDisclosure{margin:16px 0;border-top:1px solid var(--line);padding-top:12px}.translationDisclosure>summary{min-height:36px;color:var(--muted);padding:6px 0}
 #translationStatus{white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0}
 #translationStatus.error{color:#ffb7bd}
 #translationProgress{width:100%;height:12px;accent-color:var(--blue)}
 .translationActions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
-.legendDot.sourceReady{background:#5294d1}
 #translationPreview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;background:var(--bg);padding:14px;border-radius:8px;font:14px/1.6 system-ui,sans-serif}
 #translationPanel [hidden]{display:none!important}
+#translationMemory{width:min(880px,calc(100vw - 28px));font-size:16px;line-height:1.6}
+#translationMemory button,#translationMemory select{min-height:44px}
+#translationMemory .settingsHead{position:sticky;top:-24px;z-index:1;background:var(--panel);padding:12px 0;border-bottom:1px solid var(--line)}
+#translationMemory [hidden]{display:none!important}
+#translationMemory h3{font-size:18px;margin:22px 0 10px}
+#translationMemory p{margin:6px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+#translationMemory .settingsHint{font-size:14px}
+.memoryCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.memoryCard{min-width:0;border-bottom:1px solid var(--line);padding:12px 0;overflow-wrap:anywhere}
+.memoryPair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:10px}
+.memoryPair span{display:block;color:var(--muted);font-size:14px}
+#translationMemoryRaw{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);padding:14px;border-radius:8px;font:13px/1.6 monospace}
+#translationMemory details{margin-top:24px}#translationMemory summary{cursor:pointer;padding:8px 0}
+@media(max-width:640px){.memoryCards{grid-template-columns:1fr}#translationMemory{padding:14px}#translationMemory .settingsHead{top:-14px}}
 @media(max-width:760px){.translationModels{grid-template-columns:1fr}#translationPanel{padding:12px}.translationSteps{gap:6px}.translationSteps li{font-size:13px}.translationActions button{flex:1 1 150px}}
 </style>
 <dialog id="translationSettings" aria-labelledby="translationSettingsTitle">
  <div class="settingsHead"><h2 id="translationSettingsTitle">Cài đặt dịch</h2><button type="button" class="secondary" onclick="document.getElementById('translationSettings').close()">Đóng</button></div>
- <p class="settingsHint">Chọn provider và model đã lưu cho từng bước. Danh sách provider, model và API key được lưu trong trình duyệt này.</p>
+ <p class="settingsHint">Chọn model cho hai bước. Cấu hình được lưu trong trình duyệt này.</p>
  <form id="translationSettingsForm"><div id="translationModels" class="translationModels"></div></form>
  <details id="translationProviderManager"><summary id="providerManagerTitle">Quản lý provider</summary>
- <p class="settingsHint">Lưu nhiều tài khoản, kể cả cùng một hãng. Quét danh sách model một lần hoặc thêm model ID thủ công.</p>
+ <p class="settingsHint">Thêm tài khoản và quét model để dùng lại.</p>
  <div class="providerToolbar"><select id="savedProviderEditor" aria-label="Provider cần chỉnh sửa"></select><button id="providerEdit" type="button" class="secondary">Sửa provider</button><button id="providerNew" type="button" class="secondary">Thêm provider</button></div>
  <form id="providerEditor" hidden>
  <div class="providerFields">
@@ -47,28 +57,54 @@
  <div class="modelScanActions"><button id="providerScanModels" type="button" class="secondary">Quét model</button></div>
  <p id="providerScanStatus" class="settingsHint modelScanStatus" role="status" aria-live="polite"></p>
  <div class="settingsField"><label for="providerModelCatalog">Model của provider</label><select id="providerModelCatalog" aria-describedby="providerScanStatus"></select></div>
- <div class="settingsField"><label for="providerManualModel">Thêm model ID thủ công</label><div class="providerToolbar"><input id="providerManualModel" maxlength="200" placeholder="Nhập model ID" spellcheck="false"><button id="providerAddModel" type="button" class="secondary">Thêm model</button></div></div>
  <p id="providerEditorStatus" class="settingsHint" role="status" aria-live="polite"></p>
- <div class="settingsActions"><button id="providerDelete" type="button" class="danger" hidden>Xóa provider</button><button id="providerEditorCancel" type="button" class="secondary">Hủy sửa</button><button type="submit">Lưu provider</button></div>
+ <div class="settingsActions"><button id="providerDelete" type="button" class="danger" hidden>Xóa provider</button><button id="providerEditorCancel" type="button" class="secondary">Hủy thêm</button><button type="submit">Lưu provider</button></div>
  </form></details>
  <p id="translationSettingsStatus" class="settingsHint" role="status" aria-live="polite"></p>
- <div class="settingsActions"><button type="button" class="secondary" onclick="document.getElementById('translationSettings').close()">Đóng</button><button id="translationSaveSettings" type="submit" form="translationSettingsForm" disabled>Lưu lựa chọn</button></div>
+ <div class="settingsActions"><button id="translationSaveSettings" type="submit" form="translationSettingsForm" disabled>Lưu lựa chọn</button></div>
 </dialog>
 <dialog id="translationPanel" aria-labelledby="translationTitle">
  <div class="settingsHead"><h2 id="translationTitle">Tiến độ dịch</h2><button type="button" class="secondary" onclick="document.getElementById('translationPanel').close()">Đóng</button></div>
- <ol class="translationSteps" aria-label="Quy trình dịch"><li>Đọc SRT</li><li>Ngữ cảnh</li><li>Dịch thuật</li><li>Kiểm định</li><li>Xuất SRT</li></ol>
- <form id="translationForm"><fieldset id="translationInputs"><legend>Phụ đề gốc</legend>
-  <div id="translationEpisodeSource" hidden><strong id="translationEpisodeLabel"></strong><p class="settingsHint">Dùng phụ đề gốc đã tải của tập này.</p><button id="translationUseFile" type="button" class="secondary">Chuyển sang file SRT</button></div>
-  <div class="settingsField" id="translationFileRow"><label for="translationFile">Phụ đề gốc (.srt, UTF-8)</label><input id="translationFile" type="file" accept=".srt" required aria-describedby="translationFileHint"><span id="translationFileHint" class="settingsHint">Tối đa 2 triệu ký tự và 10.000 câu. Bản gốc được giữ nguyên.</span></div>
-  <p class="settingsHint">App tự phân cụm, phân tích ngữ cảnh và kiểm định độ dài trước khi xuất phụ đề.</p>
- </fieldset><div class="translationActions"><button id="translationStart" type="submit" disabled>Bắt đầu dịch</button><button id="translationResume" type="button" hidden>Dịch tiếp</button><button id="translationCancel" type="button" class="secondary" hidden>Hủy phiên dịch</button><button id="translationReconnect" type="button" class="secondary" hidden>Kiểm tra lại trạng thái</button></div></form>
+ <p><strong id="translationEpisodeLabel"></strong></p>
+ <form id="translationForm"><div class="translationActions"><button id="translationStart" type="submit" hidden disabled>Bắt đầu dịch</button><button id="translationResume" type="button" hidden>Dịch tiếp</button><button id="translationCancel" type="button" class="secondary" hidden>Hủy dịch</button><button id="translationReconnect" type="button" class="secondary" hidden>Kiểm tra lại</button></div></form>
  <div id="translationStatus" role="status" aria-live="polite" aria-atomic="true">Đang tải danh sách provider…</div>
  <p id="translationSaved" class="settingsHint" hidden></p>
  <progress id="translationProgress" aria-label="Tiến độ dịch batch" hidden></progress>
- <div class="translationActions"><button type="button" data-artifact="translated.srt" hidden>Tải SRT tiếng Việt</button><button type="button" data-artifact="memory.json" class="secondary" hidden>Tải JSON Memory</button><button type="button" data-artifact="qc.json" class="secondary" hidden>Tải báo cáo QC</button></div>
+ <div class="translationActions"><button type="button" data-artifact="translated.srt" hidden>Tải SRT tiếng Việt</button><button id="translationViewMemory" type="button" class="secondary" hidden>Hồ sơ dịch</button></div>
  <details id="translationPreviewBox" hidden><summary>Xem trước 30 câu đầu</summary><pre id="translationPreview" tabindex="0"></pre></details>
+ <details class="translationDisclosure"><summary>Chi tiết & file khác</summary><ol class="translationSteps" aria-label="Quy trình dịch"><li>Đọc SRT</li><li>Ngữ cảnh</li><li>Dịch thuật</li><li>Kiểm định</li><li>Xuất SRT</li></ol><div class="translationActions"><button type="button" data-artifact="memory.json" class="secondary" hidden>Tải JSON Memory</button><button type="button" data-artifact="qc.json" class="secondary" hidden>Tải báo cáo QC</button></div></details>
+</dialog>
+<dialog id="translationMemory" aria-labelledby="translationMemoryTitle">
+ <div class="settingsHead"><h2 id="translationMemoryTitle">Hồ sơ dịch</h2><button type="button" class="secondary" autofocus onclick="document.getElementById('translationMemory').close()">Đóng</button></div>
+ <p id="translationMemoryLabel"></p>
+ <div id="translationMemoryEpisodeRow" class="settingsField" hidden><label for="translationMemoryEpisode">Hồ sơ theo tập</label><select id="translationMemoryEpisode"></select></div>
+ <p class="settingsHint">Ngữ cảnh từ đoạn phụ đề đầu tập, dùng để thống nhất cách dịch.</p>
+ <p id="translationMemoryStatus" role="status" aria-live="polite"></p>
+ <div id="translationMemoryContent"></div>
+ <details id="translationMemoryJson" hidden><summary>Xem JSON gốc</summary><pre id="translationMemoryRaw" tabindex="0"></pre></details>
 </dialog>
 <script>
+function translationMemoryMarkup(memory){
+ if(!memory||typeof memory!=="object"||Array.isArray(memory))throw Error("Hồ sơ đã lưu không hợp lệ.");
+ const text=value=>esc(typeof value==="string"?value:""),card=body=>`<div class="memoryCard">${body}</div>`;
+ const section=(title,body)=>`<section><h3>${title}</h3>${body}</section>`;
+ const cards=(rows,empty)=>rows.length?`<div class="memoryCards">${rows.join("")}</div>`:`<p class="settingsHint">${empty}</p>`;
+ const characters=Array.isArray(memory.characters)?memory.characters:[];
+ const names=new Map(characters.map(row=>[row.name_zh,row.name_vi]));
+ const person=name=>text(names.get(name)||name);
+ const pair=(self,address)=>`<div class="memoryPair"><div><span>Tự xưng</span><strong>${text(self)}</strong></div><div><span>Gọi đối phương</span><strong>${text(address)}</strong></div></div>`;
+ const pronouns=Array.isArray(memory.pronouns)?memory.pronouns.map(row=>card(`<strong>${person(row.speaker)} → ${person(row.listener)}</strong>${pair(row.self,row.address)}<p class="settingsHint">${text(row.evidence)}</p>`)):
+  Object.entries(memory.pronoun_matrix||{}).map(([direction,value])=>{
+   const people=direction.split(" to "),terms=typeof value==="string"?value.split(/\s*\/\s*/):[];
+   return card(`<strong>${people.length===2?person(people[0])+" → "+person(people[1]):text(direction)}</strong>${terms.length===2?pair(terms[0],terms[1]):`<p>${text(value)}</p>`}`);
+  });
+ const glossary=Array.isArray(memory.glossary)?memory.glossary:Object.entries(memory.glossary||{}).map(([source,target])=>({source,target}));
+ return section("Thể loại & bối cảnh",`<p>${text(memory.genre)}</p>`)+(memory.summary?section("Tóm tắt đoạn đã phân tích",`<p>${text(memory.summary)}</p>`):"")+
+  section("Nhân vật",cards(characters.map(row=>card(`<strong>${text(row.name_vi)}</strong><p class="settingsHint">${text(row.name_zh)}</p><p>${text(row.role)}</p>`)),"Chưa có nhân vật được xác định trong hồ sơ này."))+
+  section("Cách xưng hô",`<p class="settingsHint">Người nói → người nghe</p>`+cards(pronouns,"Chưa đủ căn cứ để chốt cách xưng hô."))+
+  section("Thuật ngữ thống nhất",cards(glossary.map(row=>card(`<strong>${text(row.target)}</strong><p>${text(row.source)}</p>${row.note?`<p class="settingsHint">${text(row.note)}</p>`:""}`)),"Chưa có thuật ngữ cần thống nhất."))+
+  section("Phong cách & lưu ý khi dịch",`<p>${text(memory.translation_style||memory.style)}</p>`);
+}
 function translationSettingsV2(value){
  if(value?.version===2&&Array.isArray(value.providers))return value;
  const result={version:2,providers:[],selections:{}};
@@ -90,6 +126,7 @@ function translationModelConfig(settings,role){
 document.addEventListener("DOMContentLoaded",()=>{
  const el=id=>document.getElementById(id),form=el("translationForm"),status=el("translationStatus");
  let presets=[],jobId=null,timer=null,ready=false,running=false,selectedEpisode=null,lastState=null;
+ let viewVersion=0,pollVersion=0;
  const settingsKey="subtitle-translation-settings",roles=["context","translate"];
  let savedSettings=translationSettingsV2(null),editorId=null,editorModels=[],scanController=null;
  try{savedSettings=translationSettingsV2(JSON.parse(localStorage.getItem(settingsKey)))}catch{}
@@ -97,8 +134,39 @@ document.addEventListener("DOMContentLoaded",()=>{
  function message(text,error=false){status.textContent=text;status.classList.toggle("error",error)}
  async function jsonApi(url,options){const r=await apiFetch(url,options);const data=await r.json();if(!r.ok)throw Error(data.error||"Yêu cầu thất bại.");return data}
  function send(url,data){return jsonApi(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})}
- function busy(value){running=value;el("translationInputs").disabled=value;el("translationStart").disabled=value||!ready;el("translationResume").hidden=value||!lastState?.resumable;el("translationResume").disabled=value||!ready;el("translationCancel").hidden=!value;form.setAttribute("aria-busy",String(value))}
- function openPanel(){if(!el("translationPanel").open)el("translationPanel").showModal()}
+ let memoryRequest=null;
+ async function loadMemory(id){
+  memoryRequest?.abort();const controller=new AbortController();memoryRequest=controller;
+  const timeout=setTimeout(()=>controller.abort(Error("Đọc hồ sơ quá thời gian chờ. Hãy đóng và mở lại để thử.")),20000);
+  el("translationMemoryContent").replaceChildren();el("translationMemoryRaw").textContent="";el("translationMemoryJson").hidden=true;el("translationMemoryJson").open=false;
+  el("translationMemory").scrollTop=0;
+  el("translationMemoryStatus").textContent="Đang đọc hồ sơ đã lưu…";el("translationMemoryContent").setAttribute("aria-busy","true");
+  try{
+   const memory=await jsonApi("/api/translation/artifact?id="+encodeURIComponent(id)+"&name=memory.json",{signal:controller.signal});
+   if(memoryRequest!==controller||!el("translationMemory").open)return;
+   el("translationMemoryContent").innerHTML=translationMemoryMarkup(memory);
+   el("translationMemoryRaw").textContent=JSON.stringify(memory,null,2);el("translationMemoryJson").hidden=false;el("translationMemoryStatus").textContent="";
+  }catch(e){if(memoryRequest===controller&&el("translationMemory").open)el("translationMemoryStatus").textContent=controller.signal.reason?.message||e.message||"Chưa đọc được hồ sơ. Hãy đóng và mở lại để thử lại."}
+  finally{clearTimeout(timeout);if(memoryRequest===controller)el("translationMemoryContent").removeAttribute("aria-busy")}
+ }
+ function openMemory(label,entries){
+  el("translationMemoryLabel").textContent=label;
+  const select=el("translationMemoryEpisode");select.replaceChildren(...entries.map(row=>new Option(row.label,row.id)));
+  el("translationMemoryEpisodeRow").hidden=entries.length<2;
+  if(!el("translationMemory").open)el("translationMemory").showModal();
+  loadMemory(entries[0].id);
+ }
+ window.showMovieMemory=id=>{
+  const selected=episodeData.find(row=>row.tvid===id);if(!selected)return;
+  const rows=episodeData.filter(row=>albumKey(row)===albumKey(selected)&&row.translation?.memory_available).sort((a,b)=>(orderOf(a)||9999)-(orderOf(b)||9999));
+  if(!rows.length)return;
+  openMemory(seriesDisplayName(selected)+(rows.length===1?" · "+episodeLabel(rows[0]):""),rows.map(row=>({id:row.translation.id,label:episodeLabel(row)})));
+ };
+ el("translationMemoryEpisode").addEventListener("change",()=>loadMemory(el("translationMemoryEpisode").value));
+ el("translationMemory").addEventListener("close",()=>memoryRequest?.abort());
+ el("translationViewMemory").addEventListener("click",()=>{if(lastState?.memory_available)openMemory(lastState.episode_label||lastState.filename||"Hồ sơ dịch",[{id:lastState.id,label:"Hồ sơ hiện tại"}])});
+ function busy(value){running=value;el("translationStart").hidden=value||!!lastState||!selectedEpisode;el("translationStart").disabled=value||!ready;el("translationResume").hidden=value||!lastState?.resumable;el("translationResume").disabled=value||!ready;el("translationCancel").hidden=!value;el("translationCancel").disabled=!jobId;form.setAttribute("aria-busy",String(value))}
+ function openPanel(){if(!el("translationPanel").open)el("translationPanel").showModal();el("translationPanel").scrollTop=0}
  window.openTranslationSettings=()=>{
   if(!ready)return;
   renderProviderChoices(savedSettings.selections);closeProviderEditor();
@@ -108,31 +176,39 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(!el("translationSettings").open)el("translationSettings").showModal();
  };
  function settingsReady(){if(model("context")&&model("translate"))return true;openTranslationSettings();return false}
- function selectEpisode(value){selectedEpisode=value;el("translationEpisodeSource").hidden=!value;el("translationFileRow").hidden=!!value;el("translationFile").required=!value;el("translationFile").disabled=!!value;el("translationEpisodeLabel").textContent=value?.label||""}
- el("translationUseFile").addEventListener("click",()=>selectEpisode(null));
+ function selectEpisode(value){selectedEpisode=value;el("translationEpisodeLabel").textContent=value?.label||""}
+ function resetTranslationView(episode){
+  ++viewVersion;++pollVersion;clearTimeout(timer);jobId=null;lastState=null;selectEpisode(episode);busy(false);
+  el("translationTitle").textContent="Tiến độ dịch";
+  for(const id of ["translationSaved","translationProgress","translationPreviewBox","translationViewMemory","translationReconnect"])el(id).hidden=true;
+  el("translationPreview").textContent="";document.querySelectorAll("[data-artifact]").forEach(b=>b.hidden=true);
+  document.querySelectorAll(".translationSteps li").forEach(li=>li.removeAttribute("aria-current"));
+  return viewVersion;
+ }
  window.translateEpisode=async id=>{
-  openPanel();if(!ready){message("Đang tải cấu hình model, hãy thử lại sau.");return}
-  if(running){message("Đang có phiên dịch. Hãy chờ hoàn tất hoặc hủy phiên đang chạy.");return}
-  const row=episodeData.find(x=>x.tvid===id);if(!row?.downloaded){message("Tập chưa có phụ đề gốc.",true);return}
-  selectEpisode({id,label:seriesDisplayName(row)+" · "+episodeLabel(row)});
+  const row=episodeData.find(x=>x.tvid===id);
+  resetTranslationView(row?{id,label:seriesDisplayName(row)+" · "+episodeLabel(row)}:null);openPanel();
+  if(!row?.downloaded){message("Tập chưa có phụ đề gốc.",true);return}
+  if(!ready){message("Đang tải cấu hình model, hãy thử lại sau.");return}
   if(!settingsReady()||!form.reportValidity())return;
   await startTranslation();
  };
  window.showTranslationJob=async id=>{
-  openPanel();if(running&&jobId!==id){message("Đang theo dõi phiên dịch hiện tại. Hãy đợi hoàn tất trước khi xem phiên khác.");return}
-  jobId=id;await poll();
+  const row=episodeData.find(x=>x.translation?.id===id);
+  const version=resetTranslationView(row?{id:row.tvid,label:seriesDisplayName(row)+" · "+episodeLabel(row)}:null);
+  jobId=id;el("translationStart").hidden=true;message("Đang đọc phiên dịch đã chọn…");openPanel();await poll();return version;
  };
  window.resumeTranslationJob=async id=>{
-  openPanel();if(running){message("Đang có phiên dịch. Hãy chờ hoàn tất hoặc hủy trước.");return}
   if(!ready){message("Đang tải cấu hình model, hãy thử lại sau.");return}
-  jobId=id;await poll();
+  const version=await showTranslationJob(id);if(version!==viewVersion)return;
   if(!lastState||lastState.id!==id||!lastState.resumable){message("Phiên này chưa sẵn sàng để dịch tiếp.",true);return}
   if(!settingsReady())return;
   busy(true);clearTimeout(timer);message("Đang khôi phục các batch đã lưu…");
   try{const state=await send("/api/translation/resume",{id,context_model:model("context"),translation_model:model("translate")});
    try{localStorage.setItem("subtitle-translation-job",state.id)}catch{}
+   if(version!==viewVersion)return;
    render(state);await poll();
-  }catch(e){busy(false);message(e.message,true)}
+  }catch(e){if(version===viewVersion){busy(false);message(e.message,true)}}
  };
  el("translationResume").addEventListener("click",()=>resumeTranslationJob(jobId));
  function currentSelections(){return Object.fromEntries(roles.map(role=>[role,{provider_id:el(role+"Provider").value,model:el(role+"ModelSelect").value}]))}
@@ -143,7 +219,7 @@ document.addEventListener("DOMContentLoaded",()=>{
  function model(role){return translationModelConfig(savedSettings,role)}
  function fillModels(role,previous=""){
   const provider=savedSettings.providers.find(p=>p.id===el(role+"Provider").value),select=el(role+"ModelSelect");
-  select.replaceChildren(new Option(provider?.models.length?"Chọn model…":"Chưa có model — thêm trong Quản lý provider",""));
+  select.replaceChildren(new Option(provider?.models.length?"Chọn model…":"Chưa có model",""));
   for(const item of provider?.models||[])select.add(new Option(item.name===item.id?item.id:item.name+" · "+item.id,item.id));
   select.value=previous;
  }
@@ -165,7 +241,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   const select=el("providerModelCatalog");select.replaceChildren(new Option(editorModels.length?"Đã lưu "+editorModels.length+" model":"Chưa có model",""));
   for(const item of editorModels)select.add(new Option(item.name===item.id?item.id:item.name+" · "+item.id,item.id));
  }
- function resetEditorModels(){cancelScan();editorModels=[];renderEditorModels();el("providerScanStatus").textContent="Nhập URL và API key, rồi quét model hoặc thêm model ID thủ công."}
+ function resetEditorModels(){cancelScan();editorModels=[];renderEditorModels();el("providerScanStatus").textContent="Nhập URL và API key, rồi bấm Quét model."}
  function providerTypeChanged(){
   const preset=presets.find(p=>p.id===el("providerType").value);
   el("providerUrl").value=preset.base_url;el("providerWorkspaceRow").hidden=preset.protocol!=="anthropic";
@@ -182,6 +258,7 @@ document.addEventListener("DOMContentLoaded",()=>{
    editorModels=provider.models.map(m=>({...m}));renderEditorModels();
    el("providerScanStatus").textContent="Đã lưu "+editorModels.length+" model. Có thể quét lại để cập nhật.";
   }
+  el("providerEditorCancel").textContent=provider?"Hủy sửa":"Hủy thêm";
   el("providerDelete").hidden=!provider;el("providerEditorStatus").textContent="";el("providerEditor").hidden=false;el("translationProviderManager").open=true;el("providerName").focus();
  }
  async function scanModels(){
@@ -196,8 +273,8 @@ document.addEventListener("DOMContentLoaded",()=>{
    // Retain models selected before a provider stopped listing them.
    const models=new Map(editorModels.map(m=>[m.id,m]));for(const item of data.models)models.set(item.id,item);
    editorModels=[...models.values()];renderEditorModels();
-   note.textContent=data.models.length?`Tìm thấy ${data.models.length} model. Bấm Lưu provider để dùng lại danh sách.`:"Provider không trả model nào. Hãy thêm model ID thủ công.";
-  }catch(e){if(scanController===controller)note.textContent=e.name==="AbortError"?"Quét quá thời gian chờ. Hãy quét lại hoặc thêm model thủ công.":e.message}
+   note.textContent=data.models.length?`Tìm thấy ${data.models.length} model. Bấm Lưu provider để dùng lại danh sách.`:"Provider không trả model nào. Kiểm tra kết nối và quét lại.";
+  }catch(e){if(scanController===controller)note.textContent=e.name==="AbortError"?"Quét quá thời gian chờ. Hãy quét lại.":e.message}
   finally{clearTimeout(timeout);if(scanController===controller)cancelScan()}
  }
  el("providerType").addEventListener("change",providerTypeChanged);
@@ -208,16 +285,9 @@ document.addEventListener("DOMContentLoaded",()=>{
  el("savedProviderEditor").addEventListener("change",()=>{el("providerEdit").disabled=!el("savedProviderEditor").value;closeProviderEditor()});
  el("providerEditorCancel").addEventListener("click",closeProviderEditor);
  el("translationSettings").addEventListener("close",closeProviderEditor);
- el("providerManualModel").addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();el("providerAddModel").click()}});
- el("providerAddModel").addEventListener("click",()=>{
-  const input=el("providerManualModel"),id=input.value.trim();
-  if(!id||/\s/.test(id)){el("providerEditorStatus").textContent="Model ID không được trống hoặc chứa khoảng trắng.";input.focus();return}
-  if(!editorModels.some(m=>m.id===id))editorModels.push({id,name:id});
-  renderEditorModels();el("providerModelCatalog").value=id;input.value="";el("providerEditorStatus").textContent="Đã thêm model. Bấm Lưu provider để giữ lại.";
- });
  el("providerEditor").addEventListener("submit",event=>{
   event.preventDefault();if(scanController){el("providerEditorStatus").textContent="Đợi quét model hoàn tất trước khi lưu.";return}
-  if(!editorModels.length){el("providerEditorStatus").textContent="Quét hoặc thêm ít nhất một model trước khi lưu provider.";return}
+  if(!editorModels.length){el("providerEditorStatus").textContent="Quét ít nhất một model trước khi lưu provider.";return}
   const selections=currentSelections(),previous=savedSettings.providers.find(p=>p.id===editorId);
   const provider={id:editorId||crypto.randomUUID(),name:el("providerName").value.trim(),...editorConfig(),models:editorModels.map(m=>({...m}))};
   if(!provider.name){el("providerEditorStatus").textContent="Nhập tên gợi nhớ cho provider.";return}
@@ -235,9 +305,9 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(persistSettings(next)){closeProviderEditor();renderProviderChoices(selections);el("translationSettingsStatus").textContent="Đã xóa provider. Chọn lại nếu provider này đang được dùng."}
  });
  async function loadPresets(){
-  const data=await jsonApi("/api/translation/providers");presets=data.providers;jobId=data.active_id||jobId;
+  const data=await jsonApi("/api/translation/providers");presets=data.providers;if(!viewVersion)jobId=data.active_id||jobId;
   for(const preset of presets)el("providerType").add(new Option(preset.name,preset.id));
-  for(const [role,title] of [["context","Model hồ sơ / ngữ cảnh"],["translate","Model dịch thuật"]]){
+  for(const [role,title] of [["context","Ngữ cảnh"],["translate","Dịch thuật"]]){
    const box=document.createElement("fieldset");box.innerHTML=`<legend>${title}</legend>
     <div class="settingsField"><label for="${role}Provider">Provider đã lưu</label><select id="${role}Provider" required></select></div>
     <div class="settingsField"><label for="${role}ModelSelect">Model</label><select id="${role}ModelSelect" required></select></div>`;
@@ -249,34 +319,40 @@ document.addEventListener("DOMContentLoaded",()=>{
  }
  function render(state){
   lastState=state;
+  const row=episodeData.find(x=>x.tvid===state.episode_id);
+  selectEpisode(state.episode_id?{id:state.episode_id,label:state.episode_label||(row?seriesDisplayName(row)+" · "+episodeLabel(row):"Tập "+state.episode_id)}:null);
+  if(!selectedEpisode)el("translationEpisodeLabel").textContent=state.filename||"Phiên dịch";
+  el("translationTitle").textContent=state.stage==="complete"?"Bản dịch":"Tiến độ dịch";
   const running=!["complete","error","cancelled"].includes(state.stage);busy(running);message(state.message,state.stage==="error");
   el("translationSaved").hidden=!state.total_batches;
   el("translationSaved").textContent=state.total_batches?`Đã lưu ${state.saved_batches||0}/${state.total_batches} batch. Dịch tiếp chỉ gọi API cho phần còn thiếu.`:"";
-  selectEpisode(state.episode_id?{id:state.episode_id,label:state.episode_label}:null);
   updateTranslationEpisode(state);
   document.querySelectorAll(".translationSteps li").forEach((li,i)=>{if(i+1===state.step)li.setAttribute("aria-current","step");else li.removeAttribute("aria-current")});
   const progress=el("translationProgress");progress.hidden=!running;
   if(state.stage==="translation"){progress.max=state.total_batches||1;progress.value=state.completed_batches||0}else progress.removeAttribute("value");
   document.querySelectorAll("[data-artifact]").forEach(b=>b.hidden=b.dataset.artifact==="memory.json"?!state.memory_available:state.stage!=="complete");
+  el("translationViewMemory").hidden=!state.memory_available;
   el("translationPreviewBox").hidden=state.stage!=="complete";
-  if(state.stage==="complete")el("translationPreview").textContent=(state.preview||[]).map(c=>`${c.id} · ${c.start} → ${c.end}\n${c.text}`).join("\n\n");
+  el("translationPreview").textContent=state.stage==="complete"?(state.preview||[]).map(c=>`${c.id} · ${c.start} → ${c.end}\n${c.text}`).join("\n\n"):"";
+  if(state.stage==="complete")el("translationPreviewBox").open=true;
   return running;
  }
  async function poll(){
+  const id=jobId,version=++pollVersion;if(!id)return;
   clearTimeout(timer);el("translationReconnect").hidden=true;
-  try{if(render(await jsonApi("/api/translation/status?id="+encodeURIComponent(jobId))))timer=setTimeout(poll,1500)}
-  catch(e){message(e.message+" Bạn có thể kiểm tra lại trạng thái.",true);el("translationReconnect").hidden=false}
+  try{const state=await jsonApi("/api/translation/status?id="+encodeURIComponent(id));if(id!==jobId||version!==pollVersion)return;if(render(state))timer=setTimeout(poll,1500)}
+  catch(e){if(id===jobId&&version===pollVersion){message(e.message+" Bạn có thể kiểm tra lại trạng thái.",true);el("translationReconnect").hidden=false}}
  }
  async function startTranslation(){
-  busy(true);message(selectedEpisode?"Đang lấy phụ đề đã tải của tập…":"Đang đọc file và gửi cấu hình…");clearTimeout(timer);
+  if(!selectedEpisode||running)return;
+  const version=viewVersion,tvid=selectedEpisode.id;
+  busy(true);message("Đang lấy phụ đề đã tải của tập…");clearTimeout(timer);
   try{
-   let source;
-   if(selectedEpisode)source={tvid:selectedEpisode.id};
-   else{const file=el("translationFile").files[0];if(!file||file.size>6000000)throw Error("Chọn file SRT không quá 6 MB.");source={source:await file.text(),filename:file.name}}
-   const state=await send("/api/translation/start",{...source,context_model:model("context"),translation_model:model("translate")});
-   jobId=state.id;try{localStorage.setItem("subtitle-translation-job",jobId)}catch{}
+   const state=await send("/api/translation/start",{tvid,context_model:model("context"),translation_model:model("translate")});
+   try{localStorage.setItem("subtitle-translation-job",state.id)}catch{}
+   if(version!==viewVersion)return;jobId=state.id;
    render(state);await poll();
-  }catch(e){busy(false);message(e.message,true);try{const data=await jsonApi("/api/translation/providers");if(data.active_id){jobId=data.active_id;await poll()}}catch{}}
+  }catch(e){if(version===viewVersion){busy(false);message(e.message,true)}}
  }
  el("translationSettingsForm").addEventListener("submit",event=>{
   event.preventDefault();const next={...savedSettings,selections:currentSelections()};
@@ -284,7 +360,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(persistSettings(next))el("translationSettings").close();
  });
  form.addEventListener("submit",async event=>{event.preventDefault();if(settingsReady())await startTranslation()});
- el("translationCancel").addEventListener("click",async()=>{el("translationCancel").disabled=true;try{message((await send("/api/translation/cancel",{id:jobId})).message)}catch(e){message(e.message,true)}finally{el("translationCancel").disabled=false}});
+ el("translationCancel").addEventListener("click",async()=>{const id=jobId,version=viewVersion;el("translationCancel").disabled=true;try{const state=await send("/api/translation/cancel",{id});if(version===viewVersion)message(state.message)}catch(e){if(version===viewVersion)message(e.message,true)}finally{if(version===viewVersion)el("translationCancel").disabled=false}});
  el("translationReconnect").addEventListener("click",poll);
  window.downloadTranslation=async(id,name,button)=>{
   button.disabled=true;try{const r=await apiFetch("/api/translation/artifact?id="+encodeURIComponent(id)+"&name="+encodeURIComponent(name));if(!r.ok){const data=await r.json();throw Error(data.error||"Chưa tải được file.")}
@@ -292,6 +368,6 @@ document.addEventListener("DOMContentLoaded",()=>{
   }catch(e){openPanel();message(e.message,true)}finally{button.disabled=false}
  };
  document.querySelectorAll("[data-artifact]").forEach(button=>button.addEventListener("click",()=>downloadTranslation(jobId,button.dataset.artifact,button)));
- loadPresets().then(()=>{if(jobId)poll()}).catch(e=>message("Không tải được provider: "+e.message+" Hãy tải lại trang.",true));
+ loadPresets().then(()=>{if(jobId&&!viewVersion)poll()}).catch(e=>message("Không tải được provider: "+e.message+" Hãy tải lại trang.",true));
 });
 </script>

@@ -7,7 +7,7 @@
     if (!entry) return;
     entry.cleanup();
     const result = event.data.result;
-    if (!result || result.error) entry.reject(Error(result?.error || "Không kết nối được app phụ đề."));
+    if (!result || result.error) entry.reject(Object.assign(Error(result?.error || "Không kết nối được app phụ đề."), {code:result?.code}));
     else {
       try { entry.resolve(new Response(result.body, {status: result.status, headers: result.headers})); }
       catch (error) { entry.reject(error); }

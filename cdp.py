@@ -133,14 +133,6 @@ class ScriptSession:
         self.sock.close()
 
 
-def inject(target: dict, scripts: list[str]) -> None:
-    session = ScriptSession(target)
-    try:
-        session.install(scripts)
-    finally:
-        session.close()
-
-
 class EarlyScriptSession:
     """Pause newly created WebViews until their document-start script is registered."""
 

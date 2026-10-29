@@ -1,4 +1,4 @@
-"""Windows launchers for the iQIYI and Youku Việt hóa tools."""
+"""Windows launchers for the iQIYI Việt hóa tools."""
 from __future__ import annotations
 
 import argparse
@@ -11,12 +11,13 @@ import sys
 import time
 import urllib.error
 import urllib.request
-import webbrowser
 from urllib.parse import urlsplit
 
 from iqiyi_common import browser_proxy_token
+from app_integration import installed as integration_installed
+from app_integration import installer_args
 from iqiyi_common import python_executable as _python_executable
-from windows_runtime import command_line_args, list_processes, run_elevated, terminate_process
+from windows_runtime import command_line_args, list_processes, run_elevated, stop_background_browsers, terminate_process
 
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
@@ -57,6 +58,10 @@ def manager_busy() -> bool:
 
 
 def stop_processes(processes) -> None:
+    processes = list(processes)
+    if any(len(args := command_line_args(process.command_line)) > 1 and
+           Path(args[1]).resolve() == (ROOT / "subtitle_app.py").resolve() for process in processes):
+        stop_background_browsers(ROOT / ".local" / "iqcom-browser")
     failed = {process.pid for process in processes if not terminate_process(process.pid)}
     deadline = time.monotonic() + 0.5
     while failed:
@@ -84,8 +89,7 @@ def stop_previous_run(player: str, legacy_scripts: set[str], keep_manager: bool 
 
 def run_apply(restore: bool = False) -> int:
     python = python_executable()
-    script = ROOT / "apply-vi.py"
-    args = [str(script)] + (["--restore"] if restore else [])
+    args = installer_args(ROOT, restore)
     result = subprocess.run([str(python), *args], cwd=ROOT, capture_output=True,
                             text=True, encoding="utf-8", errors="replace", timeout=1800,
                             creationflags=CREATE_NO_WINDOW)
@@ -95,7 +99,18 @@ def run_apply(restore: bool = False) -> int:
     if result.returncode != 0:
         detail = (result.stdout + "\n" + result.stderr).strip()
         print(detail or f"Thao tác thất bại (mã {result.returncode}).")
+    elif not restore:
+        ensure_watcher()
     return result.returncode
+
+
+def ensure_watcher() -> None:
+    """Start in the normal caller's session after the privileged installer returns."""
+    if list(script_processes({"watch-players.py"}, "iqiyi")):
+        return
+    with (ROOT / "watch-iqiyi.runtime.log").open("a", encoding="utf-8") as log:
+        subprocess.Popen([str(python_executable(background=True)), str(ROOT / "watch-players.py"), "iqiyi"],
+                         cwd=ROOT, creationflags=CREATE_NO_WINDOW, close_fds=True, stdout=log, stderr=log)
 
 
 def webview_runtime() -> str:
@@ -147,14 +162,16 @@ def iqiyi_player_proxy() -> str:
     return f"http://{host}:{proxy['port']}"
 
 
-def launch_iqiyi(open_ui: bool = True) -> int:
+def launch_iqiyi(open_ui: bool = False) -> int:
     proxy = iqiyi_player_proxy()
-    if not stop_previous_run("iqiyi", {"watch-iqiyi-vi.py", "inject-cdp.py"}, keep_manager=True):
-        return 1
-
-    print("Đang cài phụ đề Việt...")
-    if run_apply() != 0:
-        return 1
+    if not integration_installed(ROOT):
+        if not stop_previous_run("iqiyi", {"watch-iqiyi-vi.py", "inject-cdp.py"}, keep_manager=True):
+            return 1
+        print("Đang cài tích hợp iQIYI lần đầu...")
+        if run_apply() != 0:
+            return 1
+    else:
+        ensure_watcher()
     try:
         path_result = subprocess.run([str(python_executable()), str(ROOT / "apply-vi.py"), "--client-path"],
                                      cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
@@ -180,7 +197,7 @@ def apply_running_iqiyi_proxy(proxy: str) -> dict:
     client = next((Path(process.path) for process in processes
                    if process.name.lower() == "qyclient.exe" and process.path), None)
     if client is None:
-        return {"status": "closed", "message": "iQIYI đang đóng; cấu hình sẽ được dùng khi mở bằng launcher."}
+        return {"status": "closed", "message": "iQIYI đang đóng; cấu hình sẽ được dùng khi mở iQIYI."}
     if not client.is_file():
         raise RuntimeError("Không tìm thấy chương trình iQIYI đang chạy.")
     start_iqiyi_client(client, proxy, processes)
@@ -227,45 +244,12 @@ def start_iqiyi_client(client: Path, proxy: str, processes=None) -> None:
         raise RuntimeError("Không mở lại được iQIYI sau khi đổi kết nối.") from exc
 
 
-def find_youku() -> Path | None:
-    bases = [Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Youku",
-             Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Youku"]
-    for base in bases:
-        if base.is_dir():
-            candidates = [folder / "YOUKU.exe" for folder in base.iterdir()
-                          if folder.is_dir() and (folder / "YOUKU.exe").is_file()]
-            if candidates:
-                return max(candidates, key=lambda path: tuple(
-                    int(n) for n in re.findall(r"\d+", path.parent.name.split("-", 1)[0])))
-    return None
-
-
-def launch_youku(open_ui: bool = True) -> int:
-    client = find_youku()
-    if not client:
-        print("Không tìm thấy YOUKU.exe trong Program Files.")
-        return 1
-    ensure_manager()
-    if not stop_previous_run("youku", {"watch-youku-vi.py"}, keep_manager=True):
-        return 1
-    try:
-        subprocess.Popen([str(client), "--remote-debugging-port=9224"], cwd=client.parent)
-        watcher = ROOT / "watch-players.py"
-        with (ROOT / "youku-vi.log").open("a", encoding="utf-8") as log:
-            subprocess.Popen([str(python_executable(background=True)), str(watcher), "youku"], cwd=ROOT,
-                             creationflags=CREATE_NO_WINDOW, stdout=log, stderr=log, close_fds=True)
-    except OSError as exc:
-        print(f"Không mở được Youku: {exc}")
-        return 1
-    return open_manager_when_ready("Youku", open_ui=open_ui)
-
-
 def open_manager_when_ready(player: str, open_ui: bool = True) -> int:
-    from desktop import health
+    from desktop import health, open_window
     for _ in range(20):
         if health():
             if open_ui:
-                webbrowser.open(MANAGER_URL)
+                open_window()
             print(f"Xong. {player} đã mở; app quản lý phụ đề đã sẵn sàng.")
             return 0
         time.sleep(0.5)
@@ -279,14 +263,12 @@ def open_manager() -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Khởi chạy công cụ Việt hóa iQIYI / Youku")
-    parser.add_argument("action", choices=("iqiyi", "youku", "manager", "open-manager", "restore"))
+    parser = argparse.ArgumentParser(description="Khởi chạy công cụ Việt hóa iQIYI")
+    parser.add_argument("action", choices=("iqiyi", "manager", "open-manager", "restore"))
     action = parser.parse_args().action
     try:
         if action == "iqiyi":
             return launch_iqiyi()
-        if action == "youku":
-            return launch_youku()
         if action == "restore":
             return run_apply(restore=True)
         if action == "open-manager":

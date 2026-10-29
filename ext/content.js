@@ -1,6 +1,6 @@
 /* iqiyi-vi */
 (function () {
-  var ENGINE_VERSION = 199;
+  var ENGINE_VERSION = 227;
   if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
     if (window.__iqiyiViReload) window.__iqiyiViReload();
     return;
@@ -9,7 +9,9 @@
   var oldStyle = document.getElementById("iqiyi-vi-css");
   if (oldStyle) oldStyle.remove();
   var IQCOM_METADATA_CACHE = new Map();
+  loadIqcomMetadataCache();
   var IQCOM_METADATA_WAITERS = new WeakMap();
+  var IQCOM_METADATA_FALLBACK = new WeakMap();
   var IQCOM_METADATA_RETRIES = new Set();
   var IQCOM_METADATA_QUEUE = [];
   var IQCOM_METADATA_ACTIVE = 0;
@@ -18,26 +20,36 @@
   var IQCOM_PENDING_LABELS = new Set();
   var TEXT_CACHE = new Map();
   var MACHINE_COPY = new Map();
+  var MACHINE_RENDERED = new WeakMap();
   function machineTextKey(value) { return String(value || "").replace(/\s+/g, " ").trim(); }
   try {
-    var savedCopy = JSON.parse(localStorage.getItem("iqiyi-vi-machine-copy-v1") || "[]");
+    var savedCopy = JSON.parse(localStorage.getItem("iqiyi-vi-machine-copy-v2") || "[]");
     if (Array.isArray(savedCopy)) savedCopy.slice(-1000).forEach(function (row) {
       if (Array.isArray(row) && typeof row[0] === "string" && typeof row[1] === "string" && row[1].trim() && !cjkCount(row[1]))
         MACHINE_COPY.set(machineTextKey(row[0]), row[1].trim());
     });
-  } catch (_) {}
+  } catch {}
   var machineTimer = null;
   var machineTimerAt = 0;
   var machineBusy = false;
   var MACHINE_PENDING = new Set();
+  var MACHINE_RETRIES = new Map();
   var MACHINE_WORKERS = [{busy:false, retryAt:0, failures:0}, {busy:false, retryAt:0, failures:0}];
   var SEARCH_TITLE_ALIASES = new Map();
   var SEARCH_IN_FLIGHT = false;
   var REPLAYING_SEARCH = false;
+  var SEARCH_SUGGEST_TIMER = null;
+  var SEARCH_SUGGEST_VERSION = 0;
+  var SEARCH_SUGGEST_INPUT = null;
   var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, CODE: 1 };
   var IS_RANKING_PAGE = /^\/ranks1(?:PCA)?(?:\/|$)/i.test(location.pathname);
+  var REFLOW_TEXT_SCOPE = '[class*="aboutTa_"],[class*="RelatedPeopleSection_"],[class*="info_starHeader__"],[class*="NavHeader_hoverPanel__"],[class*="flexVideoList_titles__"],' +
+    '[class*="thumbnailItemTitle"],[class*="filmFeed_title__"],[class*="filmFeed_desc__"],[class*="feedZaizhui_itemTitle__"],[class*="feedZaizhui_desc__"],.pcw-wrap';
   var FIXED_UI_TARGETS = [
+    '.pcw-xyd-banner', '.pcw-box-welfare .banner-image',
     '[class*="metas_tag__"]',
+    '[class*="info_starStats__"]', '[class*="aboutTa_label__"]',
+    '[class*="NavHeader_channelItem__"]', '[class*="NavHeader_item__"]',
     'img[src*="ry_bk_20.svg"]',
     "#btn_gameBtn", "#clientBtn", "#btn_msgBellBtn", "#btn_historyBtn", "#btn_uploadBtn",
     "#btn_vipBtnB", "#btn_vipBtnS", "#pwaBtn", "#searchinput", "#userCenterSpan",
@@ -48,6 +60,9 @@
     'img[src*="637ac407a456464b9902eb90a923a253"]',
     'img[src*="9013485acf0c4e07a2500429869d44f4"]',
     'img[src*="5a2c3f02c5b54771b1047a27cc1f0447"]',
+    'img[src*="6b011312d2c447ea90ed9bb47f751db5"]',
+    'img[src*="a2556f7166b541be8ad0e24c4db93cbc"]',
+    'img[src*="0487461a373d497cae2d159f0b5ddcee"]',
     'img[src*="0b3bd1c78a4b4368b4e2da2fb206b5c8"]',
     'img[src*="ac0bbaca7ffb4528a3a210b4078afbdf"]',
     'img[src*="308107f863864cd8b364bc428f50f4ec"]',
@@ -57,6 +72,217 @@
     'img[src*="f660fb9c2f57476fbe234f397fd21e37"]'
   ].join(",");
   var FIXED_COPY = {
+    "我的资产": "Tài sản của tôi",
+    "零钱": "Số dư ví",
+    "奇点": "Điểm Q",
+    "优惠券": "Phiếu giảm giá",
+    "银行卡": "Thẻ ngân hàng",
+    "零钱明细": "Lịch sử số dư",
+    "安全设置": "Cài đặt bảo mật",
+    "福利优选": "Ưu đãi nổi bật",
+    "更多福利": "Thêm ưu đãi",
+    "人人都可领会员": "Ai cũng có thể nhận VIP",
+    "最高免费得63天会员": "Nhận miễn phí tối đa 63 ngày VIP",
+    "移动积分免费兑会员": "Đổi điểm China Mobile lấy VIP",
+    "积分不用白不用 速来": "Dùng điểm đổi quà ngay",
+    "月月免费领VIP月卡": "Nhận thẻ VIP tháng miễn phí mỗi tháng",
+    "移动用户专享 加送流量": "Dành cho thuê bao China Mobile, tặng thêm data",
+    "移动用户专享  加送流量": "Dành cho thuê bao China Mobile, tặng thêm data",
+    "首次借款送1个月VIP": "Vay lần đầu, tặng 1 tháng VIP",
+    "新人福利 达标即送": "Ưu đãi khách mới khi đủ điều kiện",
+    "手机爱奇艺APP扫码领福利": "Quét mã bằng ứng dụng iQIYI để nhận ưu đãi",
+    "1、点击右上角“+*号；": "1. Bấm dấu + ở góc trên bên phải;",
+    "2、点击“扫一扫“扫描二维码；": "2. Chọn Quét mã để quét mã QR;",
+    "3、按照页面指引，福利到账；": "3. Làm theo hướng dẫn để nhận ưu đãi;",
+    "VIP会员内容推荐": "Nội dung đề xuất cho VIP",
+    "签名生成失败": "Không tạo được chữ ký xác thực",
+    "标准模式失败:": "Không chuyển được sang chế độ chuẩn:",
+    "全屏失败:": "Không bật được toàn màn hình:",
+    "主态删除失败": "Không xóa được nội dung",
+    "主态置顶失败": "Không ghim được nội dung",
+    "主态取消置顶失败": "Không bỏ ghim được nội dung",
+    "主态作品列表刷新失败": "Không làm mới được danh sách tác phẩm",
+    "高斯模糊已关闭": "Đã tắt làm mờ Gaussian",
+    "玻璃折射已关闭": "Đã tắt hiệu ứng khúc xạ kính",
+    "自动拉取离线消息失败": "Không tự động tải được tin nhắn ngoại tuyến",
+    "* 因政策限制，充值仅限固定金额，已为您推荐最接近金额": "* Do giới hạn chính sách, chỉ nạp được các mức tiền cố định. Đã đề xuất mức gần nhất.",
+    "4.联名会员仅限本单享有，自动续费代扣后不赠送": "4. Quyền lợi hội viên liên kết chỉ áp dụng cho đơn này, không tặng kèm khi tự động gia hạn.",
+    "连续保持会员，享": "Duy trì VIP liên tục để nhận",
+    "1.打开爱奇艺APP；\n2.点击右上角“+”号；\n3.点击“扫一扫”扫描二维码；\n4.按照页面指引即可查看会员积分哦；": "1. Mở ứng dụng iQIYI.\n2. Nhấn dấu “+” ở góc trên bên phải.\n3. Chọn “Quét mã” và quét mã QR.\n4. Làm theo hướng dẫn để xem điểm VIP.",
+    "1.打开爱奇艺APP；\n2.点击右上角“十”号；\n3.点击“扫一扫”扫描二维码；\n4.按照页面指引即可查看会员积分哦;": "1. Mở ứng dụng iQIYI.\n2. Nhấn dấu “+” ở góc trên bên phải.\n3. Chọn “Quét mã” và quét mã QR.\n4. Làm theo hướng dẫn để xem điểm VIP.",
+    "会员权益": "Quyền lợi VIP",
+    "会员服务": "Dịch vụ VIP",
+    "会员积分中心": "Trung tâm điểm VIP",
+    "已为您展示全部年龄内容": "Đã hiển thị nội dung cho mọi độ tuổi",
+    "黄金会员": "VIP Vàng",
+    "基础会员": "VIP Cơ bản",
+    "白金会员": "VIP Bạch Kim",
+    "星钻会员": "VIP Kim Cương",
+    "学生会员": "VIP Sinh viên",
+    "VR会员": "VIP VR",
+    "FUN会员": "VIP FUN",
+    "VIP会员": "Hội viên VIP",
+    "正在找回，请稍候…": "Đang khôi phục, vui lòng chờ…",
+    "支付失败，请重新尝试": "Thanh toán không thành công. Hãy thử lại.",
+    "请登录后购买VIP会员": "Đăng nhập để mua VIP",
+    "苹果支付失败": "Thanh toán qua Apple không thành công",
+    "当前支付异常，请检查网络或重启APP后再试。若已支付请忽略": "Thanh toán gặp lỗi. Hãy kiểm tra mạng hoặc mở lại ứng dụng rồi thử lại. Nếu đã thanh toán, hãy bỏ qua thông báo này.",
+    "正在为您开通爱奇艺会员，请稍后查看开通情况": "Đang kích hoạt iQIYI VIP. Vui lòng kiểm tra lại sau.",
+    "请阅读并同意《会员协议》": "Vui lòng đọc và đồng ý với “Thỏa thuận hội viên”",
+    "尊敬的爱奇艺用户，因平台限制，暂不支持购买爱奇艺VIP会员。": "Do giới hạn của nền tảng, hiện chưa hỗ trợ mua iQIYI VIP.",
+    "网络错误": "Lỗi mạng",
+    "兑换失败，请重试": "Đổi không thành công. Hãy thử lại.",
+    "此内容为会员加更礼剧集": "Đây là tập thuộc gói xem thêm dành cho hội viên",
+    "《会员服务协议》": "“Thỏa thuận dịch vụ hội viên”",
+    "打开失败": "Không mở được",
+    "系统错误，请点击右上角\"X\"关闭弹窗后重新购买": "Lỗi hệ thống. Nhấn “X” ở góc trên bên phải để đóng rồi mua lại.",
+    "会员积分说明": "Thông tin điểm VIP",
+    "正在为您充值，请稍后查看账户余额": "Đang nạp tiền. Vui lòng kiểm tra số dư sau.",
+    "开通前请阅读《会员协议》": "Đọc “Thỏa thuận hội viên” trước khi đăng ký",
+    "正在支付中，如遇问题，请刷新页面后重试": "Đang thanh toán. Nếu gặp lỗi, hãy tải lại trang rồi thử lại.",
+    "更多会员商品": "Thêm sản phẩm VIP",
+    "加载失败，请重试": "Không tải được. Hãy thử lại.",
+    "交易已关闭，请重新选择购买": "Giao dịch đã đóng. Hãy chọn mua lại.",
+    "暂时无法获取奇点余额，请重试": "Chưa lấy được số dư Qidian. Hãy thử lại.",
+    "暂时无法打开奇点充值，请重试": "Chưa mở được trang nạp Qidian. Hãy thử lại.",
+    "询价失败，请重试": "Không lấy được giá. Hãy thử lại.",
+    "出票失败": "Không xuất được vé",
+    "下单失败": "Không tạo được đơn hàng",
+    "支付失败": "Thanh toán không thành công",
+    "交易已关闭": "Giao dịch đã đóng",
+    "结果确认超时，请点击刷新继续查询": "Quá thời gian xác nhận. Nhấn làm mới để kiểm tra tiếp.",
+    "二维码加载失败，请点击刷新": "Không tải được mã QR. Nhấn làm mới để thử lại.",
+    "1080P画质": "Chất lượng 1080P",
+    "，会员权益到期前自动续费": ", tự động gia hạn trước khi VIP hết hạn",
+    "兑换成功，正在为您开启观影": "Đổi thành công, đang mở phim",
+    "验证码发送失败，请重试": "Không gửi được mã xác minh. Hãy thử lại.",
+    "账号融合失败，请重试": "Không hợp nhất được tài khoản. Hãy thử lại.",
+    "网络请求失败": "Yêu cầu mạng thất bại",
+    "《爱奇艺体育会员服务协议》": "“Thỏa thuận dịch vụ VIP Thể thao iQIYI”",
+    "账号登录设备已达上限，或本次登录存在安全风险。为保护会员权益，继续登录请先验证设备": "Tài khoản đã đạt giới hạn thiết bị hoặc lần đăng nhập này có rủi ro. Hãy xác minh thiết bị để tiếp tục.",
+    "验证失败": "Xác minh không thành công",
+    "您的设备已开启设备锁": "Thiết bị đã bật khóa thiết bị",
+    "发送失败，请稍后重试": "Gửi không thành công. Hãy thử lại sau.",
+    "账号或密码错误，试试短信登录吧": "Sai tài khoản hoặc mật khẩu. Hãy thử đăng nhập bằng SMS.",
+    "该账号绑定的手机号还关联以下会员账号，请选择要切换的账号进行登录": "Số điện thoại này còn liên kết các tài khoản VIP bên dưới. Hãy chọn tài khoản muốn đăng nhập.",
+    "加更礼权益为 VIP 用户付费专项，如需畅享会员权益，请先升级 VIP 再进行购买。": "Gói xem thêm là quyền lợi trả phí riêng dành cho VIP. Hãy nâng cấp VIP trước khi mua.",
+    "正在确认权益…": "Đang xác nhận quyền lợi…",
+    "正在处理…": "Đang xử lý…",
+    "关闭推荐按钮,跳过推荐按钮": "Đóng đề xuất",
+    "倒计时跳过按钮,跳过广告按钮": "Bỏ qua quảng cáo khi hết đếm ngược",
+    "免费跳过按钮,会员跳过按钮": "Bỏ qua quảng cáo",
+    "会员关闭广告按钮,黄金跳过按钮": "VIP bỏ qua quảng cáo",
+    "体育会员跳过按钮,体育广告关闭按钮": "VIP Thể thao bỏ qua quảng cáo",
+    "弹幕输入框会员升级提示关闭按钮": "Đóng thông báo nâng cấp VIP",
+    "弹幕输入框会员升级提示确认按钮": "Xác nhận nâng cấp VIP",
+    "码流浮层试看提示按钮": "Tùy chọn xem thử",
+    "码流浮层试看提示按钮文案": "Xem thử",
+    "会员二维码浮层关闭按钮": "Đóng mã QR hội viên",
+    "会员二维码浮层操作按钮": "Thao tác mã QR hội viên",
+    "安装杜比音效解码器": "Cài bộ giải mã âm thanh Dolby",
+    "安装解码器": "Cài bộ giải mã",
+    "检测到系统未安装杜比音效解码器。\n安装后可获得更好的音频体验。\n是否前往微软应用商店安装？": "Máy chưa cài bộ giải mã âm thanh Dolby.\nCài đặt để có trải nghiệm âm thanh tốt hơn.\nMở Microsoft Store để cài đặt?",
+    "正在打开APP Store，若打开失败，请在APP Store中搜索“爱奇艺”": "Đang mở App Store. Nếu không mở được, hãy tìm “iQIYI” trong App Store.",
+    "本片为VIP会员专享内容": "Phim này dành riêng cho hội viên VIP",
+    "是会员专享内容": "là nội dung dành riêng cho hội viên",
+    "继续观看请开通VIP会员": "Đăng ký VIP để xem tiếp",
+    "正在开启菁彩声": "Đang bật âm thanh sống động",
+    "您正在开启菁彩声": "Đang bật âm thanh sống động",
+    "已开启菁彩声": "Đã bật âm thanh sống động",
+    "菁彩声开启失败，请重试": "Không bật được âm thanh sống động. Hãy thử lại.",
+    "正在关闭菁彩声": "Đang tắt âm thanh sống động",
+    "已关闭菁彩声": "Đã tắt âm thanh sống động",
+    "无法加载 DRM 检查脚本。": "Không tải được thành phần kiểm tra DRM.",
+    "您的浏览器可能因版本过低或系统不支持，导致无法播放1080P及以上画质，请尝试升级至最新版本或使用爱奇艺客户端观看。": "Trình duyệt hoặc hệ thống chưa hỗ trợ phát từ 1080P. Hãy cập nhật trình duyệt hoặc xem bằng ứng dụng iQIYI.",
+    "V5及以上级别VIP会员可尊享璀璨金色、渐变色弹幕。": "VIP cấp V5 trở lên được dùng bình luận màu vàng và màu chuyển sắc.",
+    "校园网络加速计划": "Chương trình tăng tốc mạng trường học",
+    "为了优化校园计费网络的使用体验，请完善您的校园网络信息， 我们将集中针对校园网络用户的使用体验进行优化": "Hãy bổ sung thông tin mạng trường học để chúng tôi cải thiện trải nghiệm kết nối.",
+    "网络名称": "Tên mạng",
+    "您的网络名称": "Tên mạng của bạn",
+    "网络不太好，试试降低清晰度吧": "Mạng yếu, hãy thử giảm chất lượng hình ảnh.",
+    "识别结果错误": "Kết quả nhận diện không đúng",
+    "当前屏幕已开启HDR能力，可点击跳转": "Màn hình đã bật HDR. Nhấn để chuyển.",
+    "无法播放": "Không phát được",
+    "会员问题": "Vấn đề hội viên",
+    "无法登录": "Không đăng nhập được",
+    "正在加载游戏资源": "Đang tải dữ liệu trò chơi",
+    "下载失败": "Tải xuống thất bại",
+    "领取失败，请稍后重试": "Nhận không thành công. Hãy thử lại sau.",
+    "爱奇艺音效": "Hiệu ứng âm thanh iQIYI",
+    "网络可能出现异常，导致爱奇艺客户端无法正常运行。\n请检查网络是否正常，并退出电脑管家类软件后，重新运行爱奇艺客户端。": "Lỗi mạng khiến ứng dụng iQIYI không hoạt động bình thường.\nHãy kiểm tra kết nối và phần mềm quản lý máy tính, rồi mở lại iQIYI.",
+    "检测到爱奇艺疑似被【联想电脑管家】拦截导致无法联网，请尝试根据解决方案调整后再试": "iQIYI có thể bị Lenovo PC Manager chặn kết nối. Hãy làm theo hướng dẫn khắc phục rồi thử lại.",
+    "检测到爱奇艺疑似被【联想电脑管家】拦截导致无法联网，请尝试根据解决方案调整后再试。若仍然无法解决，欢迎添加QQ群48328857联系客服人员反馈。": "iQIYI có thể bị Lenovo PC Manager chặn kết nối. Hãy làm theo hướng dẫn khắc phục rồi thử lại. Nếu vẫn gặp lỗi, liên hệ hỗ trợ qua nhóm QQ 48328857.",
+    "画质：": "Chất lượng:",
+    "当前选中清晰度不支持基础会员，需要": "Chất lượng này không dành cho VIP Cơ bản. Bạn cần",
+    "请检查你的网络": "Hãy kiểm tra kết nối mạng",
+    "正在播放中": "Đang phát",
+    "您的网络存在异常，导致无法正常使用爱奇艺的服务，建议稍后重试": "Kết nối mạng gặp lỗi khiến iQIYI không hoạt động bình thường. Hãy thử lại sau.",
+    "网络诊断": "Chẩn đoán mạng",
+    "点击打开网络诊断工具": "Nhấn để mở công cụ chẩn đoán mạng",
+    "已开启小窗模式播放": "Đã bật phát trong cửa sổ nhỏ",
+    "删除失败": "Xóa không thành công",
+    "删除后将无法恢复": "Sau khi xóa sẽ không thể khôi phục",
+    "复制失败，请重试": "Không sao chép được. Hãy thử lại.",
+    "退出后将无法继续体验互动视频": "Thoát sẽ kết thúc trải nghiệm video tương tác",
+    "发布失败": "Đăng không thành công",
+    "审核失败": "Không được duyệt",
+    "视频发布失败，无法查看": "Video đăng không thành công nên không thể xem",
+    "视频审核失败，无法查看": "Video không được duyệt nên không thể xem",
+    "此下载内容无法在当前设备播放，": "Không thể phát nội dung đã tải trên thiết bị này.",
+    "▶▏ 跳过当前广告": "▶▏ Bỏ qua quảng cáo này",
+    "金币发放失败": "Không cấp được xu",
+    "开通会员免广告": "Đăng ký VIP để bỏ quảng cáo",
+    "隔空手势已开启": "Đã bật điều khiển bằng cử chỉ",
+    "续费会员": "Gia hạn VIP",
+    "爱奇艺VIP会员团队为您推荐": "Đề xuất từ đội ngũ iQIYI VIP",
+    "免费跳过此广告": "Bỏ qua quảng cáo này miễn phí",
+    "秒后可跳过此广告": "giây nữa có thể bỏ qua quảng cáo này",
+    "会员即将到期": "VIP sắp hết hạn",
+    "会员仅剩": "VIP chỉ còn",
+    "隐身模式已开启，鼠标移出视频即隐藏": "Đã bật chế độ ẩn. Video sẽ ẩn khi chuột rời khỏi vùng phát.",
+    "隐身模式已关闭，鼠标移出视频持续播放": "Đã tắt chế độ ẩn. Video tiếp tục phát khi chuột rời khỏi vùng phát.",
+    "领取金币失败：": "Không nhận được xu:",
+    "解锁失败": "Mở khóa không thành công",
+    "金币异地消耗，解锁失败，请再次尝试": "Xu đã được dùng ở nơi khác nên không mở khóa được. Hãy thử lại.",
+    "网络异常，请稍后重试": "Lỗi mạng. Hãy thử lại sau.",
+    "续费会员，持续享会员免广告特权": "Gia hạn VIP để tiếp tục xem không quảng cáo",
+    "同时播放设备数超过上限，本设备不享会员权益，请使用以下方式跳过广告": "Số thiết bị phát đồng thời đã vượt giới hạn. Thiết bị này chưa được dùng quyền lợi VIP; hãy chọn cách bỏ quảng cáo bên dưới.",
+    "分享失败，请打开并登录微信后重试": "Chia sẻ không thành công. Hãy mở và đăng nhập WeChat rồi thử lại.",
+    "系统错误": "Lỗi hệ thống",
+    "参数错误": "Tham số không hợp lệ",
+    "用户认证错误": "Lỗi xác thực người dùng",
+    "取消关注失败": "Bỏ theo dõi không thành công",
+    "关注失败": "Theo dõi không thành công",
+    "操作失败，稍后再试": "Thao tác không thành công. Hãy thử lại sau.",
+    "精选短剧": "Phim ngắn chọn lọc",
+    "爱奇艺 iQIYI-热门独播剧集在线观看": "iQIYI – Xem phim và chương trình trực tuyến",
+    "爱奇艺iQIYI-热门独播剧集在线观看": "iQIYI – Xem phim và chương trình trực tuyến",
+    "爱奇艺-中国领先的在线视频平台-海量正版高清视频在线观看": "iQIYI – Xem phim và video trực tuyến",
+    "爱奇艺-在线视频网站-播放器": "Trình phát iQIYI",
+    "关于TA": "Giới thiệu",
+    "关于Ta": "Giới thiệu",
+    "影视作品": "Phim đã tham gia",
+    "相关人物": "Nghệ sĩ liên quan",
+    "英文名": "Tên tiếng Anh",
+    "性别": "Giới tính",
+    "国籍": "Quốc tịch",
+    "出生日期": "Ngày sinh",
+    "星座": "Cung hoàng đạo",
+    "职业": "Nghề nghiệp",
+    "别名": "Tên khác",
+    "毕业院校": "Trường tốt nghiệp",
+    "血型": "Nhóm máu",
+    "粉丝": "Người hâm mộ",
+    "演员 / 歌手": "Diễn viên / Ca sĩ",
+    "查看详情": "Xem chi tiết",
+    "一周内": "7 ngày qua",
+    "更早": "Trước đó",
+    "全部频道": "Tất cả kênh",
+    "批量管理": "Quản lý hàng loạt",
+    "我的钱包": "Ví của tôi",
+    "我的订单": "Đơn hàng của tôi",
+    "空间": "Trang cá nhân",
+    "课程": "Khóa học",
     "年代榜": "Phim thời kỳ",
     "悬疑罪案榜": "Bí ẩn, tội phạm",
     "谍战榜": "Điệp chiến",
@@ -2092,12 +2318,33 @@
     return m ? m.length : 0;
   }
 
+  function setMetadataFallback(node, field, raw) {
+    var slots = IQCOM_METADATA_FALLBACK.get(node) || {};
+    var actor = isActorNameNode(node);
+    slots[field || ""] = raw ? {raw:raw, actor:actor, id:actor ? "" : findInternationalTitleId(node)} : null;
+    IQCOM_METADATA_FALLBACK.set(node, slots);
+    if (raw) scheduleRemainingLocalization();
+  }
+
+  function mayMachineTranslate(node, field, raw) {
+    var actor = isActorNameNode(node);
+    var el = node && node.nodeType === 3 ? node.parentElement : node;
+    if (!actor && !isMovieTitleNode(node) && (!el || el.tagName !== "TITLE")) return true;
+    var slots = IQCOM_METADATA_FALLBACK.get(node);
+    var fallback = slots && slots[field || ""];
+    return !!(fallback && fallback.raw === raw && fallback.actor === actor &&
+      (actor || fallback.id === findInternationalTitleId(node)));
+  }
+
   // Chuỗi giống tiêu đề phim/series: còn chữ Hán sau khi bỏ mùa, số tập và nhãn phụ.
   // Tên phim phải được dịch trọn tên, không ghép từng chữ (古偶榜 -> "Cổ ngẫu" là lỗi).
   var TITLE_NOISE = /最新|热播|独播|自制|完结|连载|更新至|全\d+集|共\d+集|第\d+[集季部]|预告|花絮|看点|预告片|抢先|限免|会员|VIP|豆瓣|榜|No\.?\d+|\d+\s*(?:万|亿|次|人|分钟|分|年|月|日|集|季)/gi;
   // Verified against iq.com Vietnamese series records.
-  var VERIFIED_TITLE_COPY = {"魅影神捕":"Mị Ảnh Thần Bộ", "田耕纪":"Điền Canh Kỷ", "逐玉":"Trục Ngọc"};
-  var VERIFIED_ACTOR_COPY = {"曾舜晞":"Tăng Thuấn Hy", "田曦薇":"Điền Hi Vi"};
+  var VERIFIED_TITLE_COPY = {"魅影神捕":"Mị Ảnh Thần Bộ", "田耕纪":"Điền Canh Kỷ", "逐玉":"Trục Ngọc",
+    "白月梵星":"Bạch Nguyệt Phạn Tinh", "卿卿日常":"Khanh Khanh Nhật Thường (Tân Xuyên Nhật Thường)", "把黑夜点燃":"Thắp Sáng Đêm Đen"};
+  var VERIFIED_ACTOR_COPY = {"曾舜晞":"Tăng Thuấn Hy", "田曦薇":"Điền Hi Vi", "白鹿":"Bạch Lộc",
+    "任重":"Nhiệm Trọng", "陈哲远":"Trần Triết Viễn", "蒋欣":"Tưởng Hân", "金莎":"Kym",
+    "鞠婧祎":"Cúc Tịnh Y", "虞书欣":"Ngu Thư Hân"};
   function localizeTitleValue(value) {
     var raw = String(value || "");
     var episode = raw.match(/^(.*?)\s*第(\d+)集(?:\s+(.+))?$/);
@@ -2107,7 +2354,9 @@
       var subtitle = episode[3] && (FIXED_COPY[episode[3]] || episode[3]);
       return subtitle ? result + " · " + subtitle : result;
     }
-    return FIXED_COPY[raw] || VERIFIED_TITLE_COPY[raw] || raw;
+    var trimmed = raw.trim();
+    var prepared = FIXED_COPY[trimmed] || VERIFIED_TITLE_COPY[trimmed];
+    return prepared ? raw.replace(trimmed, prepared) : raw;
   }
   function looksLikeTitle(s) {
     var text = String(s || "");
@@ -2144,16 +2393,19 @@
           try {
             var decoded = atob(encoded);
             if (/^\d{8,24}$/.test(decoded)) return decoded;
-          } catch (e) {}
+          } catch {}
         }
       }
       var path = url.pathname.match(/(?:^|\/)(?:play|album)\/([A-Za-z0-9]{8,20})(?=\/|\.html|$)|\/(?:m|a|v)_([A-Za-z0-9]{8,20})(?=\.html|\/|$)/i);
       return path ? internationalTitleId(path[1] || path[2]) : "";
-    } catch (e) { return ""; }
+    } catch { return ""; }
   }
 
   function isMovieTitleNode(node) {
     var el = node && node.nodeType === 3 ? node.parentElement : node;
+    if (isActorNameNode(node)) return false;
+    // Inline update notes and progress labels remain UI, even inside a title row.
+    if (el && el.closest && el.closest('[class*="tilesItem_note__"],[class*="tilesItem_desc_"],[class*="tilesItem_update_info"],.album-head-hot')) return false;
     for (var depth = 0; el && depth < 3; depth++, el = el.parentElement) {
       if (el.nodeType !== 1) continue;
       var label = String(el.className || "");
@@ -2161,10 +2413,19 @@
       if (depth === 0 && el.closest && el.closest('#search button.title, #search [data-position="title"] > .title')) return true;
       if (depth === 0 && /(?:^|\s)search-board-item_tag(?:\s|$)/i.test(label)) return false;
       var entity = el.getAttribute("data-ai-entity") || "";
+      if (depth === 0 && el.tagName === "IMG") {
+        var imageLink = el.closest && el.closest("a[href]");
+        if (imageLink && titleIdFromUrl(imageLink.getAttribute("href"))) return true;
+      }
+      if (depth === 0 && el.tagName === "A" && titleIdFromUrl(el.getAttribute("href") || "") &&
+          /(?:^|\s)(?:title-link|album-name|main-title)(?:\s|$)/.test(label)) return true;
+      // Known sidebar navigation is marked by localizeFixedUI; the remaining
+      // named entries promote films/games and need catalog lookup before fallback.
+      if (depth === 0 && /side_sideText__/.test(label) && el.closest && !el.closest('[data-iqiyi-vi-fixed]')) return true;
       var path = (el.ownerDocument && el.ownerDocument.location && el.ownerDocument.location.pathname) || location.pathname;
       if (el.tagName === "H1" && /(?:^|\/)(?:[va]_[^/]+|player(?:_mac)?)\.html$/i.test(path)) return true;
-      if (/^(?:卡片|缩略图|影片|视频|专辑|剧集)标题$/.test(entity) || entity === "播放器标题栏视频标题" ||
-          /filmFeed_title__|feedZaizhui_itemTitle__|thumbnailItemTitle|flexVideoList_title__|tilesItem_title__|videoListItem_title__|title_title__|meta_title(?:TextBlock|NotCloud)|search-board-item_title|(?:^|\s)rvi__tit\d*(?:\s|$)|(?:album|movie|video|player|detail)[-_]?(?:name|title)(?:__|\b)/i.test(label)) return true;
+      if (entity.split(/[,，]/).some(function (part) { return /^(?:卡片|缩略图|影片|视频|专辑|剧集)标题$|^播放器标题栏视频标题$/.test(part.trim()); }) ||
+          /filmFeed_(?:title|rank_item_title)__|feedZaizhui_itemTitle__|thumbnailItemTitle|flexVideoList_title__|tilesItem_title(?:__|_multi(?:__|_))|videoListItem_title__|videoList_videoTitle__|webHead_title__|NavHeader_(?:channelItem|item)__|title_title__|meta_title(?:TextBlock|NotCloud)|search-board-item_title(?:\s|$)|(?:^|\s)(?:rvi__tit\d*|main-title|piclist_title|site-piclist_info_title)(?:\s|$)|(?:album|movie|video|player|detail)[-_]?(?:name|title)(?:__|\b)/i.test(label)) return true;
     }
     return false;
   }
@@ -2207,7 +2468,7 @@
             !(el.matches && el.matches('#search button.title'))) return "";
         var label = String(el.className || "") + " " + (el.id || "");
         if (depth < 3) {
-          if (el.tagName === "TITLE" || el.tagName === "H1" || /(?:player|detail)[-_]?(?:name|title)|(?:name|title)[-_]?(?:player|detail)|meta_title(?:TextBlock|NotCloud)/i.test(label)) pageTitle = true;
+          if (el.tagName === "TITLE" || el.tagName === "H1" || /(?:player|detail)[-_]?(?:name|title)|(?:name|title)[-_]?(?:player|detail)|meta_title(?:TextBlock|NotCloud)|webHead_title__/i.test(label)) pageTitle = true;
           if (isMovieTitleNode(el) || pageTitle || /^H[1-6]$/.test(el.tagName) || /(?:^|[\s_-])(?:title|name)(?:Text|Main|Link|Label)?(?:[\s_-]|$)|(?:album|video|movie)[-_]?(?:name|title)|(?:name|title)[-_]?(?:album|video|movie)/i.test(label)) titleNode = true;
         }
         if (titleNode) {
@@ -2240,16 +2501,26 @@
       if (el.nodeType !== 1) continue;
       var label = String(el.className || "");
       var entity = el.getAttribute("data-ai-entity") || "";
+      if (depth === 0 && el.closest && el.closest('#search .item-charactor .name')) return true;
+      if (/search-board-item_(?:title|image)(?:\s|$)/.test(label) && el.closest) {
+        var suggestion = el.closest(".search-board-item");
+        var tag = suggestion && suggestion.querySelector(".search-board-item_tag");
+        if (tag && /^(?:人物|明星|演员|Nhân vật|Nghệ sĩ)$/.test((tag.textContent || "").trim())) return true;
+      }
+      if (/(?:^|\s)search-board-item_desc(?:\s|$)/.test(label) &&
+          /^(?:电视剧|电影|综艺|动漫|Phim bộ|Phim điện ảnh|Giải trí|Anime)\s*\//.test(el.textContent || "")) return true;
       if (IS_RANKING_PAGE && /(?:^|\s)rvi__type\d*(?:\s|$)/.test(label)) return true;
-      if (/(?:演员|主演|明星|人物)(?:姓名|名称|名字)$/.test(entity) || /TVG演员筛选标签/.test(entity) ||
-          /(?:act|actor|star|cast)[-_]?name(?:Text(?:Wrap)?|__|[-_]|\b)|(?:albumMeta|reserveMeta)OpenCastItem|(?:actor|cast)[-_]item[-_]name/i.test(label)) return true;
-      if (el.tagName === "A" && /\/lib\/s_\d+\.html(?:[?#]|$)|\/actor-info\//i.test(el.getAttribute("href") || "")) return true;
+      if (entity.split(/[,，]/).some(function (part) { return /^(?:演员|主演|明星|人物|演职员|导演|嘉宾|主持人)(?:姓名|名称|名字)$/.test(part.trim()); }) || /TVG演员筛选标签/.test(entity) ||
+          /(?:act|actor|star|cast)[-_]?name(?:Text(?:Wrap)?|__|[-_]|\b)|StarHeader_name__|starList_name__|follow_user_name__|(?:albumMeta|reserveMeta)OpenCastItem|(?:actor|cast)[-_]item[-_]name|RelatedPeopleSection_(?:name|personItem|avatarImg)__|info_starAvatar(?:Img|Main)__/i.test(label)) return true;
+      if (el.tagName === "A" && /\/lib\/s_\d+\.html(?:[?#]|$)|\/(?:actor-info|star|creator)\//i.test(el.getAttribute("href") || "")) return true;
     }
     return false;
   }
 
-  function actorSourceText(node, value) {
+  function actorSourceText(node, value, field) {
     var raw = String(value || "");
+    var rendered = MACHINE_RENDERED.get(node), fallback = IQCOM_METADATA_FALLBACK.get(node);
+    if (rendered && rendered[field || ""] === raw && fallback && fallback[field || ""]) return fallback[field || ""].raw;
     var el = node && node.nodeType === 3 ? node.parentElement : node;
     if (!el) return raw;
     var key = Object.keys(el).filter(function (name) { return name.indexOf("__reactFiber$") === 0; })[0];
@@ -2263,12 +2534,50 @@
     return raw;
   }
 
+  function catalogMetadataCopy(path, payload) {
+    if (!payload || typeof payload !== "object") return null;
+    var title = /^international-title\?(?:id|name)=/.test(path);
+    if (!title && !/^international-actor\?name=/.test(path)) return null;
+    var sourceKey = title ? "sourceTitle" : "sourceName", valueKey = title ? "title" : "name";
+    var original = payload[sourceKey], value = payload[valueKey];
+    if (typeof original !== "string" || !original.trim() || original.length > 200 ||
+        typeof value !== "string" || !value.trim() || value.length > 200 || cjkCount(value)) return null;
+    var copy = {};
+    copy[sourceKey] = original;
+    copy[valueKey] = value;
+    var idKey = title ? "globalAlbumId" : "id";
+    if (/^\d{1,24}$/.test(String(payload[idKey] || ""))) copy[idKey] = String(payload[idKey]);
+    return copy;
+  }
+
+  function loadIqcomMetadataCache() {
+    try {
+      var rows = JSON.parse(localStorage.getItem("iqiyi-vi-catalog-copy-v1") || "[]");
+      if (!Array.isArray(rows)) return;
+      rows.slice(-256).forEach(function (row) {
+        if (!Array.isArray(row) || typeof row[0] !== "string" || row[0].length > 2000 || !row[1]) return;
+        var expires = row[1].expires, payload = catalogMetadataCopy(row[0], row[1].payload);
+        if (!payload || typeof expires !== "number" || expires <= Date.now() || expires > Date.now() + 3600000) return;
+        IQCOM_METADATA_CACHE.set(row[0], {pending:false, expires:expires, payload:payload, promise:Promise.resolve(payload)});
+      });
+    } catch {}
+  }
+
+  function saveIqcomMetadataCache() {
+    try {
+      var rows = Array.from(IQCOM_METADATA_CACHE).filter(function (row) {
+        return row[1].payload && row[1].expires > Date.now();
+      }).slice(-256).map(function (row) { return [row[0], {expires:row[1].expires, payload:row[1].payload}]; });
+      localStorage.setItem("iqiyi-vi-catalog-copy-v1", JSON.stringify(rows));
+    } catch {}
+  }
+
   function pumpIqcomMetadata() {
-    while (!IQCOM_METADATA_STOPPED && IQCOM_METADATA_ACTIVE < 4 && IQCOM_METADATA_QUEUE.length) {
+    while (!IQCOM_METADATA_STOPPED && !window.__iqiyiViBridgeExpired && IQCOM_METADATA_ACTIVE < 4 && IQCOM_METADATA_QUEUE.length) {
       (function (job) {
         IQCOM_METADATA_ACTIVE++;
         var controller = typeof AbortController === "function" ? new AbortController() : null;
-        var timer = controller ? setTimeout(function () { controller.abort(); }, 45000) : null;
+        var timer = controller ? setTimeout(function () { controller.abort(); }, 10000) : null;
         if (controller) IQCOM_METADATA_CONTROLLERS.add(controller);
         var options = {headers:{"X-Iqiyi-Token":window.__iqiyiViToken || ""}, cache:"no-store"};
         if (controller) options.signal = controller.signal;
@@ -2280,6 +2589,8 @@
           payload = payload || {};
           var retry = Number(payload.retryAfterMs) || 120000;
           job.entry.expires = Date.now() + (payload.title || payload.name ? 3600000 : Math.max(1000, Math.min(120000, retry)));
+          job.entry.payload = catalogMetadataCopy(job.path, payload);
+          if (job.entry.payload) saveIqcomMetadataCache();
           job.resolve(payload);
         }, function () {
           job.entry.expires = Date.now() + 15000;
@@ -2298,7 +2609,7 @@
   function requestIqcomMetadata(path) {
     var cached = IQCOM_METADATA_CACHE.get(path);
     if (cached && (cached.pending || cached.expires > Date.now())) return cached.promise;
-    if (IQCOM_METADATA_STOPPED || IQCOM_METADATA_QUEUE.length >= 128) return Promise.resolve({});
+    if (IQCOM_METADATA_STOPPED || window.__iqiyiViBridgeExpired || IQCOM_METADATA_QUEUE.length >= 128) return Promise.resolve({});
     if (IQCOM_METADATA_CACHE.size >= 512) {
       for (var item of IQCOM_METADATA_CACHE) {
         if (!item[1].pending) { IQCOM_METADATA_CACHE.delete(item[0]); break; }
@@ -2306,6 +2617,8 @@
     }
     var entry = {expires:0, pending:true};
     entry.promise = new Promise(function (resolve) {
+      // Keep waiting for the catalog; only an actual miss or request failure
+      // enables machine translation. Queue time is not a failed lookup.
       IQCOM_METADATA_QUEUE.push({path:path, entry:entry, resolve:resolve});
     });
     IQCOM_METADATA_CACHE.set(path, entry);
@@ -2350,7 +2663,7 @@
   }
 
   function retryIqcomMetadata() {
-    if (IQCOM_METADATA_STOPPED) return;
+    if (IQCOM_METADATA_STOPPED || window.__iqiyiViBridgeExpired) return;
     // Revisit only unresolved labels; the request cache enforces API retry delays.
     IQCOM_METADATA_RETRIES.forEach(function (node) {
       if (node.isConnected === false) IQCOM_METADATA_RETRIES.delete(node);
@@ -2361,11 +2674,19 @@
     });
   }
 
+  function localizeActorPrefix(prefix) {
+    var label = prefix.match(/^(\s*)(主演|演员|导演)([：:\s]*)$/);
+    if (label) return label[1] + tr(label[2]) + (/[：:]/.test(label[3]) ? ": " : " ");
+    return prefix.split(/(\s*\/\s*)/).map(tr).join("");
+  }
+
   function requestInternationalActor(node, value, setter, field) {
     if (!isActorNameNode(node)) return false;
     var raw = String(value || "");
-    var original = actorSourceText(node, raw);
-    var rankingInfo = IS_RANKING_PAGE && original.match(/^(\s*\d{4}\s*\/.*\/\s*)([^/]+)$/);
+    var original = actorSourceText(node, raw, field);
+    var rankingInfo = ((IS_RANKING_PAGE && /rvi__type/.test(String((node.nodeType === 3 ? node.parentElement : node).className || ""))) ||
+      /search-board-item_desc/.test(String((node.nodeType === 3 ? node.parentElement : node).className || ""))) &&
+      original.match(/^([\s\S]*\/\s*)([^/]+)$/);
     var source = rankingInfo ? rankingInfo[2] : original.replace(/^(\s*(?:主演|演员|导演)[：:\s]*)/, "");
     var names = source.match(/[\u3400-\u9fff]+(?:[·・][\u3400-\u9fff]+)*/g) || [];
     names = names.filter(function (name, index) { return names.indexOf(name) === index; });
@@ -2375,12 +2696,15 @@
     function applyVerifiedNames() {
       var translated = source.replace(/[\u3400-\u9fff]+(?:[·・][\u3400-\u9fff]+)*/g,
         function (name) { return VERIFIED_ACTOR_COPY[name] || name; });
-      var result = tr(original.slice(0, original.length - source.length)) + translated;
+      var result = localizeActorPrefix(original.slice(0, original.length - source.length)) + translated;
+      var fallbackSource = cjkCount(result) ? (cjkCount(raw) ? result : original) : "";
+      if (cjkCount(result) && !cjkCount(raw)) result = raw;
+      setMetadataFallback(node, field, fallbackSource);
       if (result === raw) return;
       if (setter) setter(result);
       else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
     }
-    if (!namesToFetch.length || !token || !window.fetch) {
+    if (!namesToFetch.length || (!token && !window.__iqiyiViPublicApi) || !window.fetch) {
       applyVerifiedNames();
       setMetadataPending(node, field, !!(namesToFetch.length && window.__iqiyiViTokenPending));
       return true;
@@ -2393,7 +2717,7 @@
         });
       }));
     }, function (people) {
-      if (!isActorNameNode(node) || actorSourceText(node, raw) !== original) return;
+      if (!isActorNameNode(node) || actorSourceText(node, raw, field) !== original) return;
       // Replace complete names once, so a short name cannot corrupt another person's name.
       var result = source.replace(/[\u3400-\u9fff]+(?:[·・][\u3400-\u9fff]+)*/g, function (part) {
         var person = people.filter(function (person) { return person && person.sourceName === part; })[0];
@@ -2401,7 +2725,10 @@
       });
       // A profile heading can prefix the name with 演员 or 主演.
       var prefix = original.slice(0, original.length - source.length);
-      result = tr(prefix) + result;
+      result = localizeActorPrefix(prefix) + result;
+      var fallbackSource = cjkCount(result) ? (cjkCount(raw) ? result : original) : "";
+      if (cjkCount(result) && !cjkCount(raw)) result = raw;
+      setMetadataFallback(node, field, fallbackSource);
       if (result === raw) return;
       if (setter) setter(result);
       else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
@@ -2415,51 +2742,57 @@
     if (FIXED_COPY[raw.trim()] || (IS_RANKING_PAGE && /风云榜(?:[-–]爱奇艺风云榜)?$/.test(raw.trim()))) return false;
     setMetadataPending(node, field, false);
     if (requestInternationalActor(node, value, setter, field)) return true;
-    if (!/[\u3400-\u9fff]/.test(raw)) return false;
     var movieTitle = isMovieTitleNode(node);
-    if (!looksLikeTitle(raw)) return movieTitle;
+    var original = movieTitle ? actorSourceText(node, raw, field) : raw;
+    if (!/[\u3400-\u9fff]/.test(original)) return movieTitle;
+    if (!looksLikeTitle(original)) return movieTitle;
     var titleElement = node && node.nodeType === 3 ? node.parentElement : node;
     if (!movieTitle && (!titleElement || titleElement.tagName !== "TITLE")) return false;
     var titleContext = movieTitle || titleElement.tagName === "TITLE";
     var id = findInternationalTitleId(node);
-    function setTitle(result) {
+    function setTitle(result, fallbackSource) {
       result = FIXED_COPY[result] || localizeTitleValue(result);
+      setMetadataFallback(node, field, fallbackSource || (cjkCount(result) ? result : ""));
       if (result === raw) return;
       if (setter) setter(result);
       else if (node && node.nodeType === 3 && node.isConnected && node.nodeValue === raw) node.nodeValue = result;
     }
-    var prepared = localizeTitleValue(raw);
-    var episodeTitle = raw.match(/^(.*?)\s*第\d+集/);
-    if (prepared !== raw && (!cjkCount(prepared) || (episodeTitle && VERIFIED_TITLE_COPY[episodeTitle[1].trim()]))) {
+    var prepared = localizeTitleValue(original);
+    var episodeTitle = original.match(/^(.*?)\s*第\d+集/);
+    if (prepared !== original && (!cjkCount(prepared) || (episodeTitle && VERIFIED_TITLE_COPY[episodeTitle[1].trim()]))) {
       setTitle(prepared);
       return true;
     }
-    if (!id) {
+    var lookupName = (episodeTitle ? episodeTitle[1] : original).trim();
+    if (!id && (!movieTitle || lookupName.length > 200)) {
       if (titleContext) setTitle(raw);
       setMetadataPending(node, field, false);
       return titleContext;
     }
 
     function apply(payload) {
-      var result = raw;
+      var result = raw, matched = false;
       if (findInternationalTitleId(node) === id && payload && payload.title && !cjkCount(payload.title)) {
         var source = payload.sourceTitle || "";
         var verifiedTitle = VERIFIED_TITLE_COPY[source];
-        // Only replace the verified Chinese album name; keep unverified names intact.
-        if (source && raw.indexOf(source) !== -1) result = raw.split(source).join(verifiedTitle || payload.title);
+        // Prefer the verified album name; the machine fallback handles a miss.
+        if (source && original.indexOf(source) !== -1) {
+          result = original.split(source).join(verifiedTitle || payload.title);
+          matched = true;
+        }
       }
       if (payload && payload.title && payload.sourceTitle) SEARCH_TITLE_ALIASES.set(searchKey(payload.title), payload.sourceTitle);
-      setTitle(result);
+      setTitle(result, matched ? "" : original);
     }
 
     var token = window.__iqiyiViToken || "";
-    if (!token || !window.fetch) {
+    if ((!token && !window.__iqiyiViPublicApi) || !window.fetch) {
       apply({});
       setMetadataPending(node, field, !!window.__iqiyiViTokenPending);
       return true;
     }
-    waitForIqcomMetadata(node, field, "title:" + id + ":" + raw, function () {
-      return requestIqcomMetadata("international-title?id=" + encodeURIComponent(id));
+    waitForIqcomMetadata(node, field, "title:" + (id || lookupName) + ":" + raw, function () {
+      return requestIqcomMetadata("international-title?" + (id ? "id=" + encodeURIComponent(id) : "name=" + encodeURIComponent(lookupName)));
     }, apply);
     return true;
   }
@@ -2602,6 +2935,12 @@
     return translated !== source ? translated : cached === undefined ? source : cached;
   }
 
+  function playerQualityLabel(value) {
+    var raw = String(value || "").trim();
+    var normalized = raw.replace(/画质$/, "").trim().replace(/^(?:超高清|高清|超清|蓝光)\s*(?=(?:\d{3,4}P|[248]K)\b)/i, "");
+    return FIXED_COPY[raw] || FIXED_COPY[normalized] || normalized;
+  }
+
   function translateText(s) {
     var orig = String(s);
     var lead = orig.match(/^\s*/)[0];
@@ -2650,17 +2989,41 @@
     if (speedNotice) return lead + "Đã bật tốc độ phát " + speedNotice[1] + "×" + tail;
     var watchProgress = t.match(/^(?:第\s*(\d+)\s*集\s*)?已看\s*(\d+(?:\.\d+)?)\s*[%％]$/);
     if (watchProgress) return lead + (watchProgress[1] ? "Tập " + watchProgress[1] + " · " : "") + "Đã xem " + watchProgress[2] + "%" + tail;
-    var adSkipCountdown = t.match(/^(\d+)\s*(?:秒|s)\s*后可跳过(?:当前)?广告$/i);
+    var adSkipCountdown = t.match(/^(\d+)\s*(?:秒|s)\s*后可跳过(?:当前|此)?广告$/i);
     if (adSkipCountdown) return lead + "Có thể bỏ qua quảng cáo sau " + adSkipCountdown[1] + " giây" + tail;
     var adCountdown = t.match(/^(\d+)\s*(?:s|秒)后可继续看正片$/i);
     if (adCountdown) return lead + "Sau " + adCountdown[1] + " giây có thể xem tiếp phim" + tail;
-    var trialStatus = t.match(/^试看中[，,：:、\s]*(黄金\/白金\/星钻(?:VIP)?)(尊享)?$/);
-    if (trialStatus) return lead + "Đang xem thử · VIP Vàng/Bạch Kim/Kim Cương" + tail;
+    var qualityOnly = notice.match(/^(?:超高清|高清|超清|蓝光)\s*(?:\d{3,4}P|[248]K)(?:画质)?$/i);
+    if (qualityOnly) return lead + playerQualityLabel(notice.replace(/画质$/, "")) + tail;
+    var trialStatus = notice.match(/^(.*?)(试看|试用)中[，,：:、\s]*(黄金|白金|星钻|黄金\/白金\/星钻)(?:VIP)?(?:尊享|专享)?$/);
+    if (trialStatus) {
+      var trialQuality = playerQualityLabel(trialStatus[1]);
+      if (!cjkCount(trialQuality)) return lead + (trialStatus[2] === "试看" ? "Đang xem thử" : "Đang dùng thử") +
+        (trialQuality ? " " + trialQuality : "") + " · " + (FIXED_COPY[trialStatus[3] + "会员"] || tr(trialStatus[3])) + tail;
+    }
+    var qualityTrial = notice.match(/^(.+?)(试看|试用)中$/);
+    if (qualityTrial) {
+      var shortQuality = playerQualityLabel(qualityTrial[1]);
+      if (!cjkCount(shortQuality)) return lead + (qualityTrial[2] === "试看" ? "Đang xem thử " : "Đang dùng thử ") + shortQuality + tail;
+    }
+    var freeQuality = t.match(/^(已为您(?:自动)?切换至|正在切换至|已切换至)\s*(.+?)\s*画质[，,]限时免费体验(?:[，,]请稍候[.。…]*)?$/);
+    if (freeQuality) {
+      var freeLabel = playerQualityLabel(freeQuality[2]);
+      if (!cjkCount(freeLabel)) return lead + (freeQuality[1] === "正在切换至" ? "Đang chuyển sang " : "Đã chuyển sang ") +
+        freeLabel + " · Trải nghiệm miễn phí có thời hạn" + (/请稍候/.test(t) ? ", vui lòng chờ…" : "") + tail;
+    }
+    var setQuality = t.match(/^已为您设为\s*(.+)$/);
+    if (setQuality) {
+      var setLabel = playerQualityLabel(setQuality[1]);
+      if (!cjkCount(setLabel)) return lead + "Đã đặt " + setLabel + tail;
+    }
+    var vipDays = notice.match(/^(黄金|白金|星钻|VIP)?会员[，,：:\s]*仅剩\s*(\d+)\s*天$/);
+    if (vipDays) return lead + (vipDays[1] ? FIXED_COPY[vipDays[1] + "会员"] || tr(vipDays[1]) : "VIP") + " chỉ còn " + vipDays[2] + " ngày" + tail;
     var trialMinutes = t.match(/^试看(\d+)分钟[，,]由于版权原因[，,]观看完整版请$/);
     if (trialMinutes) return lead + "Do bản quyền, chỉ được xem thử " + trialMinutes[1] + " phút. Để xem toàn bộ, vui lòng" + tail;
     var memberNotice = t.match(/^尊敬的(.+?)会员[，,]\s*(.+)$/);
     if (memberNotice) {
-      var member = tr(memberNotice[1]), message = tr(memberNotice[2]);
+      var member = FIXED_COPY[memberNotice[1] + "会员"] || tr(memberNotice[1]), message = tr(memberNotice[2]);
       if (!/[\u3400-\u9fff]/.test(member + message)) return lead + "Quý hội viên " + member + ", " + message.charAt(0).toLowerCase() + message.slice(1) + tail;
     }
     var skippedAd = t.match(/^已为您跳过(\d+)\s*(秒|分钟)?广告$/);
@@ -2673,13 +3036,16 @@
     if (deepSpoilerCount) return lead + "Chống tiết lộ nội dung nâng cao đã ẩn " + deepSpoilerCount[1] + " bình luận. Bình luận ít đi có thể ảnh hưởng thảo luận; hãy báo cáo nếu còn sót." + tail;
     var qualityFailure = t.match(/^(.+?)画质开启失败[，,]请重试$/);
     if (qualityFailure) {
-      var quality = tr(qualityFailure[1]);
+      var quality = playerQualityLabel(qualityFailure[1]);
       if (!/[\u3400-\u9fff]/.test(quality)) return lead + "Không bật được chất lượng " + quality + ". Hãy thử lại." + tail;
     }
     var frameRate = t.match(/^(超高清4K|超高清4K[ ··-]*|4K[ ··-]*)(\d+)帧$/);
     if (frameRate) return lead + "4K · " + frameRate[2] + " khung hình/giây" + tail;
     var playerSwitch = t.match(/^(已切换至|正在切换至)\s*(.+)$/);
-    if (playerSwitch && FIXED_COPY[playerSwitch[2]]) return lead + FIXED_COPY[playerSwitch[1]] + " " + FIXED_COPY[playerSwitch[2]] + tail;
+    if (playerSwitch) {
+      var switchLabel = playerQualityLabel(playerSwitch[2]);
+      if (!cjkCount(switchLabel)) return lead + FIXED_COPY[playerSwitch[1]] + " " + switchLabel + tail;
+    }
     var subtitleSwitch = t.match(/^已切换(主|副)字幕为\s*(.+)$/);
     if (subtitleSwitch) return lead + "Đã chuyển phụ đề " + (subtitleSwitch[1] === "主" ? "chính" : "phụ") + " sang " + tr(subtitleSwitch[2]) + tail;
     var subtitleClosed = t.match(/^已关闭(主|副)字幕$/);
@@ -2716,6 +3082,15 @@
   }
 
   function clearSearchSuggestions() {
+    clearTimeout(SEARCH_SUGGEST_TIMER);
+    ++SEARCH_SUGGEST_VERSION;
+    if (SEARCH_SUGGEST_INPUT) {
+      SEARCH_SUGGEST_INPUT.removeAttribute("aria-controls");
+      SEARCH_SUGGEST_INPUT.setAttribute("aria-expanded", "false");
+      var root = SEARCH_SUGGEST_INPUT.closest("#searchinput");
+      if (root) root.removeAttribute("data-iqiyi-vi-search-live");
+      SEARCH_SUGGEST_INPUT = null;
+    }
     var panel = document.getElementById("iqiyi-vi-search-suggestions");
     if (panel) panel.remove();
   }
@@ -2728,19 +3103,26 @@
     }).map(function (source) { return {title:VERIFIED_TITLE_COPY[source],query:source}; });
   }
 
-  function showSearchSuggestions(root, input, choices) {
+  function showSearchSuggestions(root, input, choices, options) {
+    options = options || {};
     clearSearchSuggestions();
+    SEARCH_SUGGEST_INPUT = input;
+    setUiAttribute(root, "data-iqiyi-vi-search-live", "1");
+    input.setAttribute("aria-controls", "iqiyi-vi-search-suggestions");
+    input.setAttribute("aria-expanded", "true");
     var panel = document.createElement("div");
     panel.id = "iqiyi-vi-search-suggestions";
     panel.setAttribute("role", "region");
     panel.setAttribute("aria-label", "Gợi ý tên phim");
     var rect = root.getBoundingClientRect();
-    panel.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - Math.min(rect.width, 440) - 8)) + "px";
+    var width = Math.min(rect.width, window.innerWidth - 16);
+    panel.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) + "px";
     panel.style.top = (rect.bottom + 8) + "px";
-    panel.style.width = Math.min(rect.width, window.innerWidth - 16, 440) + "px";
+    panel.style.width = width + "px";
     var heading = document.createElement("div");
     heading.className = "iqiyi-vi-search-heading";
-    heading.textContent = "Chọn phim bạn muốn tìm";
+    heading.textContent = options.message || (choices.length ? "Gợi ý phim từ iq.com" : "Chưa có gợi ý phù hợp");
+    heading.setAttribute("role", "status");
     panel.appendChild(heading);
     choices.slice(0,5).forEach(function (choice) {
       var button = document.createElement("button");
@@ -2760,13 +3142,57 @@
           event.preventDefault();
           var next = event.key === "ArrowDown" ? button.nextElementSibling : button.previousElementSibling;
           if (next && next.tagName === "BUTTON") next.focus();
+          else if (event.key === "ArrowUp") input.focus();
         }
       };
       panel.appendChild(button);
     });
     document.body.appendChild(panel);
     var first = panel.querySelector("button");
-    if (first) first.focus();
+    if (first && options.focusFirst !== false) first.focus();
+  }
+
+  function searchSuggestionChoices(original, payload) {
+    var choices = Array.isArray(payload && payload.suggestions) ? payload.suggestions : [];
+    if (payload && typeof payload.query === "string" && payload.query !== original) {
+      choices = [{title: payload.title || original, query: payload.query}].concat(choices);
+    }
+    choices = choices.concat(preparedSearchSuggestions(original));
+    var seen = new Set();
+    return choices.filter(function (choice) {
+      if (!choice || typeof choice.title !== "string" || typeof choice.query !== "string" ||
+          !choice.title.trim() || choice.title.length > 200 || choice.query.length > 200 ||
+          !cjkCount(choice.query) || seen.has(choice.query)) return false;
+      seen.add(choice.query); return true;
+    }).slice(0, 5);
+  }
+
+  function suggestVietnameseSearch(event) {
+    var target = event.target, panel = document.getElementById("iqiyi-vi-search-suggestions");
+    if (event.type === "focusin" && panel && panel.contains(target)) return;
+    if (!target || target.tagName !== "INPUT" || !target.closest) {
+      if (event.type === "focusin") clearSearchSuggestions();
+      return;
+    }
+    var root = target.closest("#searchinput");
+    if (!root) { if (event.type === "focusin") clearSearchSuggestions(); return; }
+    clearSearchSuggestions();
+    var original = target.value.trim();
+    if (REPLAYING_SEARCH || IQCOM_METADATA_STOPPED || window.__iqiyiViBridgeExpired || event.isComposing || event.type === "compositionstart" ||
+        original.length > 100 || searchKey(original).length < 3 || cjkCount(original)) return;
+    var local = preparedSearchSuggestions(original);
+    showSearchSuggestions(root, target, local, {focusFirst:false, message:local.length ? "Gợi ý phim từ iq.com" : "Đang tìm gợi ý từ iq.com…"});
+    var version = SEARCH_SUGGEST_VERSION;
+    SEARCH_SUGGEST_TIMER = setTimeout(function () {
+      requestIqcomMetadata("international-search?q=" + encodeURIComponent(original)).then(function (payload) {
+        if (version !== SEARCH_SUGGEST_VERSION || IQCOM_METADATA_STOPPED || !target.isConnected ||
+            target.value.trim() !== original) return;
+        showSearchSuggestions(root, target, searchSuggestionChoices(original, payload), {focusFirst:false});
+      }).catch(function () {
+        if (version === SEARCH_SUGGEST_VERSION) showSearchSuggestions(root, target, local,
+          {focusFirst:false, message:local.length ? "Gợi ý phim" : "Chưa tải được gợi ý. Bạn có thể bấm Tìm."});
+      });
+    }, 300);
   }
 
   function handleVietnameseSearch(event) {
@@ -2774,35 +3200,43 @@
     var target = event.target;
     if (!target || !target.closest) return;
     var panel = document.getElementById("iqiyi-vi-search-suggestions");
-    if (event.type === "click" && panel && !panel.contains(target)) clearSearchSuggestions();
-    if (event.type === "keydown" && event.key === "Escape") { clearSearchSuggestions(); return; }
+    if (event.type === "click" && panel && !panel.contains(target) && target !== SEARCH_SUGGEST_INPUT) clearSearchSuggestions();
+    if (event.type === "keydown" && event.key === "Escape") {
+      var activeInput = SEARCH_SUGGEST_INPUT;
+      clearSearchSuggestions();
+      if (panel && panel.contains(target) && activeInput) {
+        REPLAYING_SEARCH = true;
+        try { activeInput.focus(); } finally { REPLAYING_SEARCH = false; }
+      }
+      return;
+    }
     var root = target.closest("#searchinput");
     if (!root) return;
+    if (event.type === "keydown" && event.key === "ArrowDown" && target.tagName === "INPUT" && panel) {
+      var first = panel.querySelector("button");
+      if (first) { event.preventDefault(); event.stopImmediatePropagation(); first.focus(); }
+      return;
+    }
     if (event.type === "keydown" && (event.key !== "Enter" || target.tagName !== "INPUT")) return;
     var button = event.type === "click" && target.closest(".search-button-triggle");
     if (event.type === "click" && !button) return;
     var input = root.querySelector('input[type="text"]');
     var original = input && input.value.trim();
     if (!original || original.length > 100 || cjkCount(original)) return;
+    clearSearchSuggestions();
     event.preventDefault();
     event.stopImmediatePropagation();
     if (SEARCH_IN_FLIGHT) return;
     SEARCH_IN_FLIGHT = true;
     setUiAttribute(root, "aria-busy", "true");
     var prepared = preparedSearchQuery(original);
-    var resolved = prepared !== original || !window.__iqiyiViToken ? Promise.resolve({query:prepared}) :
+    var resolved = prepared !== original || (!window.__iqiyiViToken && !window.__iqiyiViPublicApi) ? Promise.resolve({query:prepared}) :
       requestIqcomMetadata("international-search?q=" + encodeURIComponent(original));
     resolved.then(function (payload) {
       if (IQCOM_METADATA_STOPPED || !input.isConnected || input.value.trim() !== original) return;
       var query = payload && typeof payload.query === "string" && payload.query.length <= 200 ? payload.query : original;
       if (query === original) {
-        var choices = preparedSearchSuggestions(original).concat(Array.isArray(payload && payload.suggestions) ? payload.suggestions : []);
-        var seen = new Set();
-        choices = choices.filter(function (choice) {
-          if (!choice || typeof choice.title !== "string" || typeof choice.query !== "string" ||
-              choice.title.length > 200 || choice.query.length > 200 || !cjkCount(choice.query) || seen.has(choice.query)) return false;
-          seen.add(choice.query); return true;
-        });
+        var choices = searchSuggestionChoices(original, payload);
         if (choices.length) { showSearchSuggestions(root, input, choices); return; }
       }
       clearSearchSuggestions();
@@ -2842,9 +3276,115 @@
       '#iqiyi-vi-search-suggestions .iqiyi-vi-search-heading{font:12px/20px Arial,sans-serif;color:#bbb;padding:4px 8px;}' +
       '#iqiyi-vi-search-suggestions button{display:block;width:100%;border:0;border-radius:6px;background:transparent;color:#fff;text-align:left;cursor:pointer;padding:12px 10px;font:14px/20px Arial,sans-serif;white-space:normal;}' +
       '#iqiyi-vi-search-suggestions button:hover,#iqiyi-vi-search-suggestions button:focus-visible{background:#ffffff12;outline:2px solid #00d46a;outline-offset:-2px;}' +
+      '#searchinput[data-iqiyi-vi-search-live="1"]~#search-auto-suggest{display:none!important;}' +
       "#searchinput .search-placeholder{display:none!important}" +
       'img[src*="/watermark_rightTop"],img[src*="/watermark_rightBottom"]{display:none!important;}' +
       'html[lang="vi"] { overflow-wrap:normal; }' +
+      '[class*="backTop_sideTools__"]>[class*="backTop_backtopNew__"]{order:-1!important;flex-shrink:0!important;}' +
+      '[class*="backTop_backtopNew__"]:hover{width:max-content!important;max-width:calc(100vw - 40px);box-sizing:border-box;padding-left:12px!important;gap:8px;}' +
+      '[class*="backTop_backtopNew__"]:hover>span{width:max-content!important;max-width:none!important;overflow:visible!important;white-space:nowrap!important;flex-shrink:0!important;}' +
+      '#iqiyi-vi-manager{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;width:38px;height:38px;margin:0 0 12px;padding:0;border:0;border-radius:8px;background:rgba(41,44,51,.6);color:#ddd;cursor:pointer;-webkit-app-region:no-drag;}' +
+      '#iqiyi-vi-manager:hover,#iqiyi-vi-manager:focus-visible{background:#34383f;color:#00d46a;}' +
+      '#iqiyi-vi-manager:focus-visible{outline:2px solid #00d46a;outline-offset:2px;}' +
+      '#iqiyi-vi-manager:disabled{cursor:wait;opacity:.65;}' +
+      '#iqiyi-vi-manager .iqiyi-vi-manager-tip{display:none;position:absolute;right:48px;top:50%;transform:translateY(-50%);width:max-content;max-width:min(320px,calc(100vw - 100px));padding:9px 12px;border-radius:6px;background:#292c33;color:#fff;font:13px/19px Arial,sans-serif;text-align:left;white-space:normal;box-shadow:0 4px 16px #0004;pointer-events:none;}' +
+      '#iqiyi-vi-manager:hover .iqiyi-vi-manager-tip,#iqiyi-vi-manager:focus-visible .iqiyi-vi-manager-tip{display:block;}' +
+      '[class*="NavHeader_vipCenterBtn__"]{flex:0 0 auto!important;width:auto!important;min-width:max-content!important;white-space:nowrap!important;}' +
+      '[class*="NavHeader_vipCenterBtn__"]>a,[class*="NavHeader_vipCenterBtn__"] [class*="NavHeader_channelItem__"]{' +
+      'flex-shrink:0!important;width:auto!important;white-space:nowrap!important;}' +
+      '#floatBox:has([class*="topbar_uploadFloat__"]){left:auto!important;right:16px!important;width:224px!important;max-width:calc(100vw - 32px)!important;}' +
+      '[class*="topbar_uploadFloat__"]{width:100%!important;height:auto!important;padding:8px 0!important;box-sizing:border-box;}' +
+      '[class*="topbar_uploadFloat__"]>a{display:flex!important;align-items:center!important;gap:12px!important;width:100%!important;' +
+      'height:auto!important;min-height:40px;padding:10px 18px!important;box-sizing:border-box;}' +
+      '[class*="topbar_uploadFloat__"]>a>div{flex-shrink:0!important;}' +
+      '[class*="topbar_uploadFloat__"]>a>span{width:auto!important;white-space:nowrap!important;line-height:20px!important;}' +
+      '.pcw-wrap .pcw-more-popup{width:max-content!important;min-width:208px;max-width:calc(100vw - 32px);box-sizing:border-box;}' +
+      '.pcw-wrap .more-popup-item{white-space:nowrap!important;}' +
+      '.pcw-wrap .pcw-box-welfare{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px!important;height:auto!important;}' +
+      // The vendor's 23.11% maximum was relative to a flex row; inside a grid it
+      // shrinks each card to a quarter of its cell unless explicitly reset.
+      '.pcw-wrap .welfare-banner{width:100%!important;max-width:none!important;margin:0!important;height:auto!important;min-width:0;box-sizing:border-box;display:flex!important;flex-direction:column;}' +
+      '.pcw-wrap .banner-content{flex:1 0 auto;}' +
+      '.pcw-wrap .banner-tip1,.pcw-wrap .banner-tip2,.pcw-wrap .box-card-label{height:auto!important;white-space:normal!important;line-height:1.45!important;' +
+      'word-break:normal!important;overflow-wrap:break-word!important;overflow:visible!important;-webkit-line-clamp:unset!important;}' +
+      '.pcw-wrap .banner-image{width:100%!important;height:auto!important;display:block;}' +
+      '#floatBox:has([class*="NavHeader_hoverPanel__"]){max-width:calc(100vw - 32px)!important;}' +
+      '@media(max-width:960px){#floatBox:has([class*="NavHeader_hoverPanel__"]){left:16px!important;right:16px!important;width:auto!important;}}' +
+      '[class*="NavHeader_hoverPanel__"]{width:min(880px,calc(100vw - 32px))!important;max-width:100%!important;' +
+      'height:auto!important;max-height:70vh;overflow:auto;box-sizing:border-box;padding:16px!important;}' +
+      '[class*="NavHeader_hoverSection__"]{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))!important;' +
+      'grid-auto-flow:row!important;gap:8px 16px!important;width:100%!important;height:auto!important;}' +
+      '[class*="NavHeader_hoverSection__"]>a{width:auto!important;height:auto!important;min-width:0;display:block!important;}' +
+      '[class*="NavHeader_hoverPanel__"] [class*="NavHeader_item__"]{display:flex!important;align-items:center;box-sizing:border-box;' +
+      'width:100%!important;height:auto!important;min-height:40px;padding:8px 12px!important;line-height:20px!important;' +
+      'white-space:normal!important;word-break:normal!important;overflow-wrap:break-word!important;}' +
+      // Creator headers and biography cards also use widths sized for Chinese.
+      '[class*="info_starHeader__"]{flex-wrap:wrap!important;height:auto!important;row-gap:20px!important;}' +
+      '[class*="info_starMainCol__"]{flex:1 1 320px!important;min-width:0!important;height:auto!important;}' +
+      '[class*="info_starRowSubtitle__"],[class*="info_starRowTags__"]{flex-wrap:wrap!important;height:auto!important;row-gap:8px!important;}' +
+      '[class*="info_starSide__"]{width:max-content!important;max-width:100%;min-width:0;flex:0 1 auto!important;height:auto!important;}' +
+      '[class*="info_starStats__"]{width:auto!important;max-width:100%;height:auto!important;gap:24px!important;flex-wrap:wrap!important;}' +
+      '[class*="info_starStatItem__"]{width:auto!important;min-width:96px;flex:1 0 auto!important;height:auto!important;}' +
+      '[class*="info_starStatNumWrap__"]{width:max-content!important;max-width:100%;gap:6px!important;align-items:baseline!important;}' +
+      '[class*="info_starStatNum__"],[class*="info_starStatUnit__"]{flex-shrink:0!important;white-space:nowrap!important;line-height:1.3!important;height:auto!important;}' +
+      '[class*="info_starStatUnit__"]{font-size:16px!important;}' +
+      '[class*="aboutTa_detailCard__"]{width:100%!important;max-width:1000px!important;height:auto!important;box-sizing:border-box;}' +
+      '[class*="aboutTa_detailInner__"]{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:16px 32px!important;}' +
+      '[class*="aboutTa_col__"]{min-width:0!important;gap:12px!important;}' +
+      '[class*="aboutTa_row__"]{display:grid!important;grid-template-columns:minmax(100px,128px) minmax(0,1fr);align-items:start;gap:12px!important;height:auto!important;}' +
+      '[class*="aboutTa_label__"],[class*="aboutTa_value__"]{width:auto!important;max-width:100%!important;min-width:0!important;' +
+      'height:auto!important;white-space:normal!important;word-break:normal!important;overflow-wrap:anywhere!important;' +
+      'overflow:visible!important;text-overflow:clip!important;line-height:20px!important;font-size:13px!important;}' +
+      '[class*="aboutTa_descInner__"]{font-weight:400!important;line-height:1.65!important;word-break:normal!important;overflow-wrap:break-word;}' +
+      '[class*="RelatedPeopleSection_scrollArea__"]{gap:16px!important;overflow-x:auto!important;align-items:flex-start;}' +
+      '[class*="RelatedPeopleSection_personItem__"]{width:112px!important;min-width:112px!important;flex:0 0 112px!important;height:auto!important;}' +
+      '[class*="RelatedPeopleSection_name__"]{width:100%!important;max-width:100%!important;height:auto!important;' +
+      'white-space:normal!important;word-break:normal!important;overflow-wrap:break-word!important;line-height:20px!important;font-size:13px!important;}' +
+      // Shared cards must wrap Vietnamese at words, rather than splitting letters.
+      '[class*="tilesItem_titles__"],[class*="tilesItem_title_multi"],[class*="tilesItem_title__"],' +
+      '[class*="filmFeed_title__"],[class*="flexVideoList_title__"],[class*="videoListItem_title__"]{' +
+      'min-width:0;word-break:normal!important;overflow-wrap:break-word!important;line-height:1.5!important;}' +
+      '[class*="tilesItem_title_multi"]{height:auto!important;max-height:none!important;white-space:normal!important;}' +
+      '[class*="flexVideoList_titles__"]{height:auto!important;min-width:0;flex-shrink:0;}' +
+      '[class*="flexVideoList_title__"],[class*="flexVideoList_desc__"],[class*="filmFeed_title__"],[class*="filmFeed_desc__"],' +
+      '[class*="thumbnailItemTitle"],[class*="feedZaizhui_itemTitle__"],[class*="feedZaizhui_desc__"]{' +
+      'display:block!important;-webkit-line-clamp:unset!important;line-clamp:unset!important;' +
+      'height:auto!important;max-height:none!important;min-height:0!important;white-space:normal!important;overflow:visible!important;' +
+      'text-overflow:clip!important;word-break:normal!important;overflow-wrap:break-word!important;line-height:1.5!important;flex-shrink:0;}' +
+      // Responsive rows reserve room for one Chinese line. Let Vietnamese text
+      // determine their height so it cannot run into the following row.
+      '[class*="flexResp_cardResp__"]:has([class*="flexVideoList_titles__"]),' +
+      '[class*="flexResp_cardRespRow__"]:has([class*="flexVideoList_titles__"]),' +
+      '[class*="flexResp_cardRespRows__"]:has([class*="flexVideoList_titles__"]),' +
+      '[class*="flexResp_cardRespItem__"]:has([class*="flexVideoList_titles__"]){height:auto!important;min-height:0!important;}' +
+      '[class*="flexResp_cardRespRows__"]:has([class*="flexVideoList_titles__"]){row-gap:16px;}' +
+      '[class*="paging_pagingBox__"]:has([class*="thumbnailItemTitle"]),' +
+      '[class*="paging_pagingBox__"]:has([class*="thumbnailItemTitle"])>#list{align-items:flex-start!important;}' +
+      '[class*="feedZaizhui_contentWrap__"]{height:auto!important;min-width:0;overflow:visible!important;}' +
+      '[class*="flexVideoList_titles__"] [class*="metas_row3__"]{height:auto!important;overflow:visible!important;gap:4px;}' +
+      '[class*="flexVideoList_bgContainerTitle__"] #title{width:max-content!important;max-width:100%;}' +
+      '#btn_msgBellBtn,#btn_historyBtn{min-width:56px!important;flex-shrink:0!important;margin-left:4px!important;margin-right:4px!important;}' +
+      '[class*="tilesItem_note__"]{display:block!important;width:fit-content;max-width:100%;box-sizing:border-box;' +
+      'white-space:normal!important;word-break:normal!important;overflow-wrap:break-word!important;}' +
+      // These controls are reused by history, collections and other account pages.
+      '[class*="actionButton_actionButton__"]{width:max-content!important;min-width:max-content!important;flex-shrink:0!important;gap:4px;}' +
+      '[class*="actionButton_text__"],[class*="history_channelFilterCurrentText__"]{' +
+      'width:auto!important;height:auto!important;flex-shrink:0!important;white-space:nowrap!important;font-size:14px!important;line-height:20px!important;}' +
+      '[class*="history_filterBtn__"]{width:max-content!important;flex-shrink:0;}' +
+      '[class*="history_channelFilterDropdown__"]{min-width:max-content!important;}' +
+      '[class*="history_periodLabelWrapper__"]{width:112px!important;flex:0 0 112px!important;}' +
+      '[class*="history_periodLabel__"]{width:112px!important;}' +
+      '[class*="history_periodText__"]{flex:1 1 auto;min-width:0;width:auto!important;white-space:nowrap!important;font-size:14px!important;line-height:20px!important;}' +
+      '[class*="history_periodLine__"]{left:auto!important;right:6px!important;}' +
+      '[class*="history_periodContent__"]{min-width:0;}' +
+      '@media(max-width:1280px){' +
+      '[class*="history_header__"]{height:auto!important;margin-bottom:0!important;padding:8px 0!important;}' +
+      '[class*="history_row__"]{position:static!important;width:100%!important;height:auto!important;min-height:40px;' +
+      'padding:0!important;box-sizing:border-box;flex-wrap:wrap!important;gap:8px!important;}}' +
+      '[class*="basic_saleVipBubble__"]{width:max-content!important;max-width:calc(100vw - 32px);box-sizing:border-box;white-space:nowrap!important;}' +
+      '[class*="adInfoCard_adCardContainer__"]{width:clamp(340px,27vw,420px)!important;min-width:340px!important;height:auto!important;min-height:104px;gap:16px;}' +
+      '[class*="adInfoCard_leftBox__"]{min-width:0;flex:1 1 auto;}' +
+      '[class*="adInfoCard_mTitle__"],[class*="adInfoCard_sTitle__"]{height:auto!important;white-space:normal!important;word-break:normal!important;}' +
       'html[lang="vi"] [class*="tabName"],' +
       'html[lang="vi"] [class*="tagName"],' +
       'html[lang="vi"] [class*="tagHeader"],' +
@@ -2980,6 +3520,9 @@
   function replaceFixedBadge(imageId, label, width, background, color, height, scope) {
     height = height || 22;
     queryFixed(scope, 'img[src*="' + imageId + '"],img[data-iqiyi-vi-badge-id="' + imageId + '"]').forEach(function (img) {
+      var src = img.getAttribute("src") || "";
+      // React can reuse the image for another permission; its new source wins over the saved ID.
+      if (src.indexOf("data:image/svg+xml") !== 0 && src.indexOf(imageId) === -1) return;
       setUiAttribute(img, "data-iqiyi-vi-badge-id", imageId);
       var episode = /episode/i.test(String(img.className));
       // Match iQIYI's original corner ribbon: transparent lead-in, square top,
@@ -2987,7 +3530,8 @@
       var badgeHeight = episode ? 18 : height;
       var fontSize = episode ? 10.5 : (height <= 16 ? 11 : 12);
       var badgeWidth = episode ? 58 : width;
-      var ribbonWidth = Math.min(badgeWidth, Math.ceil(label.length * fontSize * 0.58 + 18));
+      var displayLabel = episode && label === "Miễn phí có hạn" ? "Miễn phí" : label;
+      var ribbonWidth = Math.min(badgeWidth, Math.ceil(displayLabel.length * fontSize * 0.58 + 18));
       var left = !!(img.closest && img.closest('[class*="marks_leftContainer__"]'));
       var offset = left ? 0 : badgeWidth - ribbonWidth;
       var radius = Math.min(12, badgeHeight * 0.55);
@@ -3003,7 +3547,7 @@
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + badgeWidth + '" height="' + badgeHeight + '" viewBox="0 0 ' + badgeWidth + ' ' + badgeHeight + '">' +
         '<defs><linearGradient id="bg"><stop stop-color="' + startColor + '"/><stop offset="1" stop-color="' + endColor + '"/></linearGradient></defs>' +
         '<g transform="translate(' + offset + ' 0)"><path d="' + shape + '" fill="url(#bg)"/>' +
-        '<text x="' + (ribbonWidth / 2) + '" y="50%" dy=".35em" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="' + fontSize + '" font-weight="500" fill="' + textColor + '">' + label + '</text></g></svg>';
+        '<text x="' + (ribbonWidth / 2) + '" y="50%" dy=".35em" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="' + fontSize + '" font-weight="500" fill="' + textColor + '">' + displayLabel + '</text></g></svg>';
       var replacement = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
       setUiAttribute(img, "src", replacement);
       setUiAttribute(img, "alt", label);
@@ -3017,8 +3561,85 @@
     });
   }
 
+  function localizeWalletPromotions(scope) {
+    // Campaign images contain baked-in Chinese. Match known assets so a new offer
+    // never inherits an old campaign's wording; keep the original image/click binding.
+    var offers = {
+      "b2c675690a6bf6a54357985448180812": ["Tặng 1 tháng iQIYI VIP vàng", "Nhận ngay", "#fff0d9", "#ffb478", true],
+      "471df0fbaaad55ea90023fdca65a7e76": ["Nhận miễn phí iQIYI VIP", "Nhận ngay", "#fff0e3", "#ffd5ab"],
+      "34916161be1a6c52a63fb61edf950017": ["Đổi điểm lấy VIP", "Đổi ngay", "#ffe7b0", "#ffbd54"],
+      "1b93db390e48440b5ebdbe463f6f543d": ["Nhận thẻ VIP tháng miễn phí", "Nhận miễn phí", "#fff8cf", "#f5ce4b"],
+      "0e8ec0d6edaf31c78cfa7a3f6fb5b3b4": ["1 tháng iQIYI VIP", "Nhận ngay", "#ffdfcc", "#ffb8d4"]
+    };
+    queryFixed(scope, '.pcw-xyd-banner,.pcw-box-welfare .banner-image').forEach(function (img) {
+      var src = img.getAttribute("src") || "";
+      var id = src.indexOf("data:image/svg+xml") === 0 ? img.getAttribute("data-iqiyi-vi-offer-id") :
+        Object.keys(offers).find(function (key) { return src.indexOf(key) !== -1; });
+      var offer = offers[id];
+      if (!offer) return;
+      var wide = offer[4], width = wide ? 1284 : 510, height = wide ? 340 : 320;
+      var x = wide ? 48 : 28, buttonY = wide ? 232 : 222, buttonWidth = wide ? 220 : 176;
+      var label = wide ? "Ưu đãi khách mới JD Finance: " + offer[0] + ". " + offer[1] : offer[0] + ". " + offer[1];
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '">' +
+        '<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="' + offer[2] + '"/><stop offset="1" stop-color="' + offer[3] + '"/></linearGradient>' +
+        '<linearGradient id="gold" x2="1" y2="1"><stop stop-color="#87623d"/><stop offset="1" stop-color="#302013"/></linearGradient></defs>' +
+        '<rect width="100%" height="100%" rx="16" fill="url(#bg)"/>' +
+        '<circle cx="' + width + '" cy="0" r="' + (wide ? 390 : 240) + '" fill="#fff" opacity=".2"/>' +
+        '<path d="M0 ' + (height - 30) + 'Q' + (width / 2) + ' ' + (height + 90) + ' ' + width + ' 100V' + height + 'H0Z" fill="#fff" opacity=".25"/>' +
+        '<g font-family="Arial,Helvetica,sans-serif" fill="#632d10">' +
+        (wide ? '<text x="48" y="62" font-size="30" font-weight="700" fill="#00b957">iQIYI · JD Finance</text>' +
+          '<text x="48" y="124" font-size="28">Ưu đãi khách mới JD Finance</text>' : '') +
+        '<text x="' + x + '" y="' + (wide ? 182 : 64) + '" font-size="' + (wide ? 40 : 27) + '" font-weight="700">' + offer[0] + '</text>' +
+        '<rect x="' + x + '" y="' + buttonY + '" width="' + buttonWidth + '" height="56" rx="28" fill="#76300d"/>' +
+        '<text x="' + (x + buttonWidth / 2) + '" y="' + (buttonY + 35) + '" text-anchor="middle" font-size="24" fill="#fff8e8">' + offer[1] + '</text>' +
+        '<g transform="translate(' + (wide ? 940 : 306) + ' ' + (wide ? 83 : 122) + ') rotate(9 85 70)">' +
+        '<rect width="' + (wide ? 280 : 174) + '" height="' + (wide ? 184 : 148) + '" rx="18" fill="url(#gold)" stroke="#fff0c8" stroke-width="4"/>' +
+        '<text x="20" y="32" font-size="18" fill="#fff0c8">iQIYI</text>' +
+        '<text x="' + (wide ? 140 : 87) + '" y="' + (wide ? 118 : 94) + '" text-anchor="middle" font-size="' + (wide ? 80 : 52) + '" font-weight="700" fill="#ffe3a2">VIP</text>' +
+        '<text x="' + (wide ? 140 : 87) + '" y="' + (wide ? 155 : 124) + '" text-anchor="middle" font-size="' + (wide ? 20 : 14) + '" fill="#ffe3a2">' + (wide ? 'HỘI VIÊN VÀNG' : 'iQIYI VIP') + '</text></g></g></svg>';
+      setUiAttribute(img, "data-iqiyi-vi-offer-id", id);
+      setUiAttribute(img, "src", "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
+      setUiAttribute(img, "alt", label);
+      setUiAttribute(img, "title", label);
+      setUiAttribute(img, "data-iqiyi-vi-fixed", "1");
+    });
+  }
+
   function localizeFixedUI(scope) {
     scope = scope || document;
+    localizeWalletPromotions(scope);
+    var navigation = '[class*="NavHeader_channelItem__"],[class*="NavHeader_item__"]';
+    queryFixed(scope, navigation).forEach(function (el) {
+      var link = el.closest && el.closest("a[href]");
+      if (!link) return;
+      try {
+        var url = new URL(link.getAttribute("href"), location.href);
+        var label = /(^|\.)iqiyi\.com$/.test(url.hostname) ? {
+          "/tv":"Phim bộ", "/free":"Phim ngắn", "/movie":"Phim", "/variety":"Giải trí",
+          "/cartoon":"Thiếu nhi", "/comic":"Anime", "/comicdrama":"Phim truyện tranh",
+          "/documentary":"Phim tài liệu", "/shortvideo":"Video ngắn", "/sports":"Thể thao",
+          "/cloudCinema":"Rạp trực tuyến", "/newonline":"Trailer phim mới", "/trending":"Bảng xếp hạng",
+          "/gamelib":"Kho game Truyền Kỳ", "/knowledge":"Kiến thức", "/live":"Trực tiếp", "/vip":"Trung tâm VIP"
+        }[url.pathname.replace(/\/$/, "")] : "";
+        label = {"gongyi.iqiyi.com":"Cộng đồng", "wenxue.iqiyi.com":"Tiểu thuyết", "vr.iqiyi.com":"VR", "games.iqiyi.com":"Game"}[url.hostname] || label;
+        if (label) replaceFixedLabel(navigation, label, el);
+      } catch {}
+    });
+    queryFixed(scope, '[class*="info_starStats__"]').forEach(function (stats) {
+      var labels = ["Lượt thích", "Đang theo dõi", "Người hâm mộ"];
+      stats.querySelectorAll('[class*="info_starStatLabel__"]').forEach(function (el, index) {
+        if (labels[index]) replaceFixedLabel('[class*="info_starStatLabel__"]', labels[index], el);
+      });
+      stats.querySelectorAll('[class*="info_starStatUnit__"]').forEach(function (el) {
+        var raw = actorSourceText(el, el.textContent || "").trim();
+        var label = {"万":"vạn", "亿":"trăm triệu", "Mười nghìn":"vạn", "mười nghìn":"vạn"}[raw];
+        if (label) replaceFixedLabel('[class*="info_starStatUnit__"]', label, el);
+      });
+    });
+    queryFixed(scope, '[class*="aboutTa_label__"]').forEach(function (el) {
+      var raw = actorSourceText(el, el.textContent || "").trim();
+      if (FIXED_COPY[raw]) replaceFixedLabel('[class*="aboutTa_label__"]', FIXED_COPY[raw], el);
+    });
     // Upgrade badges generated before stable asset IDs were saved. Do this once per image.
     var legacyIds = {"Miễn phí":"0b3bd1c78a4b4368b4e2da2fb206b5c8", "Đang theo dõi":"9013485acf0c4e07a2500429869d44f4",
       "VIP":"308107f863864cd8b364bc428f50f4ec", "Miễn phí có hạn":"5a2c3f02c5b54771b1047a27cc1f0447",
@@ -3085,6 +3706,9 @@
     replaceFixedBadge("637ac407a456464b9902eb90a923a253", "Danh sách", 72, "#c4e8ed", "#244c54", 20, scope);
     replaceFixedBadge("9013485acf0c4e07a2500429869d44f4", "Đang theo dõi", 82, "#b9ffe0", "#123d2c", 22, scope);
     replaceFixedBadge("5a2c3f02c5b54771b1047a27cc1f0447", "Miễn phí có hạn", 104, "#44cf98", "#123d2c", 22, scope);
+    replaceFixedBadge("6b011312d2c447ea90ed9bb47f751db5", "Miễn phí có hạn", 104, "#44cf98", "#123d2c", 22, scope);
+    replaceFixedBadge("a2556f7166b541be8ad0e24c4db93cbc", "Rạp tình cảm", 96, "transparent", "#f08b9b", 16, scope);
+    replaceFixedBadge("0487461a373d497cae2d159f0b5ddcee", "Phim ngắn chọn lọc", 155, "transparent", "#ffffff", 30, scope);
     replaceFixedBadge("0b3bd1c78a4b4368b4e2da2fb206b5c8", "Miễn phí", 104, "#44cf98", "#123d2c", 22, scope);
     replaceFixedBadge("ac0bbaca7ffb4528a3a210b4078afbdf", "Miễn phí", 104, "#44cf98", "#123d2c", 22, scope);
     replaceFixedBadge("308107f863864cd8b364bc428f50f4ec", "VIP", 104, "#e5bd5f", "#453313", 22, scope);
@@ -3116,20 +3740,43 @@
     channel(4, "Anime");
   }
 
+  function localizePageTitle(value) {
+    var raw = String(value || "").trim();
+    if (!raw) return "iQIYI";
+    if (FIXED_COPY[raw]) return FIXED_COPY[raw];
+    var suffix = /^(?:iQIYI|爱奇艺(?:视频)?|电视剧(?:全集)?|电影|动漫|综艺|纪录片|高清正版视频在线观看|高清完整版视频在线观看|完整版视频在线观看|全集完整版在线观看|高清视频在线观看|免费在线观看|高清在线观看)$/i;
+    var parts = raw.split(/\s*[-_|－–—]\s*/).filter(function (part, index) { return part && (!index || !suffix.test(part)); });
+    var result = localizeTitleValue(parts.join(" – ")).replace(/\s*第(\d+)集/g, " · Tập $1");
+    return /iQIYI/i.test(result) ? result : result + " – iQIYI";
+  }
+
+  function setDocumentTitle(title, raw, translated) {
+    if ((title.textContent || "") !== raw || translated === raw) return;
+    // Preserve the text nodes owned by the page while changing the displayed title.
+    if (!title.firstChild) title.appendChild(document.createTextNode(translated));
+    else Array.prototype.forEach.call(title.childNodes, function (node, index) {
+      if (node.nodeType === 3) node.nodeValue = index === 0 ? translated : "";
+    });
+  }
+
   function translateDocumentTitle() {
     var title = document.querySelector("title");
     if (!title) return;
     var raw = title.textContent || "";
+    var prepared = localizePageTitle(raw);
+    setDocumentTitle(title, raw, prepared);
+    raw = title.textContent || "";
+    if (!cjkCount(raw)) return;
     if (title.firstChild && requestInternationalTitle(title.firstChild, raw, function (translated) {
-      if ((title.textContent || "") === raw && title.firstChild && title.firstChild.nodeType === 3) title.firstChild.nodeValue = translated;
+      setDocumentTitle(title, raw, localizePageTitle(translated));
     })) return;
-    var next = tr(raw);
-    if (next !== raw && title.firstChild && title.firstChild.nodeType === 3) title.firstChild.nodeValue = next;
+    setDocumentTitle(title, raw, localizePageTitle(tr(raw)));
   }
 
   function fitCompact(node) {
     var el = node && node.nodeType === 3 ? node.parentElement : node;
     if (!el || el.nodeType !== 1 || el.childElementCount) return;
+    if (el.closest && el.closest(REFLOW_TEXT_SCOPE)) return;
     if (el.id === "pcaSubtitleContainer") return;
     // Hidden tooltips have zero width; forcing their overflow visible creates vertical text.
     if (el.clientWidth <= 0 || el.clientHeight <= 0) return;
@@ -3160,6 +3807,10 @@
 
   function walk(node) {
     if (!node || isFixedUI(node)) return;
+    if (node.tagName === "TITLE" || (node.nodeType === 3 && node.parentElement && node.parentElement.tagName === "TITLE")) {
+      translateDocumentTitle();
+      return;
+    }
     var parent = node.parentElement;
     for (; parent; parent = parent.parentElement) {
       if (SKIP[parent.tagName] || parent.tagName === "INPUT" || parent.tagName === "TEXTAREA" ||
@@ -3206,7 +3857,7 @@
       try {
         var frameDocument = node.contentDocument;
         if (frameDocument && frameDocument.documentElement) walk(frameDocument);
-      } catch (e) {} // Cross-origin frames run their own extension content script.
+      } catch {} // Cross-origin frames run their own extension content script.
     }
     if (node.tagName === "HTML" && /^zh(?:[-_]|$)/i.test(node.getAttribute("lang") || "")) setUiAttribute(node, "lang", "vi");
     ["title", "placeholder", "aria-label", "alt", "value"].forEach(function (a) {
@@ -3242,7 +3893,8 @@
     }
     if (!hasEl && kids.length === 1 && kids[0].nodeType === 3) {
       var all = node.textContent;
-      if (requestInternationalTitle(node, all, function (translated) {
+      // Track the same text node used by localizeRemaining and machine results.
+      if (requestInternationalTitle(kids[0], all, function (translated) {
         if (node.isConnected && node.childNodes.length === 1 && node.firstChild.nodeType === 3 && node.textContent === all) {
           node.firstChild.nodeValue = translated;
         }
@@ -3264,7 +3916,8 @@
     OBSERVED_ROOTS.add(root);
     var observer = new MutationObserver(handleMutations);
     observer.observe(root, { childList:true, subtree:true, characterData:true, attributes:true,
-      attributeFilter:["title","placeholder","aria-label","alt","value","src"] });
+      attributeFilter:["title","placeholder","aria-label","alt","value","src","href",
+        "data-albumid","data-album-id","data-qipuid","data-qipu-id","data-tvid","data-tv-id","data-ai-entity"] });
     ROOT_OBSERVERS.push(observer);
   }
 
@@ -3315,14 +3968,56 @@
     }
   }
 
+  function installManagerShortcut() {
+    if (location.hostname !== "localwebapp.iqiyi.com") return;
+    var tools = document.querySelector('[class*="backTop_sideTools__"]');
+    if (!tools || document.getElementById("iqiyi-vi-manager")) return;
+    var button = document.createElement("button");
+    button.id = "iqiyi-vi-manager";
+    button.type = "button";
+    button.setAttribute("aria-label", "Quản lý phụ đề");
+    button.title = "Quản lý phụ đề";
+    button.innerHTML = "<svg width=\"29\" height=\"24\" aria-hidden=\"true\" viewBox=\"0 0 504 158\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n    <title>iQIYI</title>\n    <g id=\"页面-1\" stroke=\"none\" stroke-width=\"1\" fill=\"none\" fill-rule=\"evenodd\">\n        <path d=\"M249.87,155.67 C249.883018,156.028127 250.037894,156.366382 250.3005,156.610231 C250.563106,156.854079 250.911892,156.983509 251.27,156.970985 L284.84,156.970985 C285.587548,156.998208 286.217529,156.417375 286.25,155.67 L286.25,5.31 C286.23698,4.94922192 286.08105,4.60842388 285.816569,4.3627003 C285.552088,4.11697672 285.20076,3.98649261 284.84,3.9990467 L251.27,3.9990467 C250.52629,3.97740671 249.902483,4.55665653 249.87,5.3 L249.87,155.67 Z M3.12,155.67 C3.12778834,156.034295 3.28143576,156.380228 3.54649957,156.630252 C3.81156337,156.880277 4.1658716,157.013479 4.53,157 L38.09,157 C38.8375476,157.028208 39.4675285,156.447375 39.5,155.7 L39.5,61 C39.4675285,60.2526255 38.8375476,59.671792 38.09,59.7 L4.53,59.7 C3.78245242,59.671792 3.1524715,60.2526255 3.12,61 L3.12,155.67 Z M227.72,131.13 L211.11,117.8 C210.789438,117.547053 210.561024,117.195646 210.46,116.8 C210.376525,116.382555 210.436426,115.949154 210.63,115.57 C229.238422,80.5115052 218.619859,37.0726282 185.9364,14.5523505 C153.25294,-7.96792719 108.880515,-2.42015307 82.7477721,27.4537683 C56.6150293,57.3276897 57.018261,102.043764 83.6854925,131.441557 C110.352724,160.839349 154.81798,165.58602 187.09,142.48 C187.747492,141.974793 188.662508,141.974793 189.32,142.48 L207.13,156.77 C207.426603,157.004524 207.804495,157.111067 208.179922,157.066016 C208.555349,157.020965 208.897304,156.82804 209.13,156.53 L227.91,133.13 C228.15017,132.83965 228.26509,132.465747 228.229453,132.090627 C228.193817,131.715507 228.010547,131.369932 227.72,131.13 Z M149.65,124 C125.34,128.39 101.91,111.79 97.42,87 C92.93,62.21 109.07,38.45 133.42,34.05 C157.77,29.65 181.16,46.25 185.65,71.05 C190.14,95.85 174,119.62 149.65,124 Z M501.63,3.99901459 L468.06,3.99901459 C467.312452,3.971792 466.682471,4.55262547 466.65,5.3 L466.65,155.67 C466.682471,156.417375 467.312452,156.998208 468.06,156.970985 L501.63,156.970985 C501.988108,156.983509 502.336894,156.854079 502.5995,156.610231 C502.862106,156.366382 503.016982,156.028127 503.03,155.67 L503.03,5.31 C503.002846,4.56270039 502.377455,3.97751291 501.63,3.99901459 Z M32.5156483,40.4566332 C42.5268449,34.2687636 45.6262638,21.1368259 39.4383941,11.1256293 C33.2505245,1.11443279 20.1185868,-1.98498609 10.1073902,4.20288351 C0.0961936888,10.3907531 -3.00322519,23.5226909 3.18464441,33.5338874 C9.37251402,43.545084 22.5044518,46.6445029 32.5156483,40.4566332 Z M448.89,3.99992953 L413.12,3.99992953 C412.51957,3.99454388 411.960799,4.30623974 411.65,4.82 L378.42,63.92 C378.42,63.92 378.18,64.35 377.85,64.36 L377.85,64.36 C377.52,64.36 377.28,63.92 377.28,63.92 L344.05,4.83 C343.741689,4.31240121 343.182456,3.99664367 342.58,3.99992953 L306.81,3.99992953 C306.227884,4.00156785 305.695065,4.32711338 305.428028,4.84436786 C305.16099,5.36162234 305.204161,5.98452835 305.54,6.46 L358.7,95.91 C359.208335,96.7734511 359.474345,97.7580354 359.47,98.76 L359.47,155.41 C359.461967,155.82376 359.618667,156.223756 359.905614,156.521956 C360.192561,156.820156 360.586237,156.99212 361,157 L394.64,157 C395.052824,157 395.448596,156.835333 395.739566,156.542486 C396.030537,156.249638 396.192663,155.852815 396.19,155.44 L396.19,98.76 C396.189177,97.7571694 396.458624,96.77265 396.97,95.91 L450.16,6.47 C450.501604,5.99435306 450.548051,5.36745723 450.280273,4.84666129 C450.012495,4.32586535 449.475604,3.99992953 448.89,3.99992953 L448.89,3.99992953 Z\" id=\"iQIYI\" fill=\"#00DC5A\" fill-rule=\"nonzero\"></path>\n    </g>\n</svg><span class=\"iqiyi-vi-manager-tip\" role=\"status\">Quản lý phụ đề</span>";
+    button.onclick = async function () {
+      if (button.disabled) return;
+      button.disabled = true;
+      var label = button.querySelector("span"), request = window.__iqiyiViLocalFetch || fetch;
+      label.textContent = "Đang mở quản lý phụ đề…";
+      try {
+        var options = {signal:AbortSignal.timeout(10000)};
+        var token = window.__iqiyiViToken;
+        if (!token) {
+          var tokenResponse = await request("http://127.0.0.1:18766/api/extension-token", options);
+          if (!tokenResponse.ok) throw Error("Chưa kết nối được dịch vụ phụ đề. Đóng rồi mở lại iQIYI.");
+          token = (await tokenResponse.json()).token;
+        }
+        if (!token) throw Error("Chưa nhận được kết nối dịch vụ phụ đề.");
+        var response = await request("http://127.0.0.1:18766/api/open-manager", {
+          method:"POST",signal:options.signal,headers:{"Content-Type":"application/json","X-Iqiyi-Token":token},body:"{}"
+        });
+        var result = await response.json();
+        if (!response.ok) throw Error(result.error || "Không mở được cửa sổ quản lý phụ đề.");
+        label.textContent = "Đã mở quản lý phụ đề";
+      } catch (error) {
+        label.textContent = error.name === "TimeoutError" || error.name === "TypeError" ?
+          "Chưa kết nối dịch vụ phụ đề. Đóng rồi mở lại iQIYI." : error.message;
+      } finally {
+        button.disabled = false;
+        button.title = label.textContent;
+      }
+    };
+    tools.insertBefore(button, tools.querySelector('[class*="backTop_iconBtn__"]') || tools.firstChild);
+  }
+
   function run() {
     try {
       injectCSS();
+      installManagerShortcut();
       scheduleRemainingLocalization();
       localizeFixedUI();
       translateDocumentTitle();
       document.querySelectorAll('[data-iqiyi-vi-fit="1"]').forEach(function (el) {
-        if (!el.childElementCount) return;
+        if (!el.childElementCount && !el.closest(REFLOW_TEXT_SCOPE)) return;
         el.removeAttribute("data-iqiyi-vi-fit");
         if (String(el.className).indexOf("settingBtnAnchor") !== -1) el.removeAttribute("title");
         ["whiteSpace", "overflow", "overflowWrap", "fontSize", "textOverflow", "maxWidth", "boxSizing"].forEach(function (key) {
@@ -3330,14 +4025,14 @@
         });
       });
       walk(document.documentElement || document.body);
-    } catch (e) {}
+    } catch {}
   }
 
   function scheduleRemainingLocalization(delay) {
     var player = /(?:\/play\/|\/v_[^/]+\.html?$|\/player(?:_mac)?\.html$)/i.test(location.pathname);
-    if (IQCOM_METADATA_STOPPED || document.hidden || !document.body ||
+    if (IQCOM_METADATA_STOPPED || window.__iqiyiViBridgeExpired || document.hidden || !document.body ||
         (window.top !== window && !player && !IS_RANKING_PAGE) ||
-        (!window.__iqiyiViToken && window.__iqiyiViTokenPending)) return;
+        (!window.__iqiyiViPublicApi && !window.__iqiyiViToken && window.__iqiyiViTokenPending)) return;
     var due = Date.now() + Math.max(150, typeof delay === "number" ? delay : 0);
     if (machineTimer !== null && machineTimerAt <= due) return;
     if (machineTimer !== null) clearTimeout(machineTimer);
@@ -3348,8 +4043,32 @@
     }, Math.max(0, due - Date.now()));
   }
 
+  function protectMetadataNames(raw) {
+    var tokens = [], prefix = "IQVINAME";
+    while (raw.indexOf(prefix) !== -1) prefix += "X";
+    function protect(value) {
+      var token = prefix + tokens.length + "TOKEN";
+      tokens.push([token, value]);
+      return " " + token + " ";
+    }
+    // Keep verified names stable in prose; unknown names retain machine fallback.
+    var text = raw.replace(/《([^《》\n]{1,200})》/g, function (whole, title) {
+      return VERIFIED_TITLE_COPY[title.trim()] ? "《" + protect(VERIFIED_TITLE_COPY[title.trim()]) + "》" : whole;
+    });
+    Object.keys(VERIFIED_ACTOR_COPY).sort(function (a, b) { return b.length - a.length; }).forEach(function (name) {
+      if (text.indexOf(name) !== -1) text = text.split(name).join(protect(VERIFIED_ACTOR_COPY[name]));
+    });
+    return {text:text, restore:function (value) {
+      tokens.forEach(function (pair) {
+        if (value.indexOf(pair[0]) === -1) throw new Error("Bản dịch làm mất tên riêng; sẽ thử lại.");
+        value = value.split(pair[0]).join(pair[1]);
+      });
+      return value;
+    }};
+  }
+
   async function localizeRemaining() {
-    if (machineBusy || IQCOM_METADATA_STOPPED || document.hidden) return;
+    if (machineBusy || IQCOM_METADATA_STOPPED || window.__iqiyiViBridgeExpired || document.hidden) return;
     machineBusy = true;
     var jobs = [], nextRetry = Infinity;
     try {
@@ -3372,16 +4091,22 @@
               el.closest('script,style,noscript,code,input,textarea,[contenteditable]:not([contenteditable="false"]),[data-iqiyi-vi-pending="1"],#pcaSubtitleContainer,[class*="subtitleContainer"],[class*="caption-main"],[class*="caption-sub"]') ||
               !el.getClientRects().length || getComputedStyle(el).visibility === "hidden") continue;
           var bounds = el.getBoundingClientRect();
+          var inViewport = bounds.bottom >= 0 && bounds.top < window.innerHeight;
           if (IS_RANKING_PAGE) {
             // Warm the next screen while idle; visible text takes priority below.
             if (bounds.bottom < 0 || bounds.top > window.innerHeight * 2) continue;
           }
           function add(raw, field) {
             if (!raw || raw.length > 2000 || !/[\u3400-\u9fff]/.test(raw)) return;
+            var rendered = MACHINE_RENDERED.get(node);
+            if (rendered && rendered[field] === raw) return;
+            // Wait for the catalog first; permit machine translation after a miss.
+            if (!mayMachineTranslate(node, field, raw)) return;
             var key = machineTextKey(raw);
             if (!slots.has(key)) slots.set(key, []);
             slots.get(key).push({node:node, field:field, raw:raw,
-              priority:(bounds.top < window.innerHeight ? 0 : 2) + (key.length > 160 ? 1 : 0)});
+              priority:inViewport && el.closest('[class*="aboutTa_descInner__"]') ? -1 :
+                (inViewport ? 0 : 2) + (key.length > 160 ? 1 : 0)});
           }
           if (node.nodeType === 3) add(node.nodeValue, "");
           else {
@@ -3391,16 +4116,38 @@
         }
       }
       collect(document.body);
+      // <title> has no layout box and lives outside body; it still labels browser
+      // tabs and native webapp windows and needs the same fallback as visible UI.
+      var pageTitle = document.querySelector("title");
+      var titleText = pageTitle && pageTitle.firstChild;
+      if (titleText && titleText.nodeType === 3 && titleText.nodeValue.length <= 2000 && cjkCount(titleText.nodeValue) && mayMachineTranslate(titleText, "", titleText.nodeValue)) {
+        var titleKey = machineTextKey(titleText.nodeValue);
+        if (!slots.has(titleKey)) slots.set(titleKey, []);
+        slots.get(titleKey).push({node:titleText, field:"", raw:titleText.nodeValue, priority:-2, pageTitle:true});
+      }
       function apply(raw, translated) {
         slots.get(raw).forEach(function (slot) {
           if (!slot.node.isConnected) return;
+          // React can recycle/reparent a label while a translation is in flight.
+          if (!mayMachineTranslate(slot.node, slot.field, slot.raw)) return;
+          var value = slot.pageTitle ? localizePageTitle(translated) : translated;
           if (slot.field) {
-            if (slot.node.getAttribute(slot.field) === slot.raw) slot.node.setAttribute(slot.field, translated);
-          } else if (slot.node.nodeValue === slot.raw) slot.node.nodeValue = translated;
+            if (slot.node.getAttribute(slot.field) === slot.raw) slot.node.setAttribute(slot.field, value);
+          } else if (slot.node.nodeValue === slot.raw) slot.node.nodeValue = value;
+          var rendered = MACHINE_RENDERED.get(slot.node) || {};
+          rendered[slot.field] = value;
+          MACHINE_RENDERED.set(slot.node, rendered);
         });
       }
       var texts = Array.from(slots.keys()).filter(function (raw) {
-        if (!MACHINE_COPY.has(raw)) return !MACHINE_PENDING.has(raw);
+        if (!MACHINE_COPY.has(raw)) {
+          var retry = MACHINE_RETRIES.get(raw);
+          if (retry && retry.retryAt > Date.now()) {
+            nextRetry = Math.min(nextRetry, retry.retryAt);
+            return false;
+          }
+          return !MACHINE_PENDING.has(raw);
+        }
         apply(raw, MACHINE_COPY.get(raw));
         return false;
       });
@@ -3410,38 +4157,69 @@
           var controller = typeof AbortController === "function" ? new AbortController() : null;
           var timer = controller ? setTimeout(function () { controller.abort(); }, 15000) : null;
           if (controller) IQCOM_METADATA_CONTROLLERS.add(controller);
-          try {
-            var options = {method:"POST", headers:{"Content-Type":"application/json", "X-Iqiyi-Token":window.__iqiyiViToken || ""},
-              body:JSON.stringify({texts:batch})};
-            if (controller) options.signal = controller.signal;
-            var response = await (window.__iqiyiViLocalFetch || fetch)("http://127.0.0.1:18766/api/localize-remaining", options);
-            var payload = await response.json();
-            if (!response.ok) throw new Error(payload.error || "API Việt hóa lỗi HTTP " + response.status);
-            if (!Array.isArray(payload.translations) || payload.translations.length !== batch.length ||
-                payload.translations.some(function (value) { return typeof value !== "string" || !value.trim() || cjkCount(value); }))
-              throw new Error("API chưa trả bản Việt hóa đầy đủ.");
+          async function translateItems(items) {
             if (IQCOM_METADATA_STOPPED) return;
-            batch.forEach(function (raw, index) {
-              var translated = payload.translations[index].trim();
-              MACHINE_COPY.set(raw, translated);
-              if (MACHINE_COPY.size > 1000) MACHINE_COPY.delete(MACHINE_COPY.keys().next().value);
-              apply(raw, translated);
-            });
-            try { localStorage.setItem("iqiyi-vi-machine-copy-v1", JSON.stringify(Array.from(MACHINE_COPY))); } catch (_) {}
+            if (controller && controller.signal.aborted) throw new Error("Quá thời gian chờ dịch nhanh.");
+            try {
+              var protectedTexts = items.map(protectMetadataNames);
+              var options = {method:"POST", headers:{"Content-Type":"application/json", "X-Iqiyi-Token":window.__iqiyiViToken || ""},
+                body:JSON.stringify({texts:protectedTexts.map(function (item) { return item.text; })})};
+              if (controller) options.signal = controller.signal;
+              var response = await (window.__iqiyiViLocalFetch || fetch)("http://127.0.0.1:18766/api/localize-remaining", options);
+              var payload = await response.json();
+              if (!response.ok) throw new Error((payload && payload.error) || "API Việt hóa lỗi HTTP " + response.status);
+              if (!payload || !Array.isArray(payload.translations) || payload.translations.length !== items.length ||
+                  payload.translations.some(function (value) { return typeof value !== "string" || !value.trim() || value.length > 8000 || cjkCount(value); }))
+                throw new Error("API chưa trả bản Việt hóa đầy đủ.");
+              if (IQCOM_METADATA_STOPPED) return;
+              var restored = payload.translations.map(function (value, index) { return protectedTexts[index].restore(value.trim()); });
+              items.forEach(function (raw, index) {
+                var translated = restored[index];
+                MACHINE_COPY.set(raw, translated);
+                MACHINE_RETRIES.delete(raw);
+                if (MACHINE_COPY.size > 1000) MACHINE_COPY.delete(MACHINE_COPY.keys().next().value);
+                apply(raw, translated);
+              });
+            } catch (error) {
+              if (IQCOM_METADATA_STOPPED || (controller && controller.signal.aborted)) throw error;
+              if (!/chưa trả đủ|chưa trả bản Việt hóa đầy đủ/.test(error.message || "")) throw error;
+              // A missing or unchanged name must not reject the rest of the page.
+              // Split before applying anything: a short array may have omitted a middle row.
+              if (items.length > 1) {
+                var middle = Math.ceil(items.length / 2);
+                await translateItems(items.slice(0, middle));
+                await translateItems(items.slice(middle));
+              } else {
+                var previous = MACHINE_RETRIES.get(items[0]);
+                var failures = (previous ? previous.failures : 0) + 1;
+                var retryAt = Date.now() + Math.min(300000, 5000 * Math.pow(2, Math.min(failures - 1, 6)));
+                if (MACHINE_RETRIES.size >= 1000) MACHINE_RETRIES.delete(MACHINE_RETRIES.keys().next().value);
+                MACHINE_RETRIES.set(items[0], {failures:failures, retryAt:retryAt});
+              }
+            }
+          }
+          try {
+            await translateItems(batch);
+            try { localStorage.setItem("iqiyi-vi-machine-copy-v2", JSON.stringify(Array.from(MACHINE_COPY))); } catch {}
             lane.failures = 0;
             lane.retryAt = 0;
+            localizeRemaining.lastWarning = "";
           } catch (error) {
-            if (!IQCOM_METADATA_STOPPED) {
+            if (!IQCOM_METADATA_STOPPED && !window.__iqiyiViBridgeExpired) {
               lane.failures++;
               lane.retryAt = Date.now() + Math.min(30000, 3000 * Math.pow(2, lane.failures - 1));
-              console.warn("Việt hóa tự động: " + (error.message || "Không kết nối được API."));
+              var warning = "Việt hóa tự động: " + (error.message || "Không kết nối được API.");
+              if (localizeRemaining.lastWarning !== warning) {
+                localizeRemaining.lastWarning = warning;
+                console.warn(warning);
+              }
             }
           } finally {
             if (timer) clearTimeout(timer);
             if (controller) IQCOM_METADATA_CONTROLLERS.delete(controller);
             lane.busy = false;
             batch.forEach(function (raw) { MACHINE_PENDING.delete(raw); });
-            if (!IQCOM_METADATA_STOPPED) scheduleRemainingLocalization(Math.max(0, lane.retryAt - Date.now()));
+            if (!IQCOM_METADATA_STOPPED && !window.__iqiyiViBridgeExpired) scheduleRemainingLocalization(Math.max(0, lane.retryAt - Date.now()));
           }
       }
       MACHINE_WORKERS.forEach(function (lane) {
@@ -3450,8 +4228,8 @@
         if (!candidates.length) return;
         if (lane.retryAt > Date.now()) { nextRetry = Math.min(nextRetry, lane.retryAt); return; }
         var batch = [candidates.shift()];
-        while (batch[0].length <= 160 && batch.length < 4 && candidates.length &&
-               candidates[0].length <= 160 && priority(candidates[0]) === priority(batch[0])) batch.push(candidates.shift());
+        while (!MACHINE_RETRIES.has(batch[0]) && batch[0].length <= 160 && batch.length < 8 && candidates.length &&
+               !MACHINE_RETRIES.has(candidates[0]) && candidates[0].length <= 160 && priority(candidates[0]) === priority(batch[0])) batch.push(candidates.shift());
         lane.busy = true;
         batch.forEach(function (raw) { MACHINE_PENDING.add(raw); });
         jobs.push(translateBatch(lane, batch));
@@ -3476,8 +4254,13 @@
   if (document.addEventListener) {
     document.addEventListener("keydown", handleVietnameseSearch, true);
     document.addEventListener("click", handleVietnameseSearch, true);
-    document.addEventListener("input", clearSearchSuggestions, true);
+    document.addEventListener("input", suggestVietnameseSearch, true);
+    document.addEventListener("focusin", suggestVietnameseSearch, true);
+    document.addEventListener("compositionstart", suggestVietnameseSearch, true);
+    document.addEventListener("compositionend", suggestVietnameseSearch, true);
   }
+  window.addEventListener("resize", clearSearchSuggestions);
+  window.addEventListener("scroll", clearSearchSuggestions, {passive:true});
   document.addEventListener("visibilitychange", scheduleRemainingLocalization);
   if (IS_RANKING_PAGE) window.addEventListener("scroll", scheduleRemainingLocalization, {passive:true, capture:true});
   observeRoot(document);
@@ -3490,11 +4273,32 @@
     if (!document.hidden) scanLateShadowRoots();
   }, 60000);
   var metadataRetryTimer = setInterval(retryIqcomMetadata, 15000);
+  window.__iqiyiViPauseNetwork = function () {
+    window.__iqiyiViBridgeExpired = true;
+    window.__iqiyiViPublicApi = false;
+    window.__iqiyiViToken = "";
+    clearSearchSuggestions();
+    clearTimeout(machineTimer);
+    machineTimer = null;
+    IQCOM_METADATA_RETRIES.clear();
+    IQCOM_METADATA_CONTROLLERS.forEach(function (controller) { controller.abort(); });
+    while (IQCOM_METADATA_QUEUE.length) IQCOM_METADATA_QUEUE.shift().resolve({});
+    IQCOM_PENDING_LABELS.forEach(function (el) { el.removeAttribute("data-iqiyi-vi-pending"); });
+    IQCOM_PENDING_LABELS.clear();
+  };
+  if (window.__iqiyiViBridgeExpired) window.__iqiyiViPauseNetwork();
   window.__iqiyiViStop = function () {
     IQCOM_METADATA_STOPPED = true;
+    var managerShortcut = document.getElementById("iqiyi-vi-manager");
+    if (managerShortcut) managerShortcut.remove();
     document.removeEventListener("keydown", handleVietnameseSearch, true);
     document.removeEventListener("click", handleVietnameseSearch, true);
-    document.removeEventListener("input", clearSearchSuggestions, true);
+    document.removeEventListener("input", suggestVietnameseSearch, true);
+    document.removeEventListener("focusin", suggestVietnameseSearch, true);
+    document.removeEventListener("compositionstart", suggestVietnameseSearch, true);
+    document.removeEventListener("compositionend", suggestVietnameseSearch, true);
+    window.removeEventListener("resize", clearSearchSuggestions);
+    window.removeEventListener("scroll", clearSearchSuggestions);
     clearSearchSuggestions();
     IQCOM_METADATA_RETRIES.clear();
     IQCOM_PENDING_LABELS.forEach(function (el) { el.removeAttribute("data-iqiyi-vi-pending"); });

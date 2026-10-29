@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import parse_qs, urljoin, urlsplit
 
-from iqiyi_common import atomic_write
+from iqiyi_common import HEADLESS_BROWSER_ARGS, atomic_write
 
 
 def login_cookie(cookies: list[dict]) -> str:
@@ -65,8 +65,7 @@ class IqcomSession:
         self.profile = profile
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="iqcom-browser")
         self.lock = threading.Lock()
-        self.state = {"connected": False, "browserOpen": False, "opening": False,
-                      "synced": False, "message": "", "version": 0}
+        self.state = {"connected": False, "synced": False, "message": "", "version": 0}
         self.context = self.playwright = None
         self.cookie_signature = hashlib.sha256(b"").hexdigest()
         self.auth_signature = hashlib.sha256(b"").hexdigest()
@@ -96,10 +95,6 @@ class IqcomSession:
     def status(self) -> dict:
         with self.lock:
             return {**self.state, "saved": self.saved}
-
-    def login(self) -> dict:
-        # Kept for old UI clients; checking a login must never open a window.
-        return self.status()
 
     def update(self, rows, source: str, *, select: bool = False) -> dict:
         if not isinstance(source, str) or not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", source):
@@ -152,7 +147,7 @@ class IqcomSession:
                 self.state["version"] += 1
             self.auth_signature = auth_signature
             self.cookie_signature, self.browser_cookies = signature, cookies
-            self.state.update(synced=True, connected=connected, opening=False,
+            self.state.update(synced=True, connected=connected,
                 message=("Đã nhận phiên iq.com của trình duyệt hiện tại. Quyền VIP được kiểm tra khi lấy phụ đề." if connected else
                          "Chưa đăng nhập iq.com trong trình duyệt hiện tại."))
         with self.lock:
@@ -185,18 +180,18 @@ class IqcomSession:
             self._set(message="Đã kiểm tra phiên trình duyệt nhưng chưa lưu được hồ sơ iq.com. Thử kiểm tra lại.")
             return False
 
-    def dash(self, suffix: str, tvid: str) -> dict:
+    def dash(self, suffix: str, tvid: str, *, audio: bool = False) -> dict:
         url = episode_url(suffix)
         if not re.fullmatch(r"\d{8,24}", tvid):
             raise ValueError("Mã tập iq.com không hợp lệ.")
         with self.lock:
             if self.closed:
                 raise ValueError("Phiên iq.com đang đóng.")
-            key = (self.state["version"], tvid)
+            key = (self.state["version"], tvid, audio)
             future = self.dash_pending.get(key)
             owner = future is None
             if owner:
-                future = self.pool.submit(self._dash, url, tvid)
+                future = self.pool.submit(self._dash, url, tvid, audio=audio)
                 self.dash_pending[key] = future
         if owner:
             def finished(done):
@@ -213,7 +208,6 @@ class IqcomSession:
     def _closed(self, *_):
         self.context = None
         self.applied_signature = None
-        self._set(browserOpen=False)
 
     def _browser(self):
         if self.closed:
@@ -227,7 +221,7 @@ class IqcomSession:
         if self.playwright is None:
             self.playwright = sync_playwright().start()
         options = {"headless": True, "locale": "vi-VN", "accept_downloads": False,
-                   "service_workers": "block", "args": ["--autoplay-policy=user-gesture-required",
+                   "service_workers": "block", "args": [*HEADLESS_BROWSER_ARGS, "--autoplay-policy=user-gesture-required",
                    "--disable-background-mode", "--disable-quic", "--no-proxy-server"]}
         # Use an installed browser; no separate browser download on Windows.
         for channel, vendor in (("msedge", "Microsoft/Edge"), ("chrome", "Google/Chrome")):
@@ -258,13 +252,13 @@ class IqcomSession:
                     self.auth_signature = signature
                     self.state["version"] += 1
                 self.state["connected"] = bool(auth)
-                if not self.state["opening"] and (changed or not self.state["message"]):
+                if changed or not self.state["message"]:
                     self.state["message"] = ("Đã nhận phiên iq.com; quyền VIP được kiểm tra khi lấy phụ đề." if auth else
                                              "Phiên iq.com chưa đăng nhập hoặc đã hết hạn. Bấm Mở đăng nhập iq.com.")
         except Exception:
-            self._set(browserOpen=False)
+            pass
 
-    def _dash(self, url: str, tvid: str) -> dict:
+    def _dash(self, url: str, tvid: str, *, audio: bool = False) -> dict:
         page = None
         try:
             context = self._browser()
@@ -298,17 +292,24 @@ class IqcomSession:
                     data = payload.get("props", {}).get("initialProps", {}).get("pageProps", {}).get("prePlayerData", {}).get("dash", {}).get("data", {})
             except (ValueError, TypeError, AttributeError):
                 pass
-            if has_vietnamese_track(data, tvid):
+            def ready(payload):
+                if not audio:
+                    return has_vietnamese_track(payload, tvid)
+                return str(payload.get("tvid")) == tvid and any(
+                    str(row.get("lid")) == "161" and row.get("fs")
+                    for row in (payload.get("program") or {}).get("audio", []))
+
+            if ready(data):
                 self._poll()
                 return data
             deadline = time.monotonic() + 20
             while time.monotonic() < deadline:
                 if self.closed:
                     raise ValueError("Phiên iq.com đang đóng.")
-                ready = next((row for row in reversed(captured) if has_vietnamese_track(row, tvid)), None)
-                if ready is not None:
+                found = next((row for row in reversed(captured) if ready(row)), None)
+                if found is not None:
                     self._poll()
-                    return ready
+                    return found
                 page.wait_for_timeout(250)
             self._poll()
             if captured:
@@ -332,7 +333,6 @@ class IqcomSession:
         finally:
             self.context = None
             self.applied_signature = None
-            self._set(browserOpen=False)
             if self.playwright is not None:
                 try:
                     self.playwright.stop()

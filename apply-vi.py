@@ -10,12 +10,10 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-
-if os.name == "nt":
-    import winreg
+import app_integration
 
 from iqiyi_common import (
-    SIGNED_LWA_HTML, atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
+    signed_lwa_html, atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
     lwa_backup_dir, patch_subtitle_tag, patch_ui_tag, python_executable, restore_lwa_ini_flags,
     subtitle_hook,
 )
@@ -193,6 +191,21 @@ def _set_xml_tag_attributes(tag: str, updates: dict) -> str:
     return tag
 
 
+def patch_native_context_menu(raw: str, rel: Path) -> str:
+    """Leave room for Vietnamese player menu items and aspect-ratio submenus."""
+    if rel.as_posix().casefold() not in ("player/menu/right_menu.xml", "player/menu/right_menu_wine.xml"):
+        return raw
+
+    def resize(match):
+        tag = match[0]
+        attrs = dict(re.findall(r'([\w]+)="([^"]*)"', tag))
+        updates = {name: 240 for name in ("width", "minwidht") if attrs.get(name) in ("140", "200")}
+        return _set_xml_tag_attributes(tag, updates)
+
+    raw = re.sub(r'<(?:Menu|MenuElement|MenuDivision)\b[^>]*>', resize, raw)
+    return raw.replace("166,11,178,23", "206,11,218,23").replace("14,0,182,1", "14,0,222,1")
+
+
 def patch_native_settings_layout(raw: str, rel: Path) -> str:
     """Fit Vietnamese labels inside the native settings dialog's fixed page width."""
     if rel.parent.as_posix().casefold() != "configres/settingdlgres":
@@ -361,10 +374,6 @@ def remove_injected_html_tags(text: str) -> str:
                   "", text, flags=re.I)
 
 
-STARTUP_REGISTRY_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-STARTUP_REGISTRY_VALUE = "IQIYI-VI-Watch"
-
-
 def startup_vbs() -> Path:
     """Path of the legacy startup script, removed during migration to Run key."""
     return Path(os.environ.get("APPDATA", "")) / "Microsoft/Windows/Start Menu/Programs/Startup/iqiyi-vi-watch.vbs"
@@ -374,17 +383,25 @@ def python_exe() -> str:
     return str(python_executable(ROOT, background=True))
 
 
+def integration_user_sid() -> str:
+    if "--user-sid" not in sys.argv:
+        return app_integration.current_user_sid()
+    index = sys.argv.index("--user-sid") + 1
+    if index >= len(sys.argv):
+        raise ValueError("Thiếu tài khoản Windows cài đặt.")
+    return sys.argv[index]
+
+
 def install_autostart() -> None:
     py = python_exe()
     watch = ROOT / "watch-players.py"
-    try:
-        startup_vbs().unlink(missing_ok=True)
-        with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, STARTUP_REGISTRY_KEY, 0,
-                                winreg.KEY_SET_VALUE) as key:
-            winreg.SetValueEx(key, STARTUP_REGISTRY_VALUE, 0, winreg.REG_SZ,
-                              subprocess.list2cmdline([py, str(watch), "iqiyi"]))
-    except OSError as exc:
-        print(f"Khong cai duoc tu dong khoi dong: {exc}")
+    app_integration.install(ROOT, integration_user_sid())
+    startup_vbs().unlink(missing_ok=True)
+    from launcher import script_processes, stop_processes
+    stop_processes(list(script_processes({"watch-players.py"}, "iqiyi")))
+    if "--defer-watcher" in sys.argv:
+        print("Da dang ky tich hop. Ung dung quan ly se khoi dong watchdog.")
+        return
     subprocess.Popen(
         [py, str(watch), "iqiyi"],
         cwd=str(ROOT),
@@ -402,8 +419,9 @@ def inject_lwa_dir(webapp: Path, payload: str) -> int:
     atomic_write(dest_js, payload)
     n += 1
 
+    protected = signed_lwa_html(webapp)
     for path in webapp.glob("*.html"):
-        if path.name.casefold() in SIGNED_LWA_HTML:
+        if path.name.casefold() in protected:
             # Preserve the exact bytes covered by QyClient's package signature.
             original = lwa_backup_dir(BACKUP_LWA, webapp) / path.name
             if original.is_file() and path.read_bytes() != original.read_bytes():
@@ -473,7 +491,7 @@ def restore_wrapper_app(app_dir: Path = WRAPPER_APP) -> bool:
 def apply_skin(skin: Path, mapping: dict[str, str]) -> tuple[int, int, int]:
     files = hits = skipped = 0
     for path in list(skin.rglob("*.xml")) + list(skin.rglob("*.html")):
-        if path.parent.name.casefold() == "iqiyi_webapp" and path.name.casefold() in SIGNED_LWA_HTML:
+        if path.parent.name.casefold() == "iqiyi_webapp" and path.name.casefold() in signed_lwa_html(path.parent):
             continue
         rel = path.relative_to(skin)
         try:
@@ -498,6 +516,9 @@ def apply_skin(skin: Path, mapping: dict[str, str]) -> tuple[int, int, int]:
         auxiliary = patch_native_auxiliary_layout(new, rel)
         layout_changed = layout_changed or auxiliary != new
         new = auxiliary
+        context_menu = patch_native_context_menu(new, rel)
+        layout_changed = layout_changed or context_menu != new
+        new = context_menu
         if n == 0 and not layout_changed:
             continue
         backup_file(skin, skin_backup_dir(skin), rel)
@@ -508,6 +529,19 @@ def apply_skin(skin: Path, mapping: dict[str, str]) -> tuple[int, int, int]:
 
 
 def main() -> int:
+    global APPDATA_LWA, PPSTREAM_INI, WRAPPER_APP
+    # Elevation can use another admin's profile. Keep targeting the initiating user.
+    for name in ("APPDATA", "LOCALAPPDATA"):
+        flag = "--" + name.lower()
+        if flag not in sys.argv:
+            continue
+        index = sys.argv.index(flag) + 1
+        if index >= len(sys.argv) or not Path(sys.argv[index]).is_absolute():
+            raise ValueError("Đường dẫn hồ sơ Windows cài đặt không hợp lệ.")
+        os.environ[name] = sys.argv[index]
+    APPDATA_LWA = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "localwebapp"
+    PPSTREAM_INI = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "LStyle" / "PPStream.ini"
+    WRAPPER_APP = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs/iQIYI/resources/app"
     if "--client-path" in sys.argv:
         client = find_iqiyi_client()
         if client:
@@ -520,13 +554,20 @@ def main() -> int:
         restoring = "--restore" in sys.argv
         if restoring:
             atomic_write(disabled, "restored\n")
-        result = _main()
+        try:
+            result = _main()
+        except PermissionError as exc:
+            print(f"Can quyen Administrator de cai tich hop iQIYI: {exc}")
+            return 2
         if result == 0 and not restoring:
             disabled.unlink(missing_ok=True)
         return result
 
 
 def _main() -> int:
+    if "--install-integration" in sys.argv:
+        install_autostart()
+        return 0
     restore = "--restore" in sys.argv
     lwa_only = "--lwa" in sys.argv
     mapping = load_prepared_ui() if not restore else {}
@@ -543,12 +584,13 @@ def _main() -> int:
             n = restore_tree(skin_backup_dir(skin), skin) if skin else 0
             if skin and BACKUP.exists() and not skin_backup_dir(skin).exists():
                 print("Bo qua backup skin cu khong ro phien ban de tranh ghi de sai resource.")
-            if restore_wrapper_app():
+            if restore_wrapper_app(WRAPPER_APP):
                 n += 2
             for webapp in find_lwa_dirs():
                 n += restore_tree(lwa_backup_dir(BACKUP_LWA, webapp), webapp)
+                protected = signed_lwa_html(webapp)
                 for page in webapp.glob("*.html"):
-                    if page.name.casefold() in SIGNED_LWA_HTML:
+                    if page.name.casefold() in protected:
                         continue
                     raw, enc = read_text(page)
                     cleaned = remove_injected_html_tags(raw)
@@ -561,13 +603,7 @@ def _main() -> int:
                         n += 1
             restore_lwa_sign()
             startup_vbs().unlink(missing_ok=True)
-            if os.name == "nt":
-                try:
-                    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, STARTUP_REGISTRY_KEY, 0,
-                                        winreg.KEY_SET_VALUE) as key:
-                        winreg.DeleteValue(key, STARTUP_REGISTRY_VALUE)
-                except FileNotFoundError:
-                    pass
+            app_integration.uninstall(ROOT, integration_user_sid())
         except PermissionError as exc:
             print(f"Can quyen Administrator de khoi phuc giao dien native: {exc}")
             return 2
@@ -577,7 +613,7 @@ def _main() -> int:
 
     permission_errors = []
     try:
-        wrapper_patched = patch_wrapper_app()
+        wrapper_patched = patch_wrapper_app(WRAPPER_APP)
     except PermissionError as exc:
         wrapper_patched = False
         permission_errors.append(str(exc))

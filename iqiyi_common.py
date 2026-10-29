@@ -15,11 +15,17 @@ import urllib.request
 from windows_runtime import list_processes
 
 
+# Edge's tab switcher integration can publish blank entries even in headless mode.
+# Apply this only to our background browser, never to the user's normal Edge.
+HEADLESS_BROWSER_ARGS = ("--disable-features=msWindowTabManagerPublic",)
+
+
 _IQIYI_ROOTS: tuple[Path | None, list[Path]] = (None, [])
 _IQIYI_ROOTS_REFRESH = 0.0
 SIGNED_LWA_HTML = frozenset({
     "compactplayer.html", "compactplayer_mac.html", "download.html", "index.html", "login.html",
     "mac.html", "mini.html", "placeholder.html", "player.html", "player_mac.html",
+    "harmonyos.html", "player_harmonyos.html",
 })
 LWA_INI_FLAGS = {
     "lwa_disable_checksign_pcafx": "1",
@@ -27,6 +33,24 @@ LWA_INI_FLAGS = {
     "lwa_disable_repalce_update": "1",
     "lwa_disable_load_copy": "1",
 }
+
+
+def signed_lwa_html(webapp: Path) -> frozenset[str]:
+    """Keep vendor-signed HTML intact, including pages added by later releases."""
+    manifest = webapp / "localwebapp.files.json"
+    protected = set(SIGNED_LWA_HTML)
+    if manifest.is_file():
+        try:
+            rows = json.loads(manifest.read_text(encoding="utf-8-sig"))["files"]
+            if not isinstance(rows, list):
+                raise ValueError("Invalid package file list")
+            protected.update(row["src"].replace("\\", "/").removeprefix("./").casefold() for row in rows
+                             if isinstance(row, dict) and isinstance(row.get("src"), str)
+                             and row["src"].casefold().endswith(".html"))
+        except (OSError, ValueError, KeyError, TypeError):
+            # An unreadable signed manifest is not permission to rewrite its pages.
+            protected.update(page.name.casefold() for page in webapp.glob("*.html"))
+    return frozenset(protected)
 
 
 def iqiyi_install_roots(state_dir: Path | None = None) -> list[Path]:
