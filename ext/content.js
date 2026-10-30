@@ -1,13 +1,38 @@
 /* iqiyi-vi */
 (function () {
-  var ENGINE_VERSION = 227;
-  if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION) {
+  var ENGINE_VERSION = 234;
+  var MANAGER_ONLY = window.__iqiyiViManagerOnly === true;
+  if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION && window.__iqiyiViMode === MANAGER_ONLY) {
     if (window.__iqiyiViReload) window.__iqiyiViReload();
     return;
   }
   if (window.__iqiyiViStop) window.__iqiyiViStop();
   var oldStyle = document.getElementById("iqiyi-vi-css");
   if (oldStyle) oldStyle.remove();
+  window.__iqiyiViMode = MANAGER_ONLY;
+  if (MANAGER_ONLY) {
+    function showManager() {
+      if (document.documentElement && !document.getElementById("iqiyi-vi-css")) {
+        var style = document.createElement("style");
+        style.id = "iqiyi-vi-css";
+        style.textContent = managerShortcutCSS();
+        document.documentElement.appendChild(style);
+      }
+      installManagerShortcut();
+    }
+    var managerObserver = new MutationObserver(showManager);
+    managerObserver.observe(document, {childList:true, subtree:true});
+    window.__iqiyiVi = true;
+    window.__iqiyiViVersion = ENGINE_VERSION;
+    window.__iqiyiViReload = showManager;
+    window.__iqiyiViStop = function () {
+      managerObserver.disconnect();
+      var button = document.getElementById("iqiyi-vi-manager");
+      if (button) button.remove();
+    };
+    showManager();
+    return;
+  }
   var IQCOM_METADATA_CACHE = new Map();
   loadIqcomMetadataCache();
   var IQCOM_METADATA_WAITERS = new WeakMap();
@@ -42,7 +67,7 @@
   var SEARCH_SUGGEST_VERSION = 0;
   var SEARCH_SUGGEST_INPUT = null;
   var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, CODE: 1 };
-  var IS_RANKING_PAGE = /^\/ranks1(?:PCA)?(?:\/|$)/i.test(location.pathname);
+  var IS_RANKING_PAGE = /^\/ranks1(?:PCA|PCW|MAC)?(?:\/|$)/i.test(location.pathname);
   var REFLOW_TEXT_SCOPE = '[class*="aboutTa_"],[class*="RelatedPeopleSection_"],[class*="info_starHeader__"],[class*="NavHeader_hoverPanel__"],[class*="flexVideoList_titles__"],' +
     '[class*="thumbnailItemTitle"],[class*="filmFeed_title__"],[class*="filmFeed_desc__"],[class*="feedZaizhui_itemTitle__"],[class*="feedZaizhui_desc__"],.pcw-wrap';
   var FIXED_UI_TARGETS = [
@@ -2677,7 +2702,7 @@
   function localizeActorPrefix(prefix) {
     var label = prefix.match(/^(\s*)(主演|演员|导演)([：:\s]*)$/);
     if (label) return label[1] + tr(label[2]) + (/[：:]/.test(label[3]) ? ": " : " ");
-    return prefix.split(/(\s*\/\s*)/).map(tr).join("");
+    return prefix.split(/(\s*\/\s*|\s+)/).map(tr).join("");
   }
 
   function requestInternationalActor(node, value, setter, field) {
@@ -3195,6 +3220,28 @@
     }, 300);
   }
 
+  function handleNativeRankingClick(event) {
+    if (!IS_RANKING_PAGE || window.top === window || event.defaultPrevented || event.button !== 0 ||
+        event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    var link = event.target && event.target.closest && event.target.closest("a.rvi__box[href]");
+    if (!link) return;
+    try {
+      var parent = new URL(document.referrer);
+      var target = new URL(link.getAttribute("href"), location.href);
+      if (parent.origin !== "https://localwebapp.iqiyi.com" || target.protocol !== "https:" ||
+          !/(^|\.)iqiyi\.com$/i.test(target.hostname) || !/^\/v_[a-z0-9]+\.html$/i.test(target.pathname) ||
+          target.username || target.password || target.port) return;
+      // PCA's legacy WNJSPlay call can be present but inactive in modern WebViews.
+      // Prefer the host's current launcher, with the PCW message for cross-origin frames.
+      var launcher;
+      try { launcher = window.parent.QySdk && window.parent.QySdk.Launcher; } catch {}
+      if (launcher && typeof launcher.navigate === "function") launcher.navigate(target.href, {prefer:"new"});
+      else window.parent.postMessage(JSON.stringify({cmd:"play", context:{context:target.href, options:{prefer:"new"}}}), parent.origin);
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    } catch {}
+  }
+
   function handleVietnameseSearch(event) {
     if (REPLAYING_SEARCH || IQCOM_METADATA_STOPPED || event.isComposing) return;
     var target = event.target;
@@ -3266,6 +3313,18 @@
     });
   }
 
+  function managerShortcutCSS() {
+    return '[class*="backTop_sideTools__"]>[class*="backTop_backtopNew__"]{order:-1!important;flex-shrink:0!important;}' +
+      '[class*="backTop_backtopNew__"]:hover{width:max-content!important;max-width:calc(100vw - 40px);box-sizing:border-box;padding-left:12px!important;gap:8px;}' +
+      '[class*="backTop_backtopNew__"]:hover>span{width:max-content!important;max-width:none!important;overflow:visible!important;white-space:nowrap!important;flex-shrink:0!important;}' +
+      '#iqiyi-vi-manager{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;width:38px;height:38px;margin:0 0 12px;padding:0;border:0;border-radius:8px;background:rgba(41,44,51,.6);color:#ddd;cursor:pointer;-webkit-app-region:no-drag;}' +
+      '#iqiyi-vi-manager:hover,#iqiyi-vi-manager:focus-visible{background:#34383f;color:#00d46a;}' +
+      '#iqiyi-vi-manager:focus-visible{outline:2px solid #00d46a;outline-offset:2px;}' +
+      '#iqiyi-vi-manager:disabled{cursor:wait;opacity:.65;}' +
+      '#iqiyi-vi-manager .iqiyi-vi-manager-tip{display:none;position:absolute;right:48px;top:50%;transform:translateY(-50%);width:max-content;max-width:min(320px,calc(100vw - 100px));padding:9px 12px;border-radius:6px;background:#292c33;color:#fff;font:13px/19px Arial,sans-serif;text-align:left;white-space:normal;box-shadow:0 4px 16px #0004;pointer-events:none;}' +
+      '#iqiyi-vi-manager:hover .iqiyi-vi-manager-tip,#iqiyi-vi-manager:focus-visible .iqiyi-vi-manager-tip{display:block;}';
+  }
+
   function injectCSS() {
     if (!document.documentElement || document.getElementById("iqiyi-vi-css")) return;
     var s = document.createElement("style");
@@ -3280,15 +3339,7 @@
       "#searchinput .search-placeholder{display:none!important}" +
       'img[src*="/watermark_rightTop"],img[src*="/watermark_rightBottom"]{display:none!important;}' +
       'html[lang="vi"] { overflow-wrap:normal; }' +
-      '[class*="backTop_sideTools__"]>[class*="backTop_backtopNew__"]{order:-1!important;flex-shrink:0!important;}' +
-      '[class*="backTop_backtopNew__"]:hover{width:max-content!important;max-width:calc(100vw - 40px);box-sizing:border-box;padding-left:12px!important;gap:8px;}' +
-      '[class*="backTop_backtopNew__"]:hover>span{width:max-content!important;max-width:none!important;overflow:visible!important;white-space:nowrap!important;flex-shrink:0!important;}' +
-      '#iqiyi-vi-manager{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;width:38px;height:38px;margin:0 0 12px;padding:0;border:0;border-radius:8px;background:rgba(41,44,51,.6);color:#ddd;cursor:pointer;-webkit-app-region:no-drag;}' +
-      '#iqiyi-vi-manager:hover,#iqiyi-vi-manager:focus-visible{background:#34383f;color:#00d46a;}' +
-      '#iqiyi-vi-manager:focus-visible{outline:2px solid #00d46a;outline-offset:2px;}' +
-      '#iqiyi-vi-manager:disabled{cursor:wait;opacity:.65;}' +
-      '#iqiyi-vi-manager .iqiyi-vi-manager-tip{display:none;position:absolute;right:48px;top:50%;transform:translateY(-50%);width:max-content;max-width:min(320px,calc(100vw - 100px));padding:9px 12px;border-radius:6px;background:#292c33;color:#fff;font:13px/19px Arial,sans-serif;text-align:left;white-space:normal;box-shadow:0 4px 16px #0004;pointer-events:none;}' +
-      '#iqiyi-vi-manager:hover .iqiyi-vi-manager-tip,#iqiyi-vi-manager:focus-visible .iqiyi-vi-manager-tip{display:block;}' +
+      managerShortcutCSS() +
       '[class*="NavHeader_vipCenterBtn__"]{flex:0 0 auto!important;width:auto!important;min-width:max-content!important;white-space:nowrap!important;}' +
       '[class*="NavHeader_vipCenterBtn__"]>a,[class*="NavHeader_vipCenterBtn__"] [class*="NavHeader_channelItem__"]{' +
       'flex-shrink:0!important;width:auto!important;white-space:nowrap!important;}' +
@@ -3950,6 +4001,8 @@
     });
     // MutationObserver runs before paint, so changed labels can be localized in place.
     if (!document.getElementById("iqiyi-vi-css")) injectCSS();
+    // The web toolbar mounts after DOMContentLoaded and can be replaced during hydration.
+    if (!document.getElementById("iqiyi-vi-manager")) installManagerShortcut();
     fixedScopes.forEach(localizeFixedUI);
     changedNodes.forEach(walk);
     if (Array.from(changedNodes).some(function (node) {
@@ -3969,7 +4022,7 @@
   }
 
   function installManagerShortcut() {
-    if (location.hostname !== "localwebapp.iqiyi.com") return;
+    if (!/(^|\.)iqiyi\.com$/i.test(location.hostname)) return;
     var tools = document.querySelector('[class*="backTop_sideTools__"]');
     if (!tools || document.getElementById("iqiyi-vi-manager")) return;
     var button = document.createElement("button");
@@ -4252,6 +4305,7 @@
 
   // Observe the document itself: documentElement may not exist at document_start.
   if (document.addEventListener) {
+    document.addEventListener("click", handleNativeRankingClick, true);
     document.addEventListener("keydown", handleVietnameseSearch, true);
     document.addEventListener("click", handleVietnameseSearch, true);
     document.addEventListener("input", suggestVietnameseSearch, true);
@@ -4292,6 +4346,7 @@
     var managerShortcut = document.getElementById("iqiyi-vi-manager");
     if (managerShortcut) managerShortcut.remove();
     document.removeEventListener("keydown", handleVietnameseSearch, true);
+    document.removeEventListener("click", handleNativeRankingClick, true);
     document.removeEventListener("click", handleVietnameseSearch, true);
     document.removeEventListener("input", suggestVietnameseSearch, true);
     document.removeEventListener("focusin", suggestVietnameseSearch, true);

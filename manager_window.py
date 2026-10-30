@@ -81,10 +81,14 @@ def install_titlebar(window):
 
     form.Resize += update_border
     update_border()
-    # Keep the resize frame dark even when Windows uses its light app theme.
+    # Own the entire frame. DWM's shadow extension can leave a light 1px strip
+    # outside the client area even when WM_NCPAINT is suppressed.
     dwm = ctypes.WinDLL("dwmapi")
     dwm.DwmSetWindowAttribute.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
-    for attribute, value in ((20, 1), (34, 0x1D1A17), (35, 0x1D1A17)):
+    dwm.DwmExtendFrameIntoClientArea.argtypes = [wintypes.HWND, ctypes.c_void_p]
+    margins = (ctypes.c_int * 4)(0, 0, 0, 0)
+    dwm.DwmExtendFrameIntoClientArea(hwnd, ctypes.byref(margins))
+    for attribute, value in ((2, 1), (20, 1)):  # DWMNCRP_DISABLED; dark native controls
         setting = ctypes.c_int(value)
         dwm.DwmSetWindowAttribute(hwnd, attribute, ctypes.byref(setting), ctypes.sizeof(setting))
     user32.SetWindowPos(hwnd, None, 0, 0, 0, 0, 0x37)  # refresh the frame, keep bounds/focus
@@ -144,7 +148,7 @@ def install_titlebar(window):
         button = Button()
         button.AccessibleName = label
         button.Name = "window-" + action
-        button.TabIndex = {"minimize": 0, "maximize": 1, "close": 2}[action]
+        button.TabStop = False  # Caption controls stay outside the content's Tab navigation.
         button.Size = Size(height, height)
         button.Dock = DockStyle.Fill
         button.Margin = Padding(0)
@@ -218,7 +222,7 @@ def main():
     ensure_manager()
     window = webview.create_window(
         TITLE, URL, width=1280, height=850, min_size=(760, 520),
-        frameless=True, easy_drag=False, shadow=True, background_color="#101214",
+        frameless=True, easy_drag=False, shadow=False, background_color="#101214",
     )
     window.events.before_show += install_titlebar
     webview.settings["ALLOW_DOWNLOADS"] = True

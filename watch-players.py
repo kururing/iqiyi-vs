@@ -18,7 +18,7 @@ import cdp
 from iqiyi_common import (
     signed_lwa_html, atomic_write, installation_lock, iqiyi_install_roots, iqiyi_skin_dir,
     lwa_backup_dir, patch_subtitle_tag, patch_ui_tag, python_executable, subtitle_hook,
-    subtitle_manager_alive,
+    subtitle_manager_alive, manager_only, ui_script,
 )
 from windows_runtime import create_named_mutex, list_processes
 
@@ -69,8 +69,8 @@ def write_if_changed(path: Path, data: str | bytes) -> None:
 def patch_lwa() -> None:
     if (ROOT / "watch-iqiyi-vi.disabled").exists() or not UI_ENGINE.exists():
         return
-    payload = UI_ENGINE.read_bytes()
-    hook = subtitle_hook(ROOT) if SUB_HOOK_JS.exists() else None
+    payload = ui_script(ROOT, UI_ENGINE.read_bytes())
+    hook = subtitle_hook(ROOT) if SUB_HOOK_JS.exists() and not manager_only(ROOT) else None
     for webapp in find_lwa_dirs():
         write_if_changed(webapp / "lwa-vi.js", payload)
         if hook is not None:
@@ -90,8 +90,7 @@ def patch_lwa() -> None:
                     shutil.copy2(html, backup)
             except (OSError, UnicodeError):
                 continue
-            if hook is not None:
-                text = patch_subtitle_tag(text, hook)
+            text = patch_subtitle_tag(text, hook)
             text = patch_ui_tag(text, payload)
             write_if_changed(html, text)
 
@@ -132,6 +131,13 @@ def start_manager() -> None:
         )
 
 
+def runtime_script() -> str:
+    source = ui_script(ROOT, UI_ENGINE.read_bytes()).decode("utf-8")
+    if manager_only(ROOT):
+        return source
+    return "window.__iqiyiViTokenPending = true;\n" + source + "\n" + subtitle_hook(ROOT).decode("utf-8")
+
+
 def inject_runtime() -> None:
     """Load Vietnamese in WebView2 memory, preserving signed application files."""
     global EARLY_RUNTIME
@@ -143,8 +149,7 @@ def inject_runtime() -> None:
         endpoint = urlsplit(address)
         if endpoint.scheme != "ws" or endpoint.hostname != "127.0.0.1" or endpoint.port != 9223:
             raise ValueError("Unexpected WebView debugger endpoint")
-        script = ("window.__iqiyiViTokenPending = true;\n" + UI_ENGINE.read_text(encoding="utf-8")
-                  + "\n" + subtitle_hook(ROOT).decode("utf-8"))
+        script = runtime_script()
         revision = revision_of(script)
         script += "\nwindow.__iqiyiRuntimeVi = " + json.dumps(revision) + ";"
         script = "if (/(^|\\.)iqiyi\\.com$/i.test(location.hostname)) {\n" + script + "\n}"
@@ -182,8 +187,7 @@ def inject_runtime() -> None:
             continue
         key = target["webSocketDebuggerUrl"]
         active.add(key)
-        script = ("window.__iqiyiViTokenPending = true;\n" + UI_ENGINE.read_text(encoding="utf-8")
-                  + "\n" + subtitle_hook(ROOT).decode("utf-8"))
+        script = runtime_script()
         revision = revision_of(script)
         try:
             script += "\nwindow.__iqiyiRuntimeVi = " + json.dumps(revision) + ";"

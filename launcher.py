@@ -142,7 +142,7 @@ def iqiyi_player_proxy() -> str:
             request = urllib.request.Request(MANAGER_URL + "api/iqiyi-proxy",
                 data=json.dumps({"url": fallback}).encode(), headers={
                     "X-Iqiyi-Token": token, "Content-Type": "application/json"})
-            with opener.open(request, timeout=5):
+            with opener.open(request, timeout=160):
                 pass
         request = urllib.request.Request(MANAGER_URL + "api/browser-proxy?desktop=1", headers={
             "X-Iqiyi-Token": browser_proxy_token(token)})
@@ -222,7 +222,7 @@ def start_iqiyi_client(client: Path, proxy: str, processes=None) -> None:
     browser_args = "--remote-debugging-port=9223 --remote-debugging-address=127.0.0.1"
     if proxy:
         env.update(HTTP_PROXY=proxy, HTTPS_PROXY=proxy, ALL_PROXY=proxy,
-                   NO_PROXY="localhost,127.0.0.1,::1")
+                   NO_PROXY="localhost,127.0.0.1,::1,.71edge.com,.ppsimg.com")
         proxy_parts = urlsplit(proxy if "://" in proxy else "http://" + proxy)
         proxy_server = proxy_parts.scheme + "://" + proxy_parts.netloc.rsplit("@", 1)[-1]
         browser_args += f" --proxy-server={proxy_server} --proxy-bypass-list=localhost;127.0.0.1;[::1]"

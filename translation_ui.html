@@ -176,6 +176,20 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(!el("translationSettings").open)el("translationSettings").showModal();
  };
  function settingsReady(){if(model("context")&&model("translate"))return true;openTranslationSettings();return false}
+ window.translateAlbum=async(id,button)=>{
+  if(!ready){document.getElementById("status").textContent="Đang tải cấu hình model, hãy thử lại sau.";return}
+  if(!settingsReady())return;
+  button.disabled=true;
+  try{await send("/api/translation/album",{tvid:id,context_model:model("context"),translation_model:model("translate")});await refresh(true)}
+  catch(e){document.getElementById("status").textContent=e.message}
+  finally{button.disabled=false}
+ };
+ window.stopAlbumTranslation=async button=>{
+  button.disabled=true;
+  try{await send("/api/translation/album/cancel",{});await refresh(true)}
+  catch(e){document.getElementById("status").textContent=e.message}
+  finally{button.disabled=false}
+ };
  function selectEpisode(value){selectedEpisode=value;el("translationEpisodeLabel").textContent=value?.label||""}
  function resetTranslationView(episode){
   ++viewVersion;++pollVersion;clearTimeout(timer);jobId=null;lastState=null;selectEpisode(episode);busy(false);

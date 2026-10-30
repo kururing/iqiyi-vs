@@ -16,6 +16,8 @@ Việt hóa giao diện iQIYI; quản lý phụ đề gốc tải từ player, p
 
 Màn hình chính tập trung vào tìm phim và chọn tập. Bấm vào hàng phim (ảnh bìa hoặc tên phim) để mở/thu danh sách tập. **Cài đặt** chứa cấu hình model, kết nối iq.com/proxy, Việt hóa iQIYI và thống kê. Menu **···** của tập chứa xem phụ đề gốc, tải SRT Việt, dịch lại và xóa phụ đề. Cửa sổ dịch hiện tên phim/tập đã chọn, không có phần chọn nguồn hay đổi file; bản dịch hoàn tất được mở xem trước ngay. Có thể xem bản dịch của tập khác khi một tập đang dịch nền; tiến độ và file tải luôn theo đúng tập đang xem.
 
+Nút **Dịch toàn bộ tập** trên mỗi phim xếp các tập theo thứ tự và chạy lần lượt ở dịch vụ nền: tự tải phụ đề gốc còn thiếu, bỏ qua tập đã hoàn tất và tiếp tục checkpoint của tập dịch dở. Nếu đang có phiên dịch riêng, lượt dịch chờ phiên đó hoàn tất. **Dừng dịch loạt** dừng tập của lượt dịch và các tập còn chờ; tiến độ đã lưu được giữ lại. Lỗi tải phụ đề được bỏ qua để xử lý tập kế tiếp; lỗi dịch/model dừng lượt để tránh gửi tiếp các tập lỗi. Đóng cửa sổ quản lý vẫn tiếp tục dịch; sau khi thoát dịch vụ, bấm lại nút để tiếp tục các tập còn thiếu.
+
 **Lưu nhiều provider:** vào **Cài đặt dịch → Quản lý provider → Thêm provider**, đặt tên gợi nhớ, chọn mẫu, nhập URL và API key. Bấm **Quét model** rồi **Lưu provider** để giữ cả danh sách model. Có thể lưu nhiều tài khoản cùng một hãng. Sửa provider không ảnh hưởng các tài khoản khác. Đổi mẫu, URL, key hoặc Workspace sẽ xóa danh sách model đang sửa để tránh dùng catalog của kết nối cũ; các model đã chọn vẫn được giữ khi chỉ quét lại cùng kết nối. Backend gọi `/models`, không lưu key hoặc trả key về giao diện. Quét chỉ lấy danh mục, không gửi phụ đề hay chạy dịch.
 
 Preset **Google Gemini** dùng `https://generativelanguage.googleapis.com/v1beta/openai` với API key của Google AI Studio; hỗ trợ cả quét model và dịch qua giao thức tương thích OpenAI. Xem [tài liệu Gemini](https://ai.google.dev/gemini-api/docs/openai/#list-models).
@@ -50,13 +52,19 @@ Trong thư viện, bấm **Hồ sơ dịch** ở từng phim để đọc `memor
 
 ## Bản desktop webapp cho Windows
 
-Trong thư viện, tên Việt được lấy từ metadata iq.com đã đối chiếu đúng phim; tên gốc hiển thị bên dưới. Luồng phụ đề iq.com phục vụ trực tiếp player: `/api/official-subtitle-state` lấy trạng thái, backend gọi iq.com và căn thời gian theo cuối video, rồi `/subtitle.xml?source=iqcom&tvid=...` trả XML cho track **Tiếng Việt iq.com**. Đăng nhập iq.com trong trình duyệt đã cài tiện ích rồi bấm **Kiểm tra iq.com** để đồng bộ phiên khi tập yêu cầu quyền xem. Phụ đề iq.com được giữ trong cache của dịch vụ, không có chức năng tải iq.com thành file trong webapp. Tải lại thư viện không khởi chạy yêu cầu phụ đề cho toàn bộ các tập.
+**Bản portable 1.2.79:** giải nén `IQIYI-VI-Windows-x64-v1-2-79-portable.zip`, rồi mở **IQIYI-VI.exe**. Gói kèm Python, không cần cài Python hay mở terminal. Gói không có `Uninstall.exe`; để khôi phục app iQIYI gốc, vào **Cài đặt → Tích hợp iQIYI → Gỡ tích hợp** trong app quản lý. Thao tác này gỡ script, nút quản lý và đăng ký tự khởi động đã tích hợp; đóng rồi mở lại iQIYI để hoàn tất.
+
+Gói portable kèm thư mục **ext/** cạnh **IQIYI-VI.exe**. Mở `chrome://extensions` hoặc `edge://extensions`, bật **Chế độ dành cho nhà phát triển**, chọn **Tải tiện ích đã giải nén** và trỏ tới thư mục **ext/** này. Khi cập nhật, bấm **Tải lại** tiện ích rồi tải lại trang iQIYI. Không di chuyển thư mục **ext/** sau khi đã nạp vào trình duyệt.
+
+Trên **iqiyi.com**, tiện ích từ **1.2.76** có nút logo **iQIYI – Quản lý phụ đề** ở thanh công cụ bên phải, bên dưới nút **Về đầu trang**. Bấm để mở thẳng cửa sổ app quản lý; nếu đã mở, cửa sổ đó được đưa lên trước. Dịch vụ app cần đang chạy; mở app từ Start Menu hoặc bật tùy chọn chạy nền khi đăng nhập Windows. Sau khi cập nhật, tải lại tiện ích và trang iQIYI. Trên app iQIYI, nút này cũng mở cùng cửa sổ quản lý. Cấu hình provider của trình duyệt và cửa sổ app được lưu riêng; chọn model trong giao diện bạn dùng để dịch.
+
+Trong thư viện, tên Việt được lấy từ metadata iq.com đã đối chiếu đúng phim; tên gốc hiển thị bên dưới. Luồng phụ đề iq.com phục vụ trực tiếp player: `/api/official-subtitle-state` lấy trạng thái, backend gọi iq.com và căn thời gian theo cuối video, rồi `/subtitle.xml?source=iqcom&tvid=...` trả XML cho track **Tiếng Việt iq.com**. Trong app desktop, bấm **Kiểm tra iq.com** để mở trang đăng nhập riêng; app tự nhận phiên sau khi bạn đăng nhập. Khi dùng trang quản lý trong trình duyệt web, đăng nhập iq.com trong trình duyệt đã cài tiện ích rồi bấm **Kiểm tra iq.com** để đồng bộ phiên khi tập yêu cầu quyền xem. Phụ đề iq.com được giữ trong cache của dịch vụ, không có chức năng tải iq.com thành file trong webapp. Tải lại thư viện không khởi chạy yêu cầu phụ đề cho toàn bộ các tập.
 
 Giải nén toàn bộ gói `IQIYI-VI-Windows-x64.zip` vào thư mục có quyền ghi, rồi mở **IQIYI-VI.exe**. Bản này kèm Python và các thư viện cần thiết; không cần cài Python hay chạy terminal. Cần Windows 10/11 x64 và Edge hoặc Chrome.
 
 Luồng cài đặt này được đóng gói cùng mã nguồn và áp dụng trên máy người dùng:
 
-1. Mở **IQIYI-VI.exe → Cài đặt → Tích hợp iQIYI → Cài đặt một lần**.
+1. Mở **IQIYI-VI.exe → Cài đặt → Tích hợp iQIYI → Kết nối app iQIYI**.
 2. Cho phép quyền Administrator nếu Windows yêu cầu. Cấu hình vẫn được lưu cho tài khoản người bấm Cài đặt, kể cả khi nhập thông tin của một tài khoản quản trị khác.
 3. Những lần sau mở iQIYI bằng biểu tượng gốc. Watcher tự khởi động khi đăng nhập Windows và chỉ bật dịch vụ quản lý khi iQIYI được mở; bấm biểu tượng iQIYI ở góc dưới bên phải để mở cửa sổ quản lý.
 
@@ -77,10 +85,12 @@ Chỉ chạy một bản quản lý tại một thời điểm vì player dùng 
 Để tự build trên Windows bằng CPython x64 đã có pip:
 
 ```powershell
-python build-desktop.py
+python build-desktop.py --output dist/IQIYI-VI-Windows-x64-v1-2-79-portable
 ```
 
 Kết quả nằm trong `dist/IQIYI-VI-Windows-x64/` và file ZIP cạnh thư mục này. Script từ chối ghi đè thư mục đã có để bảo vệ dữ liệu; dùng `--output` để chọn tên khác. Chạy `IQIYI-VI.exe --check` để kiểm tra gói mà không mở player hoặc thư viện.
+
+Với `--installer`, script còn tạo `*-Setup.exe`; cả ZIP và bộ cài có checksum SHA-256. Script kiểm tra tài nguyên tiện ích, giải nén bộ cài và chạy runtime trong thư mục tạm trước khi báo thành công. Kiểm tra đường dẫn cài/gỡ tùy chọn, nâng cấp/gỡ cài đặt bảo toàn dữ liệu và khôi phục file khi cập nhật lỗi bằng `python tests/check_windows_installer.py`.
 
 Kiểm tra riêng luồng cài đặt dùng chung bằng `python tests/check_portable_install.py`. Kiểm tra này lấy đúng danh sách file của bản build, chạy từ một thư mục sạch có tên Unicode và khoảng trắng, mô phỏng việc đổi tài khoản khi nâng quyền, rồi kiểm tra cài lại và gỡ cài đặt. Không sửa Registry hay khởi động dịch vụ thật.
 
@@ -94,9 +104,9 @@ python -m venv .venv
 .\.venv\Scripts\python.exe launcher.py iqiyi
 ```
 
-Lần đầu sau khi giải nén gói Windows, mở **IQIYI-VI.exe** trực tiếp để vào quản lý; bước này chưa cần tích hợp hay biểu tượng trong iQIYI. Bấm **Cài đặt một lần** trên màn hình đầu, hoặc vào **Cài đặt → Tích hợp iQIYI**. Chạy từ mã nguồn thì dùng `python desktop.py` sau khi cài requirements.
+Lần đầu sau khi giải nén gói Windows, mở **IQIYI-VI.exe** trực tiếp để vào quản lý; bước này chưa cần tích hợp hay biểu tượng trong iQIYI. Bấm **Kết nối** trên màn hình đầu, hoặc vào **Cài đặt → Tích hợp iQIYI**. Chạy từ mã nguồn thì dùng `python desktop.py` sau khi cài requirements.
 
-Windows có thể hỏi quyền Administrator ở lần cài tích hợp này. Sau đó mở iQIYI bằng biểu tượng gốc như bình thường; dịch vụ quản lý phụ đề tự chạy nền, không phải cài lại hay mở launcher. Watcher được đăng ký tự khởi động khi đăng nhập Windows. **Gỡ tích hợp** khôi phục giao diện và cấu hình kết nối đã thay đổi. Giữ thư mục app quản lý ở nguyên vị trí đã cài. Cửa sổ quản lý dùng WebView2 Runtime (có sẵn cùng iQIYI/Windows); đóng cửa sổ vẫn giữ dịch vụ nền.
+Windows có thể hỏi quyền Administrator ở lần cài tích hợp này. Sau đó mở iQIYI bằng biểu tượng gốc như bình thường; dịch vụ quản lý phụ đề tự chạy nền, không phải cài lại hay mở launcher. Watcher được đăng ký tự khởi động khi đăng nhập Windows. **Gỡ tích hợp** khôi phục giao diện gốc, gỡ toàn bộ script, nút quản lý và đăng ký tự khởi động đã cài vào iQIYI. Đóng rồi mở lại iQIYI để hoàn tất. Giữ thư mục app quản lý ở nguyên vị trí đã cài. Cửa sổ quản lý dùng WebView2 Runtime (có sẵn cùng iQIYI/Windows); đóng cửa sổ vẫn giữ dịch vụ nền.
 
 Ô tìm kiếm hỗ trợ tên phim Việt có dấu hoặc không dấu. Bộ Việt hóa đối chiếu tên đã biết và danh mục iq.com; chỉ đổi sang tên gốc khi khớp duy nhất một phim. Nhập từ 3 ký tự để xem tối đa 5 gợi ý từ iq.com ngay dưới ô tìm kiếm, không cần bấm Tìm; hỗ trợ tên Việt có/không dấu và lỗi gõ nhẹ. Gợi ý cập nhật sau khi ngừng gõ khoảng 300 ms, giữ con trỏ trong ô nhập. Dùng phím mũi tên hoặc bấm vào gợi ý để tìm đúng tên gốc; Escape đóng danh sách.
 
@@ -105,9 +115,9 @@ Thay `iqiyi` bằng:
 - `open-manager`: mở app quản lý phụ đề; nếu cửa sổ đã mở thì đưa cửa sổ đó lên trước. Nút quản lý trong iQIYI cũng dùng cùng cách này.
 - `restore`: khôi phục giao diện iQIYI gốc.
 
-Trong app quản lý, vào **Thông báo** và chọn **Chấp nhận** để thêm phim mới vào thư viện. Chọn tập để tải hoặc xem phụ đề gốc đã lưu. Nếu menu native còn nhãn cũ, chọn **Cài đặt → Tích hợp iQIYI → Cập nhật Việt hóa**, rồi đóng và mở lại iQIYI.
+Trong app quản lý, vào **Thông báo** và chọn **Chấp nhận** để thêm phim mới vào thư viện. Chọn tập để tải hoặc xem phụ đề gốc đã lưu. Trạng thái **Đã kết nối** xuất hiện trong **Cài đặt → Tích hợp iQIYI** khi đã tích hợp. **Gỡ tích hợp** khôi phục giao diện gốc và gỡ toàn bộ script cùng nút quản lý khỏi iQIYI; sau đó có thể kết nối lại.
 
-Nút **Kiểm tra iq.com** trong cửa sổ desktop mở phần Kết nối trong trình duyệt để tiện ích chọn đúng phiên iq.com của trình duyệt đó. Sau khi kết nối, cửa sổ desktop nhận trạng thái và dùng lại phiên đã chọn.
+Nút **Kiểm tra iq.com** trong cửa sổ desktop mở một trang iq.com ở cửa sổ riêng với phiên trống, không lấy sẵn đăng nhập của Edge/Chrome. Bạn đăng nhập tại đó; app tự nhận phiên mới rồi đóng cửa sổ đăng nhập. Không cần tiện ích cho bước này. Đóng cửa sổ trước khi đăng nhập xong sẽ giữ phiên đã chọn trước đó. Trang quản lý mở bằng trình duyệt web vẫn dùng tiện ích để chọn phiên của trình duyệt đó.
 
 ## Tiện ích Chrome / Edge
 
@@ -134,7 +144,7 @@ Tiêu đề tab và trang trong app dùng cùng bộ Việt hóa, tự cập nh�
 
 Từ bản 1.2.48, tiện ích tự Việt hóa giao diện, tra tên phim/diễn viên và tìm phim theo tên Việt mà không cần mở app quản lý. Tiện ích gọi trực tiếp dịch vụ dịch nhanh và danh mục công khai iq.com; không cần token của app cho các chức năng này. Phụ đề Việt chính thức, phụ đề AI, lưu phụ đề và đồng bộ thư viện vẫn cần dịch vụ app quản lý chạy.
 
-Để lấy phụ đề Việt chính thức từ iq.com, đăng nhập iq.com trên trình duyệt đã cài tiện ích, rồi bấm **Kiểm tra iq.com** trong app quản lý. Tài khoản cần có quyền xem tập đó; không phải tập nào cũng có track Việt.
+Để lấy phụ đề Việt chính thức từ iq.com, bấm **Kiểm tra iq.com** trong app desktop rồi đăng nhập ở trang mới mở. Nếu dùng trang quản lý web, đăng nhập iq.com trên trình duyệt đã cài tiện ích rồi bấm **Kiểm tra iq.com**. Tài khoản cần có quyền xem tập đó; không phải tập nào cũng có track Việt.
 
 Khi chuyển sang máy khác, dùng phiên đăng nhập iq.com của máy đó và tải tiện ích từ thư mục `ext/` cạnh app đang chạy. Mở app quản lý trước để tạo cấu hình kết nối, rồi tải lại tiện ích và bấm **Kiểm tra iq.com** trong cùng hồ sơ trình duyệt. Tên phim công khai không cần đăng nhập; phụ đề chính thức phụ thuộc quyền xem tập và khu vực.
 

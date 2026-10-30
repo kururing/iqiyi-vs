@@ -7,6 +7,7 @@ import json
 import math
 import os
 import re
+import secrets
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -14,6 +15,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, urljoin, urlsplit
 
 from iqiyi_common import HEADLESS_BROWSER_ARGS, atomic_write
+
+LOGIN_URL = "https://www.iq.com/?lang=vi_vn"
 
 
 def login_cookie(cookies: list[dict]) -> str:
@@ -60,13 +63,28 @@ def has_vietnamese_track(data: dict, tvid: str) -> bool:
         for row in (program.get("stl") or []))
 
 
+def browser_launch_options(headless: bool) -> dict:
+    options = {"headless": headless, "args": [*(HEADLESS_BROWSER_ARGS if headless else ()),
+               "--autoplay-policy=user-gesture-required", "--disable-background-mode", "--disable-quic", "--no-proxy-server"]}
+    for channel, vendor in (("msedge", "Microsoft/Edge"), ("chrome", "Google/Chrome")):
+        executable = "msedge.exe" if channel == "msedge" else "chrome.exe"
+        if any((Path(os.environ.get(env, "")) / vendor / "Application" / executable).is_file()
+               for env in ("PROGRAMFILES(X86)", "PROGRAMFILES", "LOCALAPPDATA")):
+            options["channel"] = channel
+            break
+    return options
+
+
 class IqcomSession:
     def __init__(self, profile: Path):
         self.profile = profile
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="iqcom-browser")
         self.lock = threading.Lock()
-        self.state = {"connected": False, "synced": False, "message": "", "version": 0}
+        self.state = {"connected": False, "synced": False, "message": "", "version": 0, "loginPending": False}
         self.context = self.playwright = None
+        self.login_browser = self.login_context = self.login_page = None
+        self.login_stop = None
+        self.login_source = ""
         self.cookie_signature = hashlib.sha256(b"").hexdigest()
         self.auth_signature = hashlib.sha256(b"").hexdigest()
         self.browser_cookies = None
@@ -80,7 +98,7 @@ class IqcomSession:
             self.source = ""
         if not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", self.source):
             self.source = ""
-        self.state["message"] = "Bấm Kiểm tra iq.com để chọn phiên của trình duyệt đang dùng."
+        self.state["message"] = "Bấm Kiểm tra iq.com để kết nối tài khoản."
         atexit.register(self.close)
 
     @property
@@ -95,6 +113,82 @@ class IqcomSession:
     def status(self) -> dict:
         with self.lock:
             return {**self.state, "saved": self.saved}
+
+    def start_login(self) -> dict:
+        """Open a fresh visible browser; never adopt an existing browser login."""
+        with self.lock:
+            if self.closed:
+                raise ValueError("Phiên iq.com đang đóng.")
+            if not self.state["loginPending"]:
+                self.login_source = secrets.token_hex(16)
+                self.login_stop = threading.Event()
+                self.state.update(loginPending=True, message="Đang mở trang iq.com để bạn đăng nhập…")
+                self.pool.submit(self._open_login, self.login_stop)
+            return {**self.state, "saved": self.saved}
+
+    def _ensure_playwright(self):
+        if self.playwright is None:
+            try:
+                from playwright.sync_api import sync_playwright
+            except ImportError:
+                raise ValueError("Chưa cài trình hỗ trợ iq.com. Chạy: python -m pip install -r requirements.txt") from None
+            self.playwright = sync_playwright().start()
+
+    def _open_login(self, stop):
+        try:
+            if self.closed or stop.is_set():
+                return
+            self._ensure_playwright()
+            self.login_browser = self.playwright.chromium.launch(**browser_launch_options(False))
+            # A non-persistent context starts empty, separate from both the
+            # selected subtitle profile and the user's Edge/Chrome profiles.
+            self.login_context = self.login_browser.new_context(locale="vi-VN", accept_downloads=False)
+            self.login_page = self.login_context.new_page()
+            self.login_page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=30000)
+            self._set(message="Đăng nhập iq.com trong cửa sổ vừa mở. App sẽ tự nhận phiên sau khi đăng nhập thành công.")
+
+            def monitor():
+                while not stop.wait(1):
+                    try:
+                        if self.pool.submit(self._poll_login, stop).result():
+                            return
+                    except Exception:
+                        return
+
+            threading.Thread(target=monitor, name="iqcom-login-check", daemon=True).start()
+        except Exception:
+            self._close_login()
+            self._set(loginPending=False, message="Không mở được trang đăng nhập iq.com. Kiểm tra Edge/Chrome và kết nối rồi thử lại.")
+
+    def _poll_login(self, stop) -> bool:
+        if self.closed or stop.is_set() or stop is not self.login_stop:
+            return True
+        try:
+            if self.login_page is None or self.login_page.is_closed():
+                raise ValueError("Trang đăng nhập đã đóng.")
+            cookies = self.login_context.cookies("https://www.iq.com/")
+            if not login_cookie(cookies):
+                return False
+            rows = [{**row, "expirationDate": row.get("expires", -1),
+                     "sameSite": {"Strict": "strict", "Lax": "lax", "None": "no_restriction"}.get(row.get("sameSite"))}
+                    for row in cookies]
+            self.update(rows, self.login_source, select=True)
+            self._set(loginPending=False, message="Đã nhận phiên từ trang đăng nhập iq.com. Quyền VIP được kiểm tra khi lấy phụ đề.")
+        except Exception:
+            self._set(loginPending=False, message="Trang đăng nhập iq.com đã đóng hoặc bị gián đoạn. Bấm Kiểm tra iq.com để mở lại.")
+        self._close_login()
+        return True
+
+    def _close_login(self):
+        if self.login_stop is not None:
+            self.login_stop.set()
+        browser, self.login_browser = self.login_browser, None
+        self.login_context = self.login_page = None
+        if browser is not None:
+            try:
+                browser.close()
+            except Exception:
+                pass
 
     def update(self, rows, source: str, *, select: bool = False) -> dict:
         if not isinstance(source, str) or not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", source):
@@ -136,6 +230,8 @@ class IqcomSession:
         with self.lock:
             if self.closed:
                 raise ValueError("Phiên iq.com đang đóng.")
+            if self.state.get("loginPending") and source != self.login_source:
+                return {**self.state, "saved": self.saved}
             if select and source != self.source:
                 atomic_write(self.profile / "browser-source", source)
                 self.source = source
@@ -214,22 +310,8 @@ class IqcomSession:
             raise ValueError("Phiên iq.com đang đóng.")
         if self.context is not None:
             return self.context
-        try:
-            from playwright.sync_api import sync_playwright
-        except ImportError:
-            raise ValueError("Chưa cài trình hỗ trợ iq.com. Chạy: python -m pip install -r requirements.txt") from None
-        if self.playwright is None:
-            self.playwright = sync_playwright().start()
-        options = {"headless": True, "locale": "vi-VN", "accept_downloads": False,
-                   "service_workers": "block", "args": [*HEADLESS_BROWSER_ARGS, "--autoplay-policy=user-gesture-required",
-                   "--disable-background-mode", "--disable-quic", "--no-proxy-server"]}
-        # Use an installed browser; no separate browser download on Windows.
-        for channel, vendor in (("msedge", "Microsoft/Edge"), ("chrome", "Google/Chrome")):
-            executable = "msedge.exe" if channel == "msedge" else "chrome.exe"
-            if any((Path(os.environ.get(env, "")) / vendor / "Application" / executable).is_file()
-                   for env in ("PROGRAMFILES(X86)", "PROGRAMFILES", "LOCALAPPDATA")):
-                options["channel"] = channel
-                break
+        self._ensure_playwright()
+        options = {**browser_launch_options(True), "locale": "vi-VN", "accept_downloads": False, "service_workers": "block"}
         self.profile.mkdir(parents=True, exist_ok=True)
         try:
             self.context = self.playwright.chromium.launch_persistent_context(str(self.profile), **options)
@@ -328,6 +410,7 @@ class IqcomSession:
 
     def _close(self):
         try:
+            self._close_login()
             if self.context is not None:
                 self.context.close()
         finally:
@@ -344,6 +427,8 @@ class IqcomSession:
             if self.closed:
                 return
             self.closed = True
+            if self.login_stop is not None:
+                self.login_stop.set()
             pending = list(self.dash_pending.values())
         # Cancel only queued lookups: shutdown(cancel_futures=True) could cancel
         # the cleanup itself while the browser is still serving an active lookup.

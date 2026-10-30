@@ -3,7 +3,7 @@
   "use strict";
 
   function iqiyiSubtitleHook() {
-    var HOOK_VERSION = 47;
+    var HOOK_VERSION = 48;
     var SIDE = "http://127.0.0.1:18766";
     var nativeFetch = root && root.fetch ? root.fetch.bind(root) : null;
     function localFetch(input, options) {
@@ -410,6 +410,7 @@
       var webVideo = null, webMuted = null, webOwnMute = null, webVolumeChanged = null, frameUrl = "", frameJob = null;
       var menuPatches = [], menuInstances = new Set(), menuScanAt = 0, uiSaving = false, uiError = "", connectionError = "", uiSignature = "";
       var tipController = null, tipScanAt = 0, pendingNotice = "";
+      var shownNotices = new Set();
       var audioNoticeKey = "iqiyi_vi_audio_status";
       function flushAudioNotice() {
         if (!pendingNotice || stopped || !officialRuntimeRequire) return;
@@ -459,7 +460,7 @@
           return response.json().then(function (data) { if (!response.ok) throw Error(data.error || "Không lưu được âm thanh."); return data; });
         }).then(function (state) {
           if (stopped) return;
-          settings = state; failed = ""; lastPoll = 0; lastMessage = ""; lastContact = Date.now();
+          settings = state; failed = ""; lastPoll = 0; lastMessage = ""; lastContact = Date.now(); shownNotices.clear();
           if (!state.enabled) stopSound();
           report(state.enabled ? "Đang tìm âm thanh Việt trên iq.com…" : "Đã chuyển sang tiếng gốc.");
         }).catch(function (error) {
@@ -551,8 +552,11 @@
       function report(message) {
         if (stopped || message === lastMessage) return;
         lastMessage = message;
-        pendingNotice = message;
-        flushAudioNotice();
+        if (!shownNotices.has(message)) {
+          shownNotices.add(message);
+          pendingNotice = message;
+          flushAudioNotice();
+        }
         refreshAudioMenus();
         if (!iqPlayer && tvid) post("/api/audio-playback", {tvid:tvid,message:message}).catch(function () {});
       }
@@ -721,7 +725,7 @@
         var info = iqPlayer && webEpisodeInfo();
         var playing = currentSubtitleTvid() || (iqPlayer ? String(info && (info.tvId || info.tvid) || "") : "");
         if (iqPlayer && sound && getWebVideo() !== webVideo) stopSound();
-        if (playing !== tvid) { clearAudioNotice(); stopSound(); tvid = playing; failed = ""; position = -1; lastPoll = 0; lastMessage = ""; settings = {enabled:false}; }
+        if (playing !== tvid) { clearAudioNotice(); shownNotices.clear(); stopSound(); tvid = playing; failed = ""; position = -1; lastPoll = 0; lastMessage = ""; settings = {enabled:false}; }
         flushAudioNotice();
         if (Date.now() - lastContact > 10000) { stopSound(); settings = {enabled:false}; }
         if (Date.now() - lastPoll > 2000 && !polling) {

@@ -25,14 +25,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, parse_qsl, unquote, urlencode, urljoin, urlsplit
 
-from iqiyi_common import api_token, atomic_write, browser_proxy_token, browser_session_token, player_token, python_executable
+from iqiyi_common import api_token, atomic_write, browser_proxy_token, browser_session_token, manager_only, player_token, python_executable
 from windows_runtime import run_elevated
 from iqcom_session import IqcomSession, has_vietnamese_track
 from iqcom_audio import IqcomAudio, byte_range
-from proxy_support import DesktopProxyRelay
+from proxy_support import DesktopProxyRelay, check_iqiyi_proxy
 from launcher import apply_running_iqiyi_proxy, ensure_watcher
 from iqcom_requests import PUBLIC_METADATA, RequestCache, pooled_open, read_response, singleflight
-from translation_ai import PRESETS as TRANSLATION_PROVIDERS, list_models
+from translation_ai import PRESETS as TRANSLATION_PROVIDERS, list_models, model_config
 from translation_pipeline import TranslationJobs
 
 ROOT = Path(__file__).resolve().parent
@@ -86,6 +86,9 @@ OFFICIAL_SUBTITLE_LOCK = threading.Lock()
 OFFICIAL_SUBTITLE_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="official-subtitle")
 APP_LOCALIZATION_LOCK = threading.Lock()
 APP_LOCALIZATION_STATE = {"status": "idle", "action": "", "message": ""}
+ALBUM_TRANSLATION_LOCK = threading.RLock()
+ALBUM_TRANSLATION: dict = {}
+ALBUM_TRANSLATION_CANCEL = threading.Event()
 
 
 def _load_international_metadata_cache() -> None:
@@ -137,7 +140,7 @@ _load_international_metadata_cache()
 def app_localization_status() -> dict:
     with APP_LOCALIZATION_LOCK:
         state = dict(APP_LOCALIZATION_STATE)
-    state["installed"] = app_integration.installed(ROOT)
+    state["installed"] = app_integration.installed(ROOT) and not manager_only(ROOT)
     return state
 
 
@@ -158,12 +161,12 @@ def _run_app_localization(action: str) -> None:
         if result.returncode == 2:
             result = _localization_command(action, elevated=True)
         if result.returncode == 0:
-            if action in ("apply", "repair"):
+            if action != "restore":
                 ensure_watcher()
-            message = ("Đã khôi phục giao diện gốc. Hãy đóng rồi mở lại iQIYI để nạp thay đổi."
+            message = ("Đã gỡ toàn bộ tích hợp. Đóng rồi mở lại iQIYI để hoàn tất."
                        if action == "restore" else
                        "Đã cập nhật tiếng Việt. Đóng rồi mở lại iQIYI để nạp thay đổi." if action == "repair" else
-                       "Đã cài đặt. Từ lần sau, mở iQIYI bình thường sẽ tự chạy dịch vụ quản lý phụ đề.")
+                       "Đã kết nối app iQIYI. Đóng rồi mở lại iQIYI để nạp thay đổi.")
             status = "done"
         elif result.returncode == 1223:
             message, status = ("Đã hủy yêu cầu quyền Administrator; thao tác có thể mới hoàn thành một phần. "
@@ -186,12 +189,12 @@ def start_app_localization(action: str) -> dict:
     with APP_LOCALIZATION_LOCK:
         if APP_LOCALIZATION_STATE.get("status") == "running":
             raise RuntimeError("Một thao tác iQIYI đang chạy.")
-        if action == "apply" and app_integration.installed(ROOT):
+        if action == "apply" and app_integration.installed(ROOT) and not manager_only(ROOT):
             return {**APP_LOCALIZATION_STATE, "status":"done", "installed":True,
-                    "message":"Đã cài đặt. Chỉ cần mở iQIYI bình thường để dùng quản lý phụ đề."}
+                    "message":"Đã kết nối app iQIYI."}
         APP_LOCALIZATION_STATE.update(status="running", action=action,
-                                      message=("Đang khôi phục giao diện tiếng Trung…" if action == "restore"
-                                               else "Đang cài tích hợp iQIYI…"),
+                                      message=("Đang gỡ tích hợp…" if action == "restore"
+                                               else "Đang kết nối app iQIYI…"),
                                       startedAt=time.time())
     threading.Thread(target=_run_app_localization, args=(action,),
                      name="iqiyi-localization", daemon=True).start()
@@ -1745,6 +1748,138 @@ def capture_source(tvid: str, cues: list) -> None:
         lock.release()
 
 
+def album_translation_status() -> dict:
+    with ALBUM_TRANSLATION_LOCK:
+        return copy.deepcopy(ALBUM_TRANSLATION)
+
+
+def start_album_translation(data: dict) -> dict:
+    tvid = data.get("tvid")
+    item = EPISODES.get(tvid) if isinstance(tvid, str) else None
+    if not item or library_status(item) != "accepted":
+        raise ValueError("Không tìm thấy phim này trong thư viện.")
+    album_id = str(item.get("albumId") or "")
+    if ALBUM_LISTS.get(album_id, {}).get("stage") == "loading":
+        raise EpisodeBusy("Đang lấy danh sách tập. Hãy chờ tải xong rồi dịch toàn bộ.")
+    ids = sorted((key for key in album_episode_ids(album_id, episode_series_title(item))
+                  if library_status(EPISODES[key]) == "accepted"),
+                 key=lambda key: (episode_order(EPISODES[key]) or 99999, key))
+    if not ids:
+        raise ValueError("Phim chưa có tập để dịch.")
+    models = {key: model_config(data.get(key)) for key in ("context_model", "translation_model")}
+    with ALBUM_TRANSLATION_LOCK:
+        if ALBUM_TRANSLATION.get("stage") == "running":
+            raise EpisodeBusy("Đang dịch toàn bộ một phim. Hãy chờ hoàn tất hoặc dừng lượt hiện tại.")
+        ALBUM_TRANSLATION_CANCEL.clear()
+        ALBUM_TRANSLATION.clear()
+        ALBUM_TRANSLATION.update(stage="running", episodeIds=ids, total=len(ids), processed=0,
+                                 translated=0, skipped=0, failed=0, currentJobId="",
+                                 message=f"Đã xếp lịch dịch {len(ids)} tập; các tập sẽ chạy lần lượt.")
+        threading.Thread(target=_run_album_translation, args=(ids, models),
+                         name="album-translation", daemon=True).start()
+        return album_translation_status()
+
+
+def stop_album_translation() -> dict:
+    with ALBUM_TRANSLATION_LOCK:
+        ALBUM_TRANSLATION_CANCEL.set()
+        job_id = ""
+        if ALBUM_TRANSLATION.get("stage") == "running":
+            job_id = ALBUM_TRANSLATION.get("currentJobId")
+            ALBUM_TRANSLATION["message"] = "Đang dừng lượt dịch và giữ tiến độ đã lưu…"
+    if job_id:
+        TRANSLATION_JOBS.cancel(job_id)
+    return album_translation_status()
+
+
+def _run_album_translation(ids: list[str], models: dict) -> None:
+    cancel = ALBUM_TRANSLATION_CANCEL
+
+    def update(**values):
+        with ALBUM_TRANSLATION_LOCK:
+            ALBUM_TRANSLATION.update(values)
+
+    try:
+        for index, tvid in enumerate(ids, 1):
+            update(currentJobId="", message=f"Đang chờ dịch tập {index}/{len(ids)}…")
+            while TRANSLATION_JOBS.busy() and not cancel.wait(.25):
+                pass
+            if cancel.is_set():
+                break
+            item = EPISODES.get(tvid)
+            if not item or library_status(item) != "accepted":
+                with ALBUM_TRANSLATION_LOCK:
+                    ALBUM_TRANSLATION["failed"] += 1
+                    ALBUM_TRANSLATION["processed"] = index
+                continue
+            folder = episode_dir(tvid)
+            previous = TRANSLATION_JOBS.episode_status(folder)
+            if previous and previous["stage"] == "complete":
+                with ALBUM_TRANSLATION_LOCK:
+                    ALBUM_TRANSLATION["skipped"] += 1
+                    ALBUM_TRANSLATION["processed"] = index
+                continue
+            label = f"{official_series_title(item) or episode_series_title(item)} · Tập {episode_order(item) or '?'}"
+            if not (folder / "source.srt").is_file():
+                update(message=f"Đang tải phụ đề gốc {index}/{len(ids)}: {label}")
+                queue_subtitle_downloads([tvid], retry=True)
+                while DOWNLOAD_PROGRESS.get(tvid, {}).get("stage") in ("queued", "downloading") and not cancel.wait(.25):
+                    pass
+                if cancel.is_set():
+                    break
+                if not (folder / "source.srt").is_file():
+                    with ALBUM_TRANSLATION_LOCK:
+                        ALBUM_TRANSLATION["failed"] += 1
+                        ALBUM_TRANSLATION["processed"] = index
+                    continue
+            # The episode lock protects the same snapshot used by single-episode translation.
+            while True:
+                if cancel.is_set():
+                    break
+                with ALBUM_TRANSLATION_LOCK, episode_lock(tvid), TRANSLATION_JOBS.lock:
+                    if cancel.is_set():
+                        break
+                    if not TRANSLATION_JOBS.busy():
+                        previous = TRANSLATION_JOBS.episode_status(folder)
+                        already_complete = bool(previous and previous["stage"] == "complete")
+                        if previous and previous["stage"] == "complete":
+                            state = previous
+                        elif previous and previous.get("resumable"):
+                            state = TRANSLATION_JOBS.resume_episode({**models, "id": previous["id"]}, folder)
+                        else:
+                            state = TRANSLATION_JOBS.start_episode(models, folder, tvid, label)
+                        update(currentJobId=state["id"], message=f"Đang dịch {index}/{len(ids)}: {label}")
+                        break
+                cancel.wait(.25)
+            if cancel.is_set():
+                break
+            job_id = state["id"]
+            while TRANSLATION_JOBS.active_id() == job_id and not cancel.wait(.25):
+                pass
+            if cancel.is_set():
+                TRANSLATION_JOBS.cancel(job_id)
+                break
+            result = TRANSLATION_JOBS.status(job_id)
+            if result["stage"] != "complete":
+                with ALBUM_TRANSLATION_LOCK:
+                    ALBUM_TRANSLATION["failed"] += 1
+                update(stage="error", message=f"Đã dừng tại {label}: {result.get('message', 'Không dịch được tập.')} Chọn Dịch toàn bộ tập để tiếp tục.")
+                return
+            with ALBUM_TRANSLATION_LOCK:
+                ALBUM_TRANSLATION["skipped" if already_complete else "translated"] += 1
+                ALBUM_TRANSLATION["processed"] = index
+        with ALBUM_TRANSLATION_LOCK:
+            row = ALBUM_TRANSLATION
+            update(stage="cancelled" if cancel.is_set() else "complete",
+                   message=f"{'Đã dừng' if cancel.is_set() else 'Hoàn tất'}: {row['processed']}/{row['total']} tập; "
+                           f"{row['translated']} mới dịch, {row['skipped']} đã có bản dịch, {row['failed']} tập chưa xử lý được.")
+    except Exception as exc:
+        update(stage="error", message=f"Lượt dịch đã dừng: {str(exc)[:250]}. Chọn Dịch toàn bộ tập để tiếp tục.")
+    finally:
+        for config in models.values():
+            config.clear()  # Keys stay in memory only while this queue is running.
+
+
 PAGE = r'''<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>iQIYI – Quản lý phụ đề</title>
 <link rel="icon" href="/favicon.ico" type="image/x-icon">
@@ -1779,7 +1914,7 @@ h1{font-size:24px;line-height:1.3;font-weight:650;margin:0}h3{font-size:16px;fon
 .managerBrand{display:flex;align-items:center;flex:0 0 auto;text-decoration:none}.managerBrand svg{display:block;width:104px;height:auto}
 .primaryNav{display:flex;align-self:stretch;flex:0 0 auto}.primaryNav a{position:relative;display:flex;align-items:center;color:var(--text);text-decoration:none;font-size:15px;font-weight:650;white-space:nowrap}.primaryNav a[aria-current=page]{color:var(--blue)}.primaryNav a[aria-current=page]:after{content:"";position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0;background:var(--blue)}
 .topActions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.topActions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:22px}.topActions .iconAction{width:44px;min-width:44px;padding:0;border-color:transparent;color:#c3c8ce;background:transparent}.topActions .iconAction:hover{color:var(--blue);background:#ffffff09}.topActions svg,.librarySearch>svg{width:20px;height:20px;flex-shrink:0}.topActions #addMovieButton{padding:9px 18px;margin-left:8px}
-#notificationsButton{position:relative}#notificationsCount{position:absolute;top:1px;right:0;min-width:16px;padding:1px 4px;border-radius:9px;background:var(--blue);color:#052b19;font-size:10px;line-height:14px}
+#notificationsButton{position:relative}#notificationsCount{position:absolute;top:1px;right:0;min-width:16px;padding:1px 4px;border-radius:9px;background:var(--blue);color:#000;font-size:10px;line-height:14px}
 .libraryHeading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}.libraryHeading h1{font-size:25px;font-weight:650;letter-spacing:-.4px}.libraryHeading p{margin:5px 0 0;color:var(--muted);font-size:13px}.libraryHeading .secondary{border-radius:20px;color:#c4c9ce;font-size:13px;min-height:38px;padding:7px 15px}
 .librarySearch{display:flex;align-items:center;gap:10px;flex:1;min-width:120px;max-width:440px;margin-left:auto;border:1px solid #ffffff0d;border-radius:24px;padding:0 14px;background:#25292e;color:#9fa6ae;transition:border-color .15s ease}.librarySearch:focus-within{border-color:var(--blue)}.librarySearch input{width:100%;min-width:0;min-height:42px;border:0;padding:9px 0;background:transparent;font-size:13px}.librarySearch input:focus-visible{outline:0}.librarySearch button{width:28px;height:28px;min-height:28px;border:0;border-radius:50%;padding:0;background:transparent;color:var(--muted);font-size:20px}
 #librarySearchCount{margin:8px 0}#librarySearchCount:empty,#status:empty,#appLocalizationStatus:empty{display:none}
@@ -1815,8 +1950,8 @@ dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflo
 .settingsHead{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}.settingsHead h2{font-size:20px;font-weight:600;margin:0}.settingsField{display:grid;gap:7px;margin:16px 0}.settingsField label{font-weight:500}.settingsField input,.settingsField select{width:100%}.settingsActions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:20px}
 .settingsSection{border-top:1px solid var(--line);padding:18px 0;margin:0}.settingsSection h3{margin:0 0 12px}.settingsSection .settingsActions{justify-content:flex-start;margin-top:12px}.settingsSection>summary{cursor:pointer;padding:4px 0;font-weight:500}details>summary{cursor:pointer}
 #accountStatus{font-size:13px;margin:0 0 14px;white-space:pre-wrap}#accountStatus.connected{color:#a2d1b6}.overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:20px}.metric strong{display:block;font-size:20px;font-weight:600}.metric span{font-size:13px;color:var(--muted)}
-#notificationsDialog{width:min(720px,calc(100vw - 32px))}#notificationsCount{font-size:12px;margin-left:4px;color:#c0d1ff}#notificationsStatus{margin-top:12px}
-#appLocalizationStatus{color:#c0d1ff;font-size:13px;margin:8px 0}#appLocalizationStatus.running{padding:10px 12px;border:1px solid var(--line);border-radius:7px}#appLocalizationStatus.error{color:#ffb7bd}
+#notificationsDialog{width:min(720px,calc(100vw - 32px))}#notificationsCount{font-size:12px;margin-left:4px}#notificationsStatus{margin-top:12px}
+#iqiyiIntegrationStatus.connected{color:var(--blue)}#appLocalizationStatus{color:#c0d1ff;font-size:13px;margin:8px 0}#appLocalizationStatus.running{padding:10px 12px;border:1px solid var(--line);border-radius:7px}#appLocalizationStatus.error{color:#ffb7bd}
 @media(max-width:1000px){.topbarInner{gap:22px;padding:0 24px}.managerBrand svg{width:90px}.primaryNav a{font-size:14px}.topActions{gap:3px}.topActions #addMovieButton{padding:9px 12px;margin-left:3px}}
 @media(max-width:760px){html{scroll-padding-top:140px}.topbarInner{display:grid;grid-template-columns:auto 1fr auto;gap:0 16px;padding:0 16px 12px;min-height:120px}.managerBrand svg{width:80px}.primaryNav{height:64px;justify-self:start}.primaryNav a{font-size:13px}.librarySearch{grid-column:1/-1;grid-row:2;width:100%;max-width:none;margin:0}.topActions{grid-column:3;grid-row:1;gap:0}.topActions #addMovieButton{font-size:0;width:44px;min-width:44px;padding:0;margin:0 0 0 4px}.topActions #addMovieButton svg{width:20px;height:20px}.topActions .iconAction{width:44px;min-width:44px}.libraryHeading{gap:10px;margin-bottom:20px}.libraryHeading h1{font-size:21px}.libraryHeading .secondary{padding:7px 12px}main{margin:24px auto;padding:0 16px}.albumHead{gap:12px;flex-wrap:wrap;padding:16px 0}.albumHeading{flex:1 1 200px;gap:12px}.albumCover{flex-basis:60px;width:60px;height:90px}.albumTools{margin-left:auto}.albumTools button,.menu summary{min-height:44px}.episodeList{padding:4px 12px 12px}.episodeGrid{grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:6px}.episodeRow{grid-template-columns:1fr}.episodeActions button{min-height:44px;flex:1}.episodeActions .menu{flex:0}.episodeActions .menu summary{min-width:44px}.movieSearchControls{grid-template-columns:1fr}.searchResult{align-items:flex-start;flex-wrap:wrap}.searchResult button{min-height:44px}.settingsActions button{min-height:44px}dialog{padding:20px}.settingsHead{gap:12px}.settingsHead h2{font-size:18px}}
 @media(max-width:400px){.librarySearch{flex-basis:100%}.libraryTools>button{flex:1}.albumTools{margin-left:0}.albumTools .menu{margin-left:auto}.albumTools{width:100%}.albumTools button{flex:1}}
@@ -1833,9 +1968,8 @@ dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflo
  </nav>
 </div></header>
 <main id="library">
- <section id="integrationPrompt" class="integrationPrompt" aria-label="Cài đặt lần đầu" hidden><div><strong>Kết nối với app iQIYI</strong><p>Lần đầu, mở IQIYI-VI.exe rồi cài tích hợp tại đây. Những lần sau, mở quản lý bằng biểu tượng iQIYI trong app.</p></div><button onclick="openIntegrationSettings()">Cài đặt một lần</button></section>
+ <section id="integrationPrompt" class="integrationPrompt" aria-label="Kết nối app iQIYI" hidden><strong>Kết nối app iQIYI</strong><button onclick="openIntegrationSettings()">Kết nối</button></section>
  <div class="libraryHeading"><div><h1>Thư viện phụ đề</h1><p><span id="countIqiyi">0</span> tập · Phụ đề gốc và bản dịch</p></div><button id="toggleAllAlbums" class="secondary" onclick="toggleAllAlbums()">Mở tất cả</button></div>
- <div id="appLocalizationStatus" role="status" aria-live="polite"></div>
  __TRANSLATION_PANEL__
  <section id="movieSearch" class="movieSearch" role="search" aria-labelledby="movieSearchTitle" hidden><label id="movieSearchTitle" for="movieQuery">Tìm và thêm phim iQIYI</label><form id="movieSearchForm" autocomplete="off"><div class="movieSearchControls"><input id="movieQuery" name="iw_movie_q" type="text" maxlength="100" placeholder="Tên phim hoặc tên gốc tiếng Trung" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required><button id="movieSearchButton">Tìm</button></div></form><div id="movieSearchStatus" role="status" aria-live="polite"></div><div id="movieSearchResults" class="searchResults" aria-live="polite"></div></section>
 
@@ -1844,8 +1978,8 @@ dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflo
 </main>
 <dialog id="appSettings" aria-labelledby="appSettingsTitle"><div class="settingsHead"><h2 id="appSettingsTitle">Cài đặt</h2><button class="secondary" autofocus onclick="document.getElementById('appSettings').close()">Đóng</button></div>
  <section class="settingsSection"><h3>Dịch phụ đề</h3><button id="translationSettingsButton" class="secondary" aria-haspopup="dialog" aria-controls="translationSettings" onclick="document.getElementById('appSettings').close();openTranslationSettings()" disabled>Model & provider</button></section>
- <section class="settingsSection"><h3>Kết nối</h3><div id="accountStatus" class="hint" role="status" aria-atomic="true"></div><div id="iqcomAccount"><button id="iqcomLoginButton" class="secondary" onclick="loginIqcom()">Kiểm tra iq.com</button><p id="iqcomStatus" class="settingsHint" role="status" aria-live="polite">Dùng phiên iq.com của trình duyệt hiện tại</p></div><button class="secondary" onclick="document.getElementById('appSettings').close();openIqiyiProxySettings()">Proxy</button></section>
- <section id="iqiyiIntegration" class="settingsSection"><h3>Tích hợp iQIYI</h3><p class="settingsHint">Lần đầu, mở IQIYI-VI.exe trong thư mục đã giải nén rồi bấm Cài đặt một lần. Những lần sau chỉ cần mở iQIYI như bình thường; dịch vụ quản lý phụ đề sẽ tự chạy nền. Bấm biểu tượng iQIYI ở góc dưới bên phải trong app để mở cửa sổ quản lý.</p><div class="settingsActions"><button id="localizeIqiyiButton" onclick="runAppLocalization('apply')">Cài đặt một lần</button><button id="updateIqiyiButton" class="secondary" onclick="runAppLocalization('repair')" hidden>Cập nhật Việt hóa</button><button id="restoreIqiyiButton" class="secondary" onclick="runAppLocalization('restore')">Gỡ tích hợp</button></div></section>
+ <section class="settingsSection"><h3>Kết nối</h3><div id="accountStatus" class="hint" role="status" aria-atomic="true"></div><div id="iqcomAccount"><button id="iqcomLoginButton" class="secondary" onclick="loginIqcom()">Kiểm tra iq.com</button><p id="iqcomStatus" class="settingsHint" role="status" aria-live="polite">Kết nối tài khoản iq.com để dùng phụ đề Việt chính thức.</p></div><button class="secondary" onclick="document.getElementById('appSettings').close();openIqiyiProxySettings()">Proxy</button></section>
+ <section id="iqiyiIntegration" class="settingsSection"><h3>Tích hợp iQIYI</h3><p id="iqiyiIntegrationStatus" class="settingsHint" role="status" aria-live="polite">Đang kiểm tra…</p><div class="settingsActions"><button id="localizeIqiyiButton" onclick="runAppLocalization('apply')" disabled>Kết nối app iQIYI</button><button id="restoreIqiyiButton" class="secondary" onclick="runAppLocalization('restore')">Gỡ tích hợp</button></div><div id="appLocalizationStatus" role="status" aria-live="polite"></div></section>
  <details class="settingsSection"><summary>Thống kê thư viện</summary><section class="overview" aria-label="Tổng quan thư viện"><div class="metric"><strong id="metricTotal">0</strong><span>Tập trong thư viện</span></div><div class="metric"><strong id="metricDownloaded">0</strong><span>Có phụ đề gốc</span></div><div class="metric"><strong id="metricCueCount">0</strong><span>Câu phụ đề</span></div><div class="metric"><strong id="metricAttention">0</strong><span>Cần chú ý</span></div></section></details>
 </dialog>
 <dialog id="notificationsDialog" aria-labelledby="notificationsTitle"><div class="settingsHead"><h2 id="notificationsTitle">Phim vừa nhận diện</h2><button class="secondary" onclick="document.getElementById('notificationsDialog').close()" aria-label="Đóng thông báo">Đóng</button></div>
@@ -1869,32 +2003,55 @@ document.addEventListener("click",event=>document.querySelectorAll(".menu[open]"
 document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;const menu=document.querySelector(".menu[open]");if(menu){menu.open=false;menu.querySelector("summary").focus();event.preventDefault()}});
 const iqiyiProxyDialog=document.getElementById("iqiyiProxyDialog");
 const expandedAlbums=new Set(),collapsedAlbums=new Set(),expandedCues=new Set(),detailCache=new Map(),selectedEpisodes=new Map(),episodeMessages=new Map();
-let albumLists={},episodeData=[],lastRenderSignature="",refreshBusy=false,refreshPending=false,refreshError="";
+let albumLists={},albumTranslation={},episodeData=[],lastRenderSignature="",refreshBusy=false,refreshPending=false,refreshError="";
 const pendingActions=new Set(),detailPending=new Set();
 let allAlbumsOpen=false,iqiyiSynced=false,iqiyiSources={};
-let iqcomChecking=false;
+let iqcomChecking=false,iqcomLoginPending=false;
 let discoveries=[],discoveriesSignature="";
 const discoveryBusy=new Set();
 function renderDiscoveries(){
  const count=document.getElementById("notificationsCount");count.textContent=String(discoveries.length);count.hidden=!discoveries.length;
  document.getElementById("notificationsButton").setAttribute("aria-label","Thông báo: "+discoveries.length+" phim chờ chấp nhận");
  const signature=JSON.stringify([discoveries,[...discoveryBusy]]);if(signature===discoveriesSignature)return;discoveriesSignature=signature;
- document.getElementById("notificationsList").innerHTML=discoveries.length?discoveries.map(movie=>"<article class='searchResult'><div class='discoveryIdentity'>"+movieCoverMarkup(movie.albumCoverUrl)+"<div><div class='searchResultTitle'>"+esc(movie.title)+"</div><div class='searchResultMeta'>"+"iQIYI"+" · "+movie.episodes+" tập đã nhận diện</div>"+(movie.originalTitle&&movie.originalTitle!==movie.title?"<div class='searchResultMeta'>Tên gốc: "+esc(movie.originalTitle)+"</div>":"")+"</div></div><div class='discoveryActions'><button class='secondary' onclick=\"decideDiscovery("+jsArg(movie.tvid)+",'dismiss')\" "+(discoveryBusy.has(movie.tvid)?"disabled":"")+">Bỏ qua</button><button onclick=\"decideDiscovery("+jsArg(movie.tvid)+",'accept')\" "+(discoveryBusy.has(movie.tvid)?"disabled":"")+">Chấp nhận</button></div></article>").join(""):"<p class='hint'>Chưa có phim mới chờ chấp nhận.</p>";
+ setMovieMarkup(document.getElementById("notificationsList"),discoveries.length?discoveries.map(movie=>"<article class='searchResult' data-movie-key='"+esc(movie.tvid)+"'><div class='discoveryIdentity'>"+movieCoverMarkup(movie.albumCoverUrl,movie.tvid)+"<div><div class='searchResultTitle'>"+esc(movie.title)+"</div><div class='searchResultMeta'>"+"iQIYI"+" · "+movie.episodes+" tập đã nhận diện</div>"+(movie.originalTitle&&movie.originalTitle!==movie.title?"<div class='searchResultMeta'>Tên gốc: "+esc(movie.originalTitle)+"</div>":"")+"</div></div><div class='discoveryActions'><button class='secondary' onclick=\"decideDiscovery("+jsArg(movie.tvid)+",'dismiss')\" "+(discoveryBusy.has(movie.tvid)?"disabled":"")+">Bỏ qua</button><button onclick=\"decideDiscovery("+jsArg(movie.tvid)+",'accept')\" "+(discoveryBusy.has(movie.tvid)?"disabled":"")+">Chấp nhận</button></div></article>").join(""):"<p class='hint'>Chưa có phim mới chờ chấp nhận.</p>");
 }
 async function decideDiscovery(tvid,action){
  if(discoveryBusy.has(tvid))return;discoveryBusy.add(tvid);renderDiscoveries();const status=document.getElementById("notificationsStatus");status.textContent="Đang xử lý…";
  try{const r=await apiFetch("/api/discoveries/decide",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tvid,action})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không xử lý được thông báo.");status.textContent=safeStatusText(x.message,"Đã cập nhật thông báo.");await refresh(true)}catch(e){status.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}finally{discoveryBusy.delete(tvid);renderDiscoveries()}
 }
-function updateIqcomStatus(state){const button=document.getElementById("iqcomLoginButton"),status=document.getElementById("iqcomStatus");button.disabled=iqcomChecking;button.textContent=iqcomChecking?"Đang kiểm tra…":"Kiểm tra iq.com";if(!iqcomChecking)status.textContent=safeStatusText(state.message,"Kiểm tra phiên iq.com của trình duyệt hiện tại; không mở cửa sổ mới.");status.setAttribute("aria-busy",String(iqcomChecking))}
-async function loginIqcom(){if(window.pywebview){window.open(location.origin+"/?connect=iqcom","_blank");updateIqcomStatus({message:"Chọn phiên iq.com bằng nút Kiểm tra iq.com trong trang trình duyệt vừa mở."});return}if(iqcomChecking)return;iqcomChecking=true;updateIqcomStatus({});document.getElementById("iqcomStatus").textContent="Đang kiểm tra phiên iq.com của trình duyệt này…";try{const state=await new Promise((resolve,reject)=>{const requestId=crypto.randomUUID();let timer;function receive(event){if(event.source!==window||event.origin!==location.origin||event.data?.type!=="iqcom-session-result"||event.data.requestId!==requestId)return;clearTimeout(timer);window.removeEventListener("message",receive);event.data.error?reject(Error(event.data.error)):resolve(event.data.state||{})}window.addEventListener("message",receive);timer=setTimeout(()=>{window.removeEventListener("message",receive);reject(Error("Tải lại tiện ích Việt hóa và trang này để kiểm tra phiên của trình duyệt."))},8000);window.postMessage({type:"iqcom-session-check",requestId},location.origin)});iqcomChecking=false;updateIqcomStatus(state)}catch(e){iqcomChecking=false;updateIqcomStatus({message:e.message})}}
+function updateIqcomStatus(state){
+ const button=document.getElementById("iqcomLoginButton"),status=document.getElementById("iqcomStatus");
+ iqcomLoginPending=!!state.loginPending;button.disabled=iqcomChecking||iqcomLoginPending;
+ button.textContent=iqcomLoginPending?"Đang chờ đăng nhập…":iqcomChecking?"Đang kiểm tra…":"Kiểm tra iq.com";
+ if(!iqcomChecking)status.textContent=safeStatusText(state.message,window.pywebview?"Bấm Kiểm tra iq.com để mở trang đăng nhập riêng.":"Kiểm tra phiên iq.com của trình duyệt hiện tại.");
+ status.setAttribute("aria-busy",String(iqcomChecking||iqcomLoginPending));
+}
+async function loginIqcom(){
+ if(iqcomChecking||iqcomLoginPending)return;
+ iqcomChecking=true;updateIqcomStatus({});
+ document.getElementById("iqcomStatus").textContent=window.pywebview?"Đang mở trang iq.com để bạn đăng nhập…":"Đang kiểm tra phiên iq.com của trình duyệt này…";
+ try{
+  let state;
+  if(window.pywebview){
+   const response=await apiFetch("/api/iqcom-login",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+   state=await response.json();if(!response.ok)throw Error(state.error||"Không mở được trang đăng nhập iq.com.");
+  }else state=await new Promise((resolve,reject)=>{
+   const requestId=crypto.randomUUID();let timer;
+   function receive(event){if(event.source!==window||event.origin!==location.origin||event.data?.type!=="iqcom-session-result"||event.data.requestId!==requestId)return;clearTimeout(timer);window.removeEventListener("message",receive);event.data.error?reject(Error(event.data.error)):resolve(event.data.state||{})}
+   window.addEventListener("message",receive);timer=setTimeout(()=>{window.removeEventListener("message",receive);reject(Error("Tải lại tiện ích Việt hóa và trang này để kiểm tra phiên của trình duyệt."))},8000);
+   window.postMessage({type:"iqcom-session-check",requestId},location.origin);
+  });
+  iqcomChecking=false;updateIqcomStatus(state);
+ }catch(e){iqcomChecking=false;updateIqcomStatus({message:e.message})}
+}
 let appLocalizationPoll=0;
 function openIntegrationSettings(){document.getElementById("appSettings").showModal();document.getElementById("iqiyiIntegration").scrollIntoView({block:"center"})}
 let searchMoviesData=[];
 const addingAlbums=new Set(),movieSearchStatus=document.getElementById("movieSearchStatus");
 document.getElementById("movieSearchForm").addEventListener("submit",event=>{event.preventDefault();searchMovies()});
 function toggleSearch(){const panel=document.getElementById("movieSearch"),q=document.getElementById("movieQuery");panel.hidden=!panel.hidden;document.getElementById("addMovieButton").setAttribute("aria-expanded",String(!panel.hidden));if(panel.hidden){q.value=""}else{q.focus()}}
-async function refreshAppLocalization(){clearTimeout(appLocalizationPoll);try{const r=await apiFetch("/api/app-localization"),x=await r.json();if(!r.ok)throw Error(x.error||"Không đọc được trạng thái iQIYI");const busy=x.status==="running",status=document.getElementById("appLocalizationStatus");document.getElementById("integrationPrompt").hidden=!!x.installed;const installButton=document.getElementById("localizeIqiyiButton");installButton.disabled=busy||!!x.installed;installButton.textContent=x.installed?"Đã cài đặt":"Cài đặt một lần";const updateButton=document.getElementById("updateIqiyiButton");updateButton.hidden=!x.installed;updateButton.disabled=busy;document.getElementById("restoreIqiyiButton").disabled=busy;status.className=busy?"running":x.status==="error"?"error":"";status.setAttribute("aria-busy",String(busy));status.textContent=x.status==="idle"?(x.installed?"Đã cài đặt. Mở iQIYI bình thường để dùng quản lý phụ đề.":""):safeStatusText(x.message,"Trạng thái Việt hóa chưa có bản tiếng Việt.");if(busy)appLocalizationPoll=setTimeout(refreshAppLocalization,1000)}catch(e){const status=document.getElementById("appLocalizationStatus");status.className="error";status.setAttribute("aria-busy","false");status.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}}
-async function runAppLocalization(action){if(action==="restore"&&!confirm("Khôi phục các file giao diện iQIYI từ bản sao lưu? Đóng và mở lại iQIYI sau khi hoàn tất."))return;const status=document.getElementById("appLocalizationStatus");document.getElementById("localizeIqiyiButton").disabled=true;document.getElementById("updateIqiyiButton").disabled=true;document.getElementById("restoreIqiyiButton").disabled=true;status.className="running";status.setAttribute("aria-busy","true");status.textContent=action==="restore"?"Đang khôi phục giao diện tiếng Trung…":action==="repair"?"Đang cập nhật tiếng Việt…":"Đang cài tích hợp iQIYI…";try{const r=await apiFetch("/api/app-localization",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không chạy được thao tác");status.textContent=safeStatusText(x.message,status.textContent);refreshAppLocalization()}catch(e){status.className="error";status.setAttribute("aria-busy","false");status.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.");refreshAppLocalization()}}
+async function refreshAppLocalization(){clearTimeout(appLocalizationPoll);try{const r=await apiFetch("/api/app-localization"),x=await r.json();if(!r.ok)throw Error(x.error||"Không đọc được trạng thái iQIYI");const busy=x.status==="running",status=document.getElementById("appLocalizationStatus");document.getElementById("integrationPrompt").hidden=!!x.installed;const installButton=document.getElementById("localizeIqiyiButton");installButton.disabled=busy||!!x.installed;installButton.textContent="Kết nối app iQIYI";const connectionStatus=document.getElementById("iqiyiIntegrationStatus");connectionStatus.textContent=x.installed?"Đã kết nối":"Chưa kết nối";connectionStatus.className="settingsHint"+(x.installed?" connected":"");document.getElementById("restoreIqiyiButton").disabled=busy;status.className=busy?"running":x.status==="error"?"error":"";status.setAttribute("aria-busy",String(busy));status.textContent=x.status==="idle"?"":safeStatusText(x.message,"Không đọc được trạng thái tích hợp.");if(busy)appLocalizationPoll=setTimeout(refreshAppLocalization,1000)}catch(e){const status=document.getElementById("appLocalizationStatus");status.className="error";status.setAttribute("aria-busy","false");status.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}}
+async function runAppLocalization(action){if(action==="restore"&&!confirm("Gỡ toàn bộ script và nút quản lý khỏi app iQIYI, khôi phục giao diện gốc? Đóng rồi mở lại iQIYI sau khi hoàn tất."))return;const status=document.getElementById("appLocalizationStatus");document.getElementById("localizeIqiyiButton").disabled=true;document.getElementById("restoreIqiyiButton").disabled=true;status.className="running";status.setAttribute("aria-busy","true");status.textContent=action==="restore"?"Đang gỡ tích hợp…":"Đang kết nối app iQIYI…";try{const r=await apiFetch("/api/app-localization",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không chạy được thao tác");status.textContent=safeStatusText(x.message,status.textContent);refreshAppLocalization()}catch(e){status.className="error";status.setAttribute("aria-busy","false");status.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.");refreshAppLocalization()}}
 function renderMovieSearchResults(){
  const node=document.getElementById("movieSearchResults");
  node.innerHTML=searchMoviesData.map((movie,index)=>{
@@ -1933,7 +2090,7 @@ async function post(url,data,button){const actionKey=url+JSON.stringify(data);if
 function deleteSubtitle(id){const x=episodeData.find(item=>item.tvid===id);if(!x||!confirm("Xóa phụ đề gốc của "+episodeLabel(x)+"? Có thể tải lại phụ đề sau."))return;detailCache.delete(id);expandedCues.delete(id);post("/api/delete-subtitle",{tvid:id})}
 function deleteAlbum(tvid){const first=episodeData.find(item=>item.tvid===tvid);if(!first)return;const rows=episodeData.filter(item=>albumKey(item)===albumKey(first)),title=seriesName(first);if(!confirm("Xóa phim “"+title+"” cùng toàn bộ "+rows.length+" tập và phụ đề gốc đã lưu? Thao tác này không thể hoàn tác."))return;post("/api/delete-album",{provider:first.provider||"iqiyi",albumId:first.albumId||"",seriesTitle:seriesName(first)})}
 async function openIqiyiProxySettings(){iqiyiProxyDialog.showModal();const message=document.getElementById("iqiyiProxyStatus");message.textContent="Đang kiểm tra…";try{const r=await apiFetch("/api/iqiyi-proxy"),x=await r.json();if(!r.ok)throw Error(x.error||"Không kiểm tra được proxy");message.textContent=x.configured?"Proxy đang bật trong phiên chạy này; nhập URL mới để thay thế.":"Đang kết nối trực tiếp."}catch(e){message.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}}
-async function saveIqiyiProxy(button){if(button)button.disabled=true;const message=document.getElementById("iqiyiProxyStatus");message.textContent="Đang áp dụng và kết nối lại iQIYI…";try{const r=await apiFetch("/api/iqiyi-proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:document.getElementById("iqiyiProxyUrl").value})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không lưu được proxy");document.getElementById("iqiyiProxyUrl").value="";message.textContent=(x.configured?"Đã bật proxy. ":"Đã tắt proxy. ")+(safeStatusText(x.desktop?.message,""))+" Tiện ích web đồng bộ trong khoảng 30 giây."}catch(e){message.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}finally{if(button)button.disabled=false}}
+async function saveIqiyiProxy(button){if(button)button.disabled=true;const message=document.getElementById("iqiyiProxyStatus");message.textContent="Đang kiểm tra proxy và kết nối lại iQIYI…";try{const r=await apiFetch("/api/iqiyi-proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:document.getElementById("iqiyiProxyUrl").value})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không lưu được proxy");document.getElementById("iqiyiProxyUrl").value="";message.textContent=(x.configured?"Đã bật proxy. ":"Đã tắt proxy. ")+(safeStatusText(x.desktop?.message,""))+" Tiện ích web đồng bộ trong khoảng 30 giây."}catch(e){message.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}finally{if(button)button.disabled=false}}
 async function clearIqiyiProxy(button){document.getElementById("iqiyiProxyUrl").value="";return saveIqiyiProxy(button)}
 async function detail(id){
   if(detailPending.has(id))return;
@@ -1991,9 +2148,37 @@ async function detail(id){
  if(account.textContent!==accountText)account.textContent=accountText;
  account.classList.toggle("connected",iqiyiSynced);
 }
-function movieCoverMarkup(url){
+function movieCoverMarkup(url,key){
  const placeholder="<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5'><rect x='3' y='3' width='18' height='18' rx='2'/><path d='M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4'/></svg>";
- return "<span class='albumCover' aria-hidden='true'>"+placeholder+(url?"<img src='"+esc(url)+"' alt='' width='72' height='108' loading='lazy' decoding='async' referrerpolicy='no-referrer' onerror='this.remove()'>":"")+"</span>";
+ return "<span class='albumCover' data-cover-key='"+esc(key)+"' data-cover-url='"+esc(url||"")+"' aria-hidden='true'>"+placeholder+(url?"<img src='"+esc(url)+"' alt='' width='72' height='108' loading='lazy' decoding='async' referrerpolicy='no-referrer' onerror='this.remove()'>":"")+"</span>";
+}
+function setMovieMarkup(node,html){
+ const template=document.createElement("template");template.innerHTML=html;
+ function patch(parent,next){
+  const keyOf=node=>node.nodeType===1?node.getAttribute("data-movie-key"):null;
+  const keyed=new Map(Array.from(parent.children).filter(node=>keyOf(node)!==null).map(node=>[keyOf(node),node]));
+  let cursor=parent.firstChild;
+  for(const fresh of Array.from(next.childNodes)){
+   const key=keyOf(fresh);let current=key===null?cursor:keyed.get(key);
+   if(!current||current.nodeType!==fresh.nodeType||current.nodeName!==fresh.nodeName||keyOf(current)!==key){
+    current=fresh.cloneNode(true);parent.insertBefore(current,cursor);
+   }else{
+    if(current!==cursor)parent.insertBefore(current,cursor);
+    if(!current.isEqualNode(fresh)){
+     if(current.nodeType===1){
+      if(!current.classList.contains("albumCover")||current.dataset.coverKey!==fresh.dataset.coverKey||current.dataset.coverUrl!==fresh.dataset.coverUrl){
+       for(const attr of Array.from(current.attributes))if(!fresh.hasAttribute(attr.name))current.removeAttribute(attr.name);
+       for(const attr of Array.from(fresh.attributes))if(current.getAttribute(attr.name)!==attr.value)current.setAttribute(attr.name,attr.value);
+       patch(current,fresh);
+      }
+     }else current.nodeValue=fresh.nodeValue;
+    }
+   }
+   cursor=current.nextSibling;
+  }
+  while(cursor){const next=cursor.nextSibling;cursor.remove();cursor=next;}
+ }
+ patch(node,template.content);
 }
 function render(data){
  const providerRows=data.filter(x=>(x.provider||"iqiyi")==="iqiyi"),label="iQIYI",groups=new Map();
@@ -2010,6 +2195,7 @@ function render(data){
    if(query&&!rows.some(x=>normalizeMovieQuery(seriesDisplayName(x)+" "+seriesName(x)).includes(query)))return;
    rows.sort((a,b)=>(orderOf(a)||9999)-(orderOf(b)||9999));
    const first=rows[0],original=seriesName(first),title=seriesDisplayName(first)||"Phim đang phát";
+   const bulk=albumTranslation.episodeIds?.includes(first.tvid)?albumTranslation:null,bulkRunning=albumTranslation.stage==="running";
    const shown=rows;visibleAlbums++;
    const list=albumLists[String(first.albumId||"")]||{},total=list.stage==="ready"?list.total:Math.max(rows.length,...rows.map(x=>Number(x.albumTotal)||0));
    const sourceCount=rows.filter(x=>x.downloaded).length;
@@ -2017,12 +2203,14 @@ function render(data){
    const open=albumIsOpen(key),listId="episode-list-"+String(first.albumId||first.tvid).replace(/[^a-z0-9_-]/gi,"-");
    const selected=shown.find(x=>x.tvid===selectedEpisodes.get(key))||shown[0];
    const grid=open?shown.map(x=>{const state=episodeState(x);return "<button id='episode-"+esc(x.tvid)+"' class='episodeChip "+state.style+"' aria-pressed='"+(x===selected)+"' aria-label='"+esc(episodeLabel(x)+": "+state.label)+"' title='"+esc(episodeLabel(x)+": "+state.label)+"' onclick=\"selectEpisode("+jsArg(key)+","+jsArg(x.tvid)+")\"><span>"+esc(orderOf(x)||"?")+"</span><small>"+esc(state.short)+"</small></button>"}).join(""):"";
-   html+="<section class='album'><div class='albumHead'><button type='button' class='albumHeading' id='album-toggle-"+listId+"' aria-expanded='"+open+"' aria-controls='"+listId+"' onclick=\"toggleAlbum("+jsArg(key)+")\">"+movieCoverMarkup(rows.find(x=>x.albumCoverUrl)?.albumCoverUrl)+"<span class='albumIdentity'><span class='seriesTitle'>"+esc(title)+"</span>"+
+   html+="<section class='album' data-movie-key='"+esc(key)+"'><div class='albumHead'><button type='button' class='albumHeading' id='album-toggle-"+listId+"' aria-expanded='"+open+"' aria-controls='"+listId+"' onclick=\"toggleAlbum("+jsArg(key)+")\">"+movieCoverMarkup(rows.find(x=>x.albumCoverUrl)?.albumCoverUrl,key)+"<span class='albumIdentity'><span class='seriesTitle'>"+esc(title)+"</span>"+
     (title!==original?"<span class='originalTitle'>"+esc(original)+"</span>":"")+
     "<span class='albumSummary'><strong>"+rows.length+(total>rows.length?" / "+total:"")+" tập</strong> · "+(sourceCount?sourceCount+" đã tải":"Chưa tải phụ đề")+(issueCount?"<span class='needsAttention'> · "+issueCount+" cần kiểm tra</span>":"")+"</span>"+
-    (list.stage==="loading"?"<span class='albumSummary' role='status'>Đang lấy toàn bộ danh sách tập từ iQIYI…</span>":list.stage==="error"?"<span class='errorText'>Chưa lấy đủ danh sách tập: "+esc(list.message)+". App sẽ tự thử lại.</span>":"")+"</span>"+
+    (list.stage==="loading"?"<span class='albumSummary' role='status'>Đang lấy toàn bộ danh sách tập từ iQIYI…</span>":list.stage==="error"?"<span class='errorText'>Chưa lấy đủ danh sách tập: "+esc(list.message)+". App sẽ tự thử lại.</span>":"")+(bulk?"<span class='albumSummary' role='status'>"+esc(bulk.message)+"</span>":"")+"</span>"+
     "<svg class='albumChevron' aria-hidden='true' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5'><path d='m6 9 6 6 6-6'/></svg></button><div class='albumTools'>"+
     (rows.some(x=>x.translation?.memory_available)?"<button class='secondary' onclick=\"showMovieMemory("+jsArg(first.tvid)+")\">Hồ sơ dịch</button>":"")+
+    (bulkRunning&&bulk?"<button class='secondary' onclick=\"stopAlbumTranslation(this)\">Dừng dịch loạt</button>":"<button class='secondary' onclick=\"translateAlbum("+jsArg(first.tvid)+",this)\" "+(bulkRunning||list.stage==="loading"?"disabled":"")+">Dịch toàn bộ tập</button>")+
+    (bulk?.currentJobId?"<button class='secondary' onclick=\"showTranslationJob("+jsArg(bulk.currentJobId)+")\">Tiến độ dịch loạt</button>":"")+
     "<details class='menu' data-menu-key='album:"+esc(key)+"'><summary class='secondary' aria-label='Thao tác phim'>···</summary><div class='moreMenu'>"+("<button onclick=\"post('/api/download-all',{albumId:'"+esc(first.albumId||"")+"'},this)\">Tải phụ đề gốc</button>")+"<button class='danger' onclick=\"deleteAlbum('"+esc(first.tvid)+"')\">Xóa phim</button></div></details></div></div>"+
     "<div id='"+listId+"' class='episodeList' "+(open?"":"hidden")+">"+(open?"<details class='episodeLegendHelp'><summary>Chú giải trạng thái</summary><div class='episodeLegend' aria-label='Chú giải trạng thái'><span class='legendItem'><i class='legendDot'></i>Chưa tải</span><span class='legendItem'><i class='legendDot sourceReady'></i>Đã tải gốc</span><span class='legendItem'><i class='legendDot complete'></i>Đã dịch</span><span class='legendItem'><i class='legendDot active'></i>Đang xử lý</span><span class='legendItem'><i class='legendDot error'></i>Lỗi</span><span class='legendItem'><i class='legendDot access'></i>Cần quyền</span></div></details><div class='episodeGrid' role='group' aria-label='Chọn tập phim'>"+grid+"</div>"+episodePanel(selected):"")+"</div></section>";
   });
@@ -2031,14 +2219,14 @@ function render(data){
  const searchCount=document.getElementById("librarySearchCount"),searchText=query?"Hiển thị "+visibleAlbums+" / "+groups.size+" phim trong "+label:"";if(searchCount.textContent!==searchText)searchCount.textContent=searchText;
  html+="</section>";
  const scrollY=window.scrollY,focusedId=document.activeElement?.id,focusedControl=itemsNode.contains(document.activeElement)?{tag:document.activeElement.tagName,action:document.activeElement.getAttribute("onclick"),menu:document.activeElement.closest(".menu")?.dataset.menuKey}:null,openMenus=new Set(Array.from(itemsNode.querySelectorAll(".menu[open]")).map(node=>node.dataset.menuKey)),scrollPositions=Array.from(itemsNode.querySelectorAll(".detail")||[]).map(node=>[node.id,node.scrollTop,node.scrollLeft]);
- itemsNode.innerHTML=html;
+ setMovieMarkup(itemsNode,html);
  itemsNode.querySelectorAll(".menu[data-menu-key]").forEach(node=>{if(openMenus.has(node.dataset.menuKey))node.open=true});
  scrollPositions.forEach(([id,top,left])=>{const node=document.getElementById(id);if(node){node.scrollTop=top;node.scrollLeft=left}});
  if(focusedId)document.getElementById(focusedId)?.focus({preventScroll:true});
  else if(focusedControl)Array.from(itemsNode.querySelectorAll("button,summary,a")).find(node=>node.tagName===focusedControl.tag&&node.getAttribute("onclick")===focusedControl.action&&node.closest(".menu")?.dataset.menuKey===focusedControl.menu)?.focus({preventScroll:true});
  window.scrollTo(0,scrollY);
 }
-async function refresh(force){if(refreshBusy){refreshPending=refreshPending||!!force;return}refreshBusy=true;try{const r=await apiFetch("/api/episodes"),payload=await r.json();if(!r.ok)throw Error(payload.error||"Không tải được thư viện.");const data=payload.episodes||[];if(refreshError&&statusNode.textContent===refreshError)statusNode.textContent="";refreshError="";albumLists=payload.albums||{};discoveries=payload.discoveries||[];renderDiscoveries();iqiyiSynced=!!(payload.session&&payload.session.synced);iqiyiSources=payload.session?.sources||{};updateIqcomStatus(payload.iqcomSession||{});episodeData=data;const signature=JSON.stringify([albumLists,data.map(x=>[x.tvid,x.provider,x.title,x.albumTitle,x.albumTitleVi,x.albumCoverUrl,x.albumId,x.albumTotal,x.cues,x.downloadAvailable,x.downloadProgress,x.translation])]);if(force||signature!==lastRenderSignature){lastRenderSignature=signature;render(data);renderMovieSearchResults()}else updateProviderChrome(data)}catch(e){refreshError=safeStatusText(e.message,"Không kết nối được app quản lý.");statusNode.textContent=refreshError}finally{refreshBusy=false;if(refreshPending){refreshPending=false;queueMicrotask(()=>refresh(true))}}}
+async function refresh(force){if(refreshBusy){refreshPending=refreshPending||!!force;return}refreshBusy=true;try{const r=await apiFetch("/api/episodes"),payload=await r.json();if(!r.ok)throw Error(payload.error||"Không tải được thư viện.");const data=payload.episodes||[];if(refreshError&&statusNode.textContent===refreshError)statusNode.textContent="";refreshError="";albumLists=payload.albums||{};albumTranslation=payload.albumTranslation||{};discoveries=payload.discoveries||[];renderDiscoveries();iqiyiSynced=!!(payload.session&&payload.session.synced);iqiyiSources=payload.session?.sources||{};updateIqcomStatus(payload.iqcomSession||{});episodeData=data;const signature=JSON.stringify([albumLists,albumTranslation,data.map(x=>[x.tvid,x.provider,x.title,x.albumTitle,x.albumTitleVi,x.albumCoverUrl,x.albumId,x.albumTotal,x.cues,x.downloadAvailable,x.downloadProgress,x.translation])]);if(force||signature!==lastRenderSignature){lastRenderSignature=signature;render(data);renderMovieSearchResults()}else updateProviderChrome(data)}catch(e){refreshError=safeStatusText(e.message,"Không kết nối được app quản lý.");statusNode.textContent=refreshError}finally{refreshBusy=false;if(refreshPending){refreshPending=false;queueMicrotask(()=>refresh(true))}}}
 function refreshVisible(){if(!document.hidden)refresh(false)}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh(false)});
 if(new URLSearchParams(location.search).get("connect")==="iqcom")document.getElementById("appSettings").showModal();
@@ -2078,7 +2266,8 @@ class Handler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin")
         local = (f"http://127.0.0.1:{port}", f"http://localhost:{port}")
         if urlsplit(self.path).path == "/api/open-manager":
-            return origin is None or origin in (*local, "https://localwebapp.iqiyi.com")
+            return (origin is None or origin in (*local, "https://localwebapp.iqiyi.com") or
+                    bool(re.fullmatch(r"chrome-extension://[a-p]{32}", origin)))
         if urlsplit(self.path).path in ("/api/browser-proxy", "/api/browser-session"):
             methods = ("POST", "OPTIONS") if urlsplit(self.path).path == "/api/browser-session" else ("GET", "OPTIONS")
             return (self.command in methods and
@@ -2262,7 +2451,7 @@ class Handler(BaseHTTPRequestHandler):
                 busy = (any(lock.locked() for lock in EPISODE_LOCKS.values()) or
                         any(state.get("stage") in ("queued", "downloading") for state in list(DOWNLOAD_PROGRESS.values())) or
                         any(state.get("stage") == "loading" for state in list(ALBUM_LISTS.values())) or
-                        app_localization_status().get("status") == "running" or TRANSLATION_JOBS.busy()
+                        app_localization_status().get("status") == "running" or TRANSLATION_JOBS.busy() or album_translation_status().get("stage") == "running" or IQCOM_SESSION.status().get("loginPending")
                         or any(state.get("loading") for state in list(OFFICIAL_SUBTITLE_CACHE.values())))
             self.send_json(200, {"ok": True, "app": "subtitle-manager", "version": 25, "busy": busy,
                                  "runtimeVersion": RUNTIME_VERSION,
@@ -2271,6 +2460,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {"providers": TRANSLATION_PROVIDERS, "active_id": TRANSLATION_JOBS.active_id()})
         elif request.path == "/api/translation/status":
             self.send_json(200, TRANSLATION_JOBS.status(parse_qs(request.query).get("id", [""])[0]))
+        elif request.path == "/api/translation/album":
+            self.send_json(200, album_translation_status())
         elif request.path == "/api/translation/artifact":
             query = parse_qs(request.query)
             name = query.get("name", [""])[0]
@@ -2335,6 +2526,7 @@ class Handler(BaseHTTPRequestHandler):
             for row in rows:
                 row.pop("discoveredAt", None)
             self.send_json(200, {"episodes": rows, "albums": dict(ALBUM_LISTS),
+                                 "albumTranslation": album_translation_status(),
                                  "discoveries": pending_movies(),
                                  "session": player_session_status(), "iqcomSession": IQCOM_SESSION.status()})
         elif request.path == "/api/official-subtitle-state":
@@ -2397,6 +2589,12 @@ class Handler(BaseHTTPRequestHandler):
             if route == "/api/translation/models":
                 self.send_json(200, {"models": list_models(data)})
                 return
+            if route == "/api/translation/album":
+                self.send_json(202, start_album_translation(data))
+                return
+            if route == "/api/translation/album/cancel":
+                self.send_json(200, stop_album_translation())
+                return
             if route == "/api/translation/resume":
                 previous = TRANSLATION_JOBS.status(data.get("id"))
                 tvid = previous.get("episode_id")
@@ -2449,6 +2647,9 @@ class Handler(BaseHTTPRequestHandler):
             if route == "/api/iqcom-session":
                 self.send_json(200, IQCOM_SESSION.status())
                 return
+            if route == "/api/iqcom-login":
+                self.send_json(202, IQCOM_SESSION.start_login())
+                return
             if route == "/api/audio-settings":
                 self.send_json(200, IQCOM_AUDIO.configure(data))
                 return
@@ -2478,12 +2679,24 @@ class Handler(BaseHTTPRequestHandler):
                 proxy_url = validate_iqiyi_proxy_url(data.get("url", ""))
                 global IQIYI_PROXY_URL
                 with IQIYI_PROXY_APPLY_LOCK:
+                    if proxy_url:
+                        check_iqiyi_proxy(proxy_url)
+                    relay = DESKTOP_PROXY.url() if proxy_url else ""
                     try:
-                        relay = DESKTOP_PROXY.url() if proxy_url else ""
                         if app_integration.read_state(ROOT):
                             app_integration.set_proxy(ROOT, relay)
-                        with IQIYI_PROXY_LOCK:
-                            IQIYI_PROXY_URL = proxy_url
+                    except PermissionError:
+                        self.send_json(409, {"error": "Windows từ chối quyền cập nhật proxy iQIYI. Hãy lưu lại và chấp thuận quyền Administrator."})
+                        return
+                    except RuntimeError as exc:
+                        self.send_json(409, {"error": str(exc)})
+                        return
+                    except OSError:
+                        self.send_json(409, {"error": "Không cập nhật được cấu hình proxy iQIYI. Kiểm tra quyền truy cập thư mục app rồi thử lại."})
+                        return
+                    with IQIYI_PROXY_LOCK:
+                        IQIYI_PROXY_URL = proxy_url
+                    try:
                         desktop = apply_running_iqiyi_proxy(relay)
                     except (OSError, RuntimeError):
                         desktop = {"status": "error", "message": "Đã lưu cấu hình nhưng chưa kết nối lại được iQIYI. Đóng rồi mở lại iQIYI."}
@@ -2584,6 +2797,9 @@ class Handler(BaseHTTPRequestHandler):
             if route == "/api/delete-subtitle":
                 if tvid not in EPISODES:
                     raise ValueError("Không tìm thấy tập này trong thư viện.")
+                bulk = album_translation_status()
+                if bulk.get("stage") == "running" and tvid in bulk.get("episodeIds", []):
+                    raise EpisodeBusy("Tập thuộc lượt dịch toàn bộ đang chạy. Dừng lượt dịch trước khi xóa.")
                 lock = episode_lock(tvid)
                 with LOCK_GUARD:
                     if DOWNLOAD_PROGRESS.get(tvid, {}).get("stage") in ("queued", "downloading"):
@@ -2610,12 +2826,15 @@ class Handler(BaseHTTPRequestHandler):
                 title = str(data.get("seriesTitle", ""))[:500].casefold().strip()
                 if album_id and not re.fullmatch(r"\d{1,24}", album_id):
                     raise ValueError("Invalid album ID")
-                with LOCK_GUARD:
+                with ALBUM_TRANSLATION_LOCK, LOCK_GUARD:
                     if not (album_id and album_id != "0") and not title:
                         raise ValueError("Invalid movie identity")
                     ids = album_episode_ids(album_id, title)
                     if not ids:
                         raise ValueError("Không tìm thấy phim này trong thư viện.")
+                    bulk = album_translation_status()
+                    if bulk.get("stage") == "running" and set(ids).intersection(bulk.get("episodeIds", [])):
+                        raise EpisodeBusy("Phim đang dịch toàn bộ. Dừng lượt dịch trước khi xóa phim.")
                     album_ids = {album_id} | {str(EPISODES[key].get("albumId", "")) for key in ids}
                     if any(ALBUM_LISTS.get(key, {}).get("stage") == "loading" for key in album_ids):
                         raise EpisodeBusy("Phim đang đồng bộ danh sách tập; hãy thử xóa lại sau khi đồng bộ xong.")

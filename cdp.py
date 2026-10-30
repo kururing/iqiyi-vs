@@ -181,13 +181,10 @@ class EarlyScriptSession:
                 return
             if "error" not in response:
                 state["identifier"] = response["result"]["identifier"]
-                # Also update an already loaded page; the engine is idempotent.
-                self.command("Runtime.evaluate", {"expression": source}, session,
-                             lambda result: self.resume(session))
-                for context in state.get("contexts", ()):
-                    self.command("Runtime.evaluate", {"expression": source, "contextId": context}, session)
-            else:
-                self.resume(session)
+            # runImmediately updates loaded contexts; the registered script handles
+            # future documents. A new frame may not have a default context yet, so
+            # evaluating without contextId here races startup and can leave it paused.
+            self.resume(session)
 
         self.command("Page.addScriptToEvaluateOnNewDocument", {
             "source": source, "runImmediately": True,
@@ -200,6 +197,11 @@ class EarlyScriptSession:
             target = params["targetInfo"]
             if target.get("type") in {"page", "iframe", "webview"}:
                 self.sessions[session] = {"contexts": set()}
+                # Browser-level auto-attach only covers direct children. Each page/frame
+                # must also attach its own out-of-process frames before their scripts run.
+                self.command("Target.setAutoAttach", {
+                    "autoAttach": True, "waitForDebuggerOnStart": True, "flatten": True,
+                }, session)
                 # Same-process child frames do not create separate Target attachments.
                 self.command("Runtime.enable", {}, session)
                 self.command("Page.enable", {}, session,
@@ -222,6 +224,14 @@ class EarlyScriptSession:
             state = self.sessions.get(message.get("sessionId"))
             if state is not None:
                 state["contexts"].clear()
+        elif message.get("method") in {"Page.frameNavigated", "Page.frameStoppedLoading", "Page.domContentEventFired"}:
+            session = message.get("sessionId")
+            state = self.sessions.get(session)
+            if state:
+                # Native embedded pages can retain an about:blank context while
+                # committing a remote URL. Its initial hostname guard ran too soon.
+                for context in tuple(state["contexts"]):
+                    self.command("Runtime.evaluate", {"expression": self.source, "contextId": context}, session)
         elif "id" in message:
             entry = self.pending.pop(message["id"], None)
             if entry:

@@ -66,18 +66,30 @@ def find_iqiyi_client() -> Path | None:
     return None
 
 
-def find_lwa_dirs() -> list[Path]:
+def find_skins() -> list[Path]:
+    skins = [skin] if (skin := find_skin()) else []
+    for base in iqiyi_install_roots(ROOT):
+        if base.is_dir():
+            for folder in (base, *base.iterdir()):
+                skin = folder / "skin"
+                if skin.is_dir() and skin not in skins:
+                    skins.append(skin)
+    return skins
+
+
+def find_lwa_dirs(*, all_versions: bool = False) -> list[Path]:
     found: list[Path] = []
     if APPDATA_LWA.exists():
         for index in APPDATA_LWA.rglob("index.html"):
             found.append(index.parent)
-    skin = find_skin()
-    if skin:
+    for skin in find_skins() if all_versions else [find_skin()]:
+        if skin is None:
+            continue
         pf = skin / "LwaRes" / "iqiyi_webapp"
         if pf.exists() and (pf / "index.html").exists():
             found.append(pf)
     # newest first
-    return sorted(found, key=lambda p: p.name, reverse=True)
+    return sorted(set(found), key=lambda p: p.name, reverse=True)
 
 
 def load_prepared_ui() -> dict[str, str]:
@@ -366,7 +378,7 @@ def restore_lwa_sign() -> None:
 
 def remove_injected_html_tags(text: str) -> str:
     """Remove this app's external/marked scripts, including versioned tags, only."""
-    text = re.sub(r'<script\b[^>]*\bsrc=["\']\./(?:lwa-vi|sub-hook)\.js(?:\?[^"\'<>]*)?["\'][^>]*>\s*</script>',
+    text = re.sub(r'<script\b[^>]*\bsrc=["\'](?:\./)?(?:lwa-vi|sub-hook)\.js(?:[?#][^"\'<>]*)?["\'][^>]*>\s*</script>',
                   "", text, flags=re.I)
     text = re.sub(r'<script\b[^>]*\bdata-iqiyi-vi(?:-ui|-subtitle)?(?:\s|=|>)[\s\S]*?</script>',
                   "", text, flags=re.I)
@@ -411,10 +423,11 @@ def install_autostart() -> None:
     print("Da khoi dong watchdog.")
 
 
-def inject_lwa_dir(webapp: Path, payload: str) -> int:
+def inject_lwa_dir(webapp: Path, payload: str, *, subtitles: bool = True) -> int:
     n = 0
-    hook = subtitle_hook(ROOT)
-    atomic_write(webapp / "sub-hook.js", hook)
+    hook = subtitle_hook(ROOT) if subtitles else None
+    if hook is not None:
+        atomic_write(webapp / "sub-hook.js", hook)
     dest_js = webapp / "lwa-vi.js"
     atomic_write(dest_js, payload)
     n += 1
@@ -479,13 +492,17 @@ def restore_wrapper_app(app_dir: Path = WRAPPER_APP) -> bool:
     """Restore the wrapper entry point changed by patch_wrapper_app."""
     main = app_dir / "main.js"
     backup = app_dir / "main.js.iqiyi-vi.bak"
-    if not backup.is_file():
-        return False
-    shutil.copy2(backup, main)
+    restored = backup.is_file()
+    if restored:
+        shutil.copy2(backup, main)
+        backup.unlink()
+    elif main.is_file() and "IQIYI-VI EARLY SUBTITLE HOOK" in main.read_text(encoding="utf-8"):
+        raise RuntimeError("Không có bản gốc main.js để gỡ hook iQ.com. Giữ lại hook để tránh làm hỏng app.")
     hook = app_dir / "iqiyi-vi-subtitle.js"
     if hook.exists():
         hook.unlink()
-    return True
+        restored = True
+    return restored
 
 
 def apply_skin(skin: Path, mapping: dict[str, str]) -> tuple[int, int, int]:
@@ -561,6 +578,8 @@ def main() -> int:
             return 2
         if result == 0 and not restoring:
             disabled.unlink(missing_ok=True)
+        if result == 0 and not restoring:
+            (ROOT / ".local" / "iqiyi-manager-only").unlink(missing_ok=True)
         return result
 
 
@@ -578,20 +597,19 @@ def _main() -> int:
 
     if restore:
         try:
-            skin = find_skin()
-            if skin:
+            from launcher import script_processes, stop_processes
+            stop_processes(list(script_processes({"watch-players.py", "watch-iqiyi-vi.py", "inject-cdp.py"})))
+            n = 0
+            for skin in find_skins():
                 print(f"Skin: {skin}")
-            n = restore_tree(skin_backup_dir(skin), skin) if skin else 0
-            if skin and BACKUP.exists() and not skin_backup_dir(skin).exists():
-                print("Bo qua backup skin cu khong ro phien ban de tranh ghi de sai resource.")
+                n += restore_tree(skin_backup_dir(skin), skin)
+                if BACKUP.exists() and not skin_backup_dir(skin).exists():
+                    print("Bo qua backup skin cu khong ro phien ban de tranh ghi de sai resource.")
             if restore_wrapper_app(WRAPPER_APP):
                 n += 2
-            for webapp in find_lwa_dirs():
+            for webapp in find_lwa_dirs(all_versions=True):
                 n += restore_tree(lwa_backup_dir(BACKUP_LWA, webapp), webapp)
-                protected = signed_lwa_html(webapp)
                 for page in webapp.glob("*.html"):
-                    if page.name.casefold() in protected:
-                        continue
                     raw, enc = read_text(page)
                     cleaned = remove_injected_html_tags(raw)
                     if cleaned != raw:
@@ -604,6 +622,7 @@ def _main() -> int:
             restore_lwa_sign()
             startup_vbs().unlink(missing_ok=True)
             app_integration.uninstall(ROOT, integration_user_sid())
+            (ROOT / ".local" / "iqiyi-manager-only").unlink(missing_ok=True)
         except PermissionError as exc:
             print(f"Can quyen Administrator de khoi phuc giao dien native: {exc}")
             return 2

@@ -3,7 +3,7 @@ const LOCAL_PLAYER_ORIGIN = "http://127.0.0.1:18766";
 const LOCAL_PLAYER_ROUTES = {
   GET: new Set(["/health", "/api/extension-token", "/api/international-title", "/api/international-actor", "/api/international-search",
     "/api/official-subtitle-state", "/api/audio-state", "/api/audio-frame", "/subtitle.xml"]),
-  POST: new Set(["/api/session", "/api/register", "/api/album/register", "/api/capture", "/api/localize-remaining", "/api/audio-playback", "/api/audio-settings"])
+  POST: new Set(["/api/session", "/api/register", "/api/album/register", "/api/capture", "/api/localize-remaining", "/api/audio-playback", "/api/audio-settings", "/api/open-manager"])
 };
 const localPlayerRequests = new Map();
 

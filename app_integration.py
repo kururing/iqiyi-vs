@@ -12,7 +12,7 @@ if os.name == "nt":
     import winreg
 
 from iqiyi_common import atomic_write, python_executable
-from windows_runtime import command_line_args
+from windows_runtime import command_line_args, run_elevated
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 RUN_NAME = "IQIYI-VI-Watch"
@@ -144,20 +144,42 @@ def install(root: Path, user_sid: str | None = None) -> None:
         write_value(row["key"], row["name"], row["value"], user_sid)
 
 
-def set_proxy(root: Path, proxy: str) -> None:
-    """Keep normal iQIYI launches on the manager's active loopback relay."""
+def _set_proxy(root: Path, proxy: str, user_sid: str) -> None:
     state = read_state(root)
+    if state.get("userSid", user_sid) != user_sid:
+        raise RuntimeError("Tích hợp thuộc tài khoản Windows khác; cấu hình hiện tại được giữ lại.")
     row = next((item for item in state.get("entries", []) if item["key"] == WEBVIEW_KEY), None)
-    if not row or read_value(WEBVIEW_KEY, WEBVIEW_APP) != row["value"]:
-        raise RuntimeError("Tích hợp iQIYI đã thay đổi. Cập nhật Việt hóa trước khi đặt proxy.")
+    if not row or read_value(WEBVIEW_KEY, WEBVIEW_APP, user_sid) != row["value"]:
+        raise RuntimeError("Tích hợp iQIYI đã thay đổi. Bấm Kết nối app iQIYI trước khi đặt proxy.")
     arguments = [arg for arg in command_line_args(row["value"][0])
                  if not arg.startswith(("--proxy-server=", "--proxy-bypass-list="))]
     if proxy:
         arguments.extend(("--proxy-server=" + proxy, "--proxy-bypass-list=localhost;127.0.0.1;[::1]"))
     row["value"] = [subprocess.list2cmdline(arguments), winreg.REG_SZ]
     row["proxy"] = proxy
-    write_value(WEBVIEW_KEY, WEBVIEW_APP, row["value"])
+    write_value(WEBVIEW_KEY, WEBVIEW_APP, row["value"], user_sid)
     atomic_write(state_path(root), json.dumps(state, ensure_ascii=False))
+
+
+def set_proxy(root: Path, proxy: str) -> None:
+    """Update protected WebView2 policy under the original user's identity."""
+    user_sid = current_user_sid()
+    try:
+        _set_proxy(root, proxy, user_sid)
+        return
+    except PermissionError:
+        pass
+    # Only the loopback relay URL enters the elevated helper, never credentials.
+    result = run_elevated(str(python_executable(root)),
+                          [str(root / "app_integration.py"), "--set-proxy", proxy,
+                           "--user-sid", user_sid], str(root), timeout=120)
+    if result.returncode == 1223:
+        raise RuntimeError("Chưa lưu proxy vì yêu cầu quyền Administrator đã bị hủy. Bấm Lưu proxy và chấp thuận cửa sổ Windows.")
+    if result.returncode:
+        raise RuntimeError("Windows chưa cho phép cập nhật proxy iQIYI. Thử lưu lại và chấp thuận quyền Administrator.")
+    row = next((item for item in read_state(root).get("entries", []) if item["key"] == WEBVIEW_KEY), None)
+    if not row or row.get("proxy") != proxy or read_value(WEBVIEW_KEY, WEBVIEW_APP, user_sid) != row["value"]:
+        raise RuntimeError("Chưa xác nhận được cấu hình proxy iQIYI sau khi xin quyền Administrator. Hãy thử lại.")
 
 
 def uninstall(root: Path, user_sid: str | None = None) -> None:
@@ -178,3 +200,21 @@ def uninstall(root: Path, user_sid: str | None = None) -> None:
         if len(args) > 1 and Path(args[1]).resolve() == (root / "watch-players.py").resolve():
             write_value(RUN_KEY, RUN_NAME, None, user_sid)
     state_path(root).unlink(missing_ok=True)
+
+
+if __name__ == "__main__":
+    import argparse
+    from urllib.parse import urlsplit
+
+    parser = argparse.ArgumentParser(description="Cập nhật proxy iQIYI cho tài khoản Windows đã cài tích hợp")
+    parser.add_argument("--set-proxy", required=True)
+    parser.add_argument("--user-sid", required=True)
+    args = parser.parse_args()
+    if not re.fullmatch(r"S-1-(?:\d+-){1,15}\d+", args.user_sid):
+        parser.error("Tài khoản Windows không hợp lệ.")
+    if args.set_proxy:
+        address = urlsplit(args.set_proxy)
+        if (address.scheme != "http" or address.hostname != "127.0.0.1" or not address.port
+                or address.username is not None or address.path or address.query or address.fragment):
+            parser.error("Chỉ chấp nhận relay proxy nội bộ của app.")
+    _set_proxy(Path(__file__).resolve().parent, args.set_proxy, args.user_sid)

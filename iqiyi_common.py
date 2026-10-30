@@ -211,6 +211,18 @@ def restore_lwa_ini_flags(current: str, backup: str) -> str:
     return current
 
 
+def manager_only(root: Path) -> bool:
+    return (root / ".local" / "iqiyi-manager-only").exists()
+
+
+def ui_script(root: Path, source: bytes) -> bytes:
+    if not manager_only(root):
+        return b"window.__iqiyiViManagerOnly = false;\n" + source
+    prefix = ("window.__iqiyiViManagerOnly = true;\n"
+              "window.__iqiyiViToken = " + json.dumps(player_token(api_token(root))) + ";\n")
+    return prefix.encode("utf-8") + source
+
+
 def subtitle_hook(root: Path) -> bytes:
     prefix = ("window.__iqiyiViToken = " + json.dumps(player_token(api_token(root))) + ";\n"
               "window.__iqiyiViTokenPending = false;\n"

@@ -139,7 +139,7 @@ def check_bundle():
 
 def main():
     parser = argparse.ArgumentParser(description="iQIYI Việt hóa — desktop webapp")
-    parser.add_argument("action", nargs="?", default="open", choices=("open", "iqiyi", "restore", "stop"))
+    parser.add_argument("action", nargs="?", default="open", choices=("open", "iqiyi", "restore", "stop", "background", "uninstall"))
     parser.add_argument("--check", action="store_true", help="Kiểm tra gói app mà không mở player hay thư viện")
     args = parser.parse_args()
     if args.check:
@@ -148,15 +148,27 @@ def main():
         raise RuntimeError("Bản desktop này dành cho Windows.")
     (ROOT / ".local").mkdir(exist_ok=True)
     import launcher
-    if args.action == "stop":
-        status = health()
-        processes = list(launcher.script_processes({"watch-players.py", "subtitle_app.py"}))
+    if args.action in ("stop", "uninstall"):
+        processes = list(launcher.script_processes({"watch-players.py", "subtitle_app.py", "manager_window.py"}))
+        try:
+            status = health()
+        except RuntimeError:
+            if processes:
+                raise
+            status = None  # Another checkout may run while this inactive copy is removed.
         unknown_manager = status is None and any("subtitle_app.py" in process.command_line.lower() for process in processes)
         if unknown_manager or (status and status.get("busy") is not False):
             raise RuntimeError("App đang xử lý phụ đề hoặc chưa xác nhận được trạng thái. Chờ hoàn tất trước khi dừng dịch vụ.")
+        if args.action == "uninstall" and (ROOT / ".local/iqiyi-integration.json").exists():
+            if launcher.run_apply(restore=True):
+                raise RuntimeError("Chưa gỡ được tích hợp iQIYI. Dữ liệu và app được giữ lại; thử Gỡ tích hợp trong Cài đặt.")
         launcher.stop_processes(processes)
         return 0
     ensure_manager()
+    if args.action == "background":
+        if launcher.integration_installed(ROOT):
+            launcher.ensure_watcher()
+        return 0
     if args.action == "iqiyi":
         result = launcher.launch_iqiyi(open_ui=False)
         if result:
