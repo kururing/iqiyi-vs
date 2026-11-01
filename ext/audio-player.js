@@ -1,7 +1,7 @@
 /* Media stays in the extension origin; its worker serves seekable iq.com audio. */
 (() => {
   const audio = new Audio();
-  audio.preload = "metadata";
+  audio.preload = "auto";
   let port, seekTarget = null;
   function state(event) {
     port?.postMessage({event, state:{paused:audio.paused,currentTime:audio.currentTime,

@@ -72,9 +72,10 @@ function fixture(nodes, cache = [], fetcher = async () => ({translations: ['Qu�
     },
     waitForIqcomMetadata: (node, field, key, load, apply) => pending.push(load().then(apply))});
   vm.runInContext(source.slice(source.indexOf('  function cjkCount('), source.indexOf('  function pumpIqcomMetadata(')) +
+    source.slice(source.indexOf('  function localizeActorPrefix('), source.indexOf('  function requestInternationalActor(')) +
     source.slice(source.indexOf('  function requestInternationalTitle('), source.indexOf('  function trPatterns(')) +
     source.slice(source.indexOf('  function localizePageTitle('), source.indexOf('  function fitCompact(')) +
-    source.slice(source.indexOf('  function protectMetadataNames('), source.indexOf('  window.__iqiyiVi = true;')), context);
+    source.slice(source.indexOf('  function protectMetadataNames('), source.lastIndexOf('  window.__iqiyiVi = true;')), context);
   return {context, requests, metadata, pending};
 }
 
@@ -86,6 +87,11 @@ function fixture(nodes, cache = [], fetcher = async () => ({translations: ['Qu�
   const note = text('管理', element('tilesItem_note__JfQnC', title));
   const actor = text('演员甲', element('actor-name__test'));
   const f = fixture([title, name, note, actor], [['大梦归离', 'Giấc mơ lớn trở lại'], ['演员甲', 'Diễn viên máy']]);
+  const originalTr = f.context.tr;
+  f.context.tr = value => fixedCopy[value] || value;
+  assert.equal(f.context.localizeActorPrefix('2026 / 爱情 复仇 / '), '2026 / Tình cảm Báo thù / ',
+    'Ranking genres are separate labels before the actor names');
+  f.context.tr = originalTr;
   assert.equal(f.context.isMovieTitleNode(name), true);
   assert.equal(f.context.isMovieTitleNode(title), true, 'Title attributes must also be protected');
   assert.equal(f.context.isMovieTitleNode(note), false, 'Inline updates are UI, not part of the film name');
@@ -188,6 +194,37 @@ function fixture(nodes, cache = [], fetcher = async () => ({translations: ['Qu�
   await Promise.all(f.pending);
   assert.equal(name.nodeValue, 'Đại Mộng Quy Ly', 'History titles use official metadata via their encoded album link');
   assert.equal(f.metadata[0], 'international-title?id=1234567890123456');
+  const upcoming = text('即将播放：大梦归离第2集', element('player-title', null, {'data-albumid':'99999999'}));
+  const upcomingPage = fixture([upcoming]);
+  upcomingPage.context.location.href = 'https://www.iqiyi.com/v_99999999.html';
+  upcomingPage.context.location.pathname = '/v_99999999.html';
+  assert.equal(upcomingPage.context.isMovieTitleNode(upcoming), true);
+  assert.equal(upcomingPage.context.findInternationalTitleId(upcoming), '', 'Never use the current video ID for the next title');
+  upcomingPage.context.requestInternationalTitle(upcoming, upcoming.nodeValue);
+  await Promise.all(upcomingPage.pending);
+  assert.equal(upcoming.nodeValue, 'Sắp phát: Đại Mộng Quy Ly · Tập 2');
+  assert.equal(upcomingPage.metadata[0], 'international-title?name=' + encodeURIComponent('大梦归离'));
+
+  for (const label of ['即将播放：', 'Sắp phát:']) {
+    const prefix = text(label, element('tip-label'));
+    const nextTitle = text('田耕纪第3集', element('tip-bold'));
+    nextTitle.parentElement.previousSibling = prefix.parentElement;
+    const splitNotice = fixture([prefix, nextTitle]);
+    assert.equal(splitNotice.context.isMovieTitleNode(nextTitle), true);
+    splitNotice.context.requestInternationalTitle(nextTitle, nextTitle.nodeValue);
+    assert.equal(nextTitle.nodeValue, 'Điền Canh Kỷ · Tập 3');
+    assert.equal(splitNotice.metadata.length, 0, 'Prepared upcoming names render synchronously');
+    assert.equal(prefix.nodeValue, label, 'Leave the SDK-owned prefix node intact');
+  }
+
+  const unknownUpcoming = text('即将播放：未收录影片', element('tip-text'));
+  const noticeFallback = fixture([unknownUpcoming], [], async () => ({translations:['Sắp phát: Phim thử nghiệm']}));
+  noticeFallback.context.requestIqcomMetadata = async () => ({});
+  noticeFallback.context.requestInternationalTitle(unknownUpcoming, unknownUpcoming.nodeValue);
+  await Promise.all(noticeFallback.pending);
+  assert.equal(unknownUpcoming.nodeValue, 'Sắp phát: 未收录影片');
+  await noticeFallback.context.localizeRemaining();
+  assert.equal(unknownUpcoming.nodeValue, 'Sắp phát: Phim thử nghiệm');
   const unknown = text('未收录新剧', element('tilesItem_title_multi__test'));
   f.context.requestInternationalTitle(unknown, unknown.nodeValue);
   assert.equal(unknown.nodeValue, '未收录新剧', 'Unmatched titles retain the source name');
@@ -366,5 +403,19 @@ function fixture(nodes, cache = [], fetcher = async () => ({translations: ['Qu�
   await expiredBridge.context.localizeRemaining();
   assert.equal(expiredBridge.requests.length,1,'A reloaded extension stops old automatic translation requests');
   assert.equal(bridgeWarnings.length,0,'Expected extension invalidation does not fill the extension error list');
-  console.log('Title checks passed: official-name priority, persistent catalog cache, actors, recycled nodes, partial batches, isolated retries and expired bridge.');
+  const nativeTitles = fixture([]).context;
+  nativeTitles.IQCOM_METADATA_CACHE = new Map([['international-title?name=宁安如梦', {
+    payload:{sourceTitle:'宁安如梦', title:'Ninh An Như Mộng'}
+  }]]);
+  nativeTitles.document.querySelectorAll = () => [];
+  assert.equal(nativeTitles.localizeWindowTitle('爱奇艺'), 'iQIYI');
+  assert.equal(nativeTitles.localizeWindowTitle('宁安如梦 第15集 燕家小子喜成年'), 'Ninh An Như Mộng · Tập 15 – iQIYI');
+  assert.equal(nativeTitles.localizeWindowTitle('宁安如梦 第16集'), 'Ninh An Như Mộng · Tập 16 – iQIYI');
+  assert.equal(nativeTitles.localizeWindowTitle('未收录片名 第1集'), null, 'Wait for a matching catalog title instead of using the previous movie');
+  const visibleTitle = element('meta_titleNotCloud__test');
+  text('Đại Mộng Quy Ly', visibleTitle);
+  visibleTitle.__reactFiber$test = {memoizedProps:{children:'大梦归离'}};
+  nativeTitles.document.querySelectorAll = () => [visibleTitle];
+  assert.equal(nativeTitles.localizeWindowTitle('大梦归离 第2集'), 'Đại Mộng Quy Ly · Tập 2 – iQIYI');
+  console.log('Title checks passed: catalog, actors, document and native window titles, recycled nodes, isolated retries and expired bridge.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

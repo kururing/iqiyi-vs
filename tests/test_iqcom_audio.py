@@ -1,5 +1,6 @@
 """Run: python -m unittest discover -s tests -p test_iqcom_audio.py"""
 from contextlib import contextmanager
+import copy
 import gzip
 import io
 import json
@@ -53,6 +54,7 @@ class AudioTest(unittest.TestCase):
             yield response
 
         stub = patch.object(audio, "audio_open", upstream)
+        self.upstream = upstream
         stub.start()
         self.addCleanup(stub.stop)
         self.manager = audio.IqcomAudio(Path(self.temp.name) / 'settings.json',
@@ -102,6 +104,74 @@ class AudioTest(unittest.TestCase):
             self.assertTrue(refreshed['available'])
             self.assertEqual(refreshed['stream'], state['stream'])
             self.assertIsNotNone(self.manager.source('12345678', state['stream']))
+
+    def test_interrupted_range_resumes_after_last_yielded_byte(self):
+        state = self.ready()
+        source = self.manager.source('12345678', state['stream'])
+        attempts = []
+
+        class Broken(io.BytesIO):
+            def read(self, size=-1):
+                if self.tell() >= 3:
+                    raise OSError('fixture disconnect')
+                return super().read(min(size, 3))
+
+        @contextmanager
+        def flaky(url, *, byte_range=None):
+            with self.upstream(url, byte_range=byte_range) as response:
+                if url.endswith('/1') and byte_range:
+                    attempts.append(byte_range)
+                    if len(attempts) == 1:
+                        broken = Broken(response.read())
+                        broken.status, broken.headers = response.status, response.headers
+                        yield broken
+                        return
+                yield response
+
+        with patch.object(audio, 'audio_open', flaky), patch.object(audio.time, 'sleep'):
+            result = b''.join(source.read(len(self.init), source.size - 1))
+        self.assertEqual(result, b'12345678abcdefgh')
+        self.assertEqual(attempts, [(0, 7), (3, 7)])
+
+    def test_expired_cdn_url_refreshes_and_retries_are_bounded(self):
+        state = self.ready()
+        source = self.manager.source('12345678', state['stream'])
+        source.location(1)
+        denied = []
+
+        @contextmanager
+        def expired(url, *, byte_range=None):
+            if byte_range:
+                denied.append(url)
+                if len(denied) == 1:
+                    raise urllib.error.HTTPError(url, 403, 'expired', {}, None)
+            with self.upstream(url, byte_range=byte_range) as response:
+                yield response
+
+        with patch.object(audio, 'audio_open', expired), patch.object(audio.time, 'sleep'):
+            self.assertEqual(b''.join(source.read(len(self.init), len(self.init) + 7)), b'12345678')
+        self.assertEqual(len(denied), 2)
+        self.assertEqual(sum(url.startswith(self.data['dd']) and '/1.amp4' in url for url, _ in self.opens), 2)
+
+        @contextmanager
+        def offline(*args, **kwargs):
+            raise OSError('fixture offline')
+            yield
+
+        with patch.object(audio, 'audio_open', offline) as unused, patch.object(audio.time, 'sleep') as sleep:
+            with self.assertRaisesRegex(OSError, 'sau khi thử lại'):
+                b''.join(source.read(len(self.init), len(self.init) + 7))
+            self.assertEqual(sleep.call_count, 2)
+
+    def test_refresh_rejects_changed_segment_boundaries(self):
+        state = self.ready()
+        source = self.manager.source('12345678', state['stream'])
+        changed = copy.deepcopy(self.track)
+        changed['fs'][1]['b'] += 1
+        changed['fs'][2]['b'] -= 1
+        self.manager.resolve = lambda _: (self.data, changed, source.info)
+        self.manager._refresh('12345678', self.manager.states['12345678'])
+        self.assertEqual([p['b'] for p in source.parts], [p['b'] for p in self.track['fs']])
 
     def test_range_and_upstream_validation(self):
         cdn = 'https://v-cc03b183.71edge.com:8402/segment'

@@ -20,7 +20,7 @@ from iqiyi_common import (
     lwa_backup_dir, patch_subtitle_tag, patch_ui_tag, python_executable, subtitle_hook,
     subtitle_manager_alive, manager_only, ui_script,
 )
-from windows_runtime import create_named_mutex, list_processes
+from windows_runtime import create_named_mutex, list_processes, localize_iqiyi_window_titles
 
 ROOT = Path(__file__).resolve().parent
 APP_PORT = 18766
@@ -207,16 +207,47 @@ def inject_runtime() -> None:
 
 
 
+def sync_window_titles() -> None:
+    def translate(titles):
+        fallback = ["iQIYI" if title in {"爱奇艺", "爱奇艺视频"} else None for title in titles]
+        if all(fallback):
+            return fallback
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        try:
+            with opener.open("http://127.0.0.1:9223/json/list", timeout=1) as response:
+                targets = json.load(response)
+            for target in targets:
+                page = urlsplit(target.get("url", ""))
+                websocket = urlsplit(target.get("webSocketDebuggerUrl", ""))
+                if (page.scheme != "https" or page.hostname != "localwebapp.iqiyi.com" or
+                        page.path != "/player.html" or websocket.scheme != "ws" or
+                        websocket.hostname != "127.0.0.1" or websocket.port != 9223):
+                    continue
+                expression = "typeof window.__iqiyiViWindowTitle==='function' ? " + json.dumps(titles) + ".map(window.__iqiyiViWindowTitle) : null"
+                result = cdp.evaluate(target, expression).get("result", {}).get("value")
+                if isinstance(result, list) and len(result) == len(titles):
+                    return result
+        except (OSError, ValueError, RuntimeError):
+            pass  # App startup, navigation or a closed player: try on the next tick.
+        return fallback
+
+    localize_iqiyi_window_titles(translate)
+
+
 def run_iqiyi() -> int:
     global EARLY_RUNTIME
     handle = create_named_mutex("Local\\iqiyi-vi-watch")
     if not handle:
         return 0
     next_maintenance = 0.0
+    next_titles = 0.0
     while True:
         try:
             if not (ROOT / "watch-iqiyi-vi.disabled").exists():
                 inject_runtime()
+                if not manager_only(ROOT) and time.monotonic() >= next_titles:
+                    sync_window_titles()
+                    next_titles = time.monotonic() + 1
                 # Finish preparing frames before disk maintenance can delay CDP polling.
                 if time.monotonic() >= next_maintenance and (EARLY_RUNTIME is None or not EARLY_RUNTIME.pending):
                     if any(process.name.lower() in {"qyclient.exe", "qyplayer.exe"}

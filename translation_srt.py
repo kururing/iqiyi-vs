@@ -6,6 +6,12 @@ import unicodedata
 
 STAMP = r"\d{2,}:\d{2}:\d{2},\d{3}"
 TIMING = re.compile(rf"({STAMP}) --> ({STAMP})")
+CJK = re.compile(r"[\u2e80-\u2fff\u3007\u3040-\u30ff\u3100-\u312f\u31a0-\u31ff\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff\U00020000-\U000323af]")
+TRANSLATOR_NOTE = re.compile(r"[\[(（]\s*(?:translator(?:'s)?\s*note|ghi chú (?:của )?(?:người )?dịch|chú thích dịch|nd\s*:)", re.I)
+
+
+def dialogue_lines(text: str) -> list[str]:
+    return [line.strip() for line in text.splitlines() if line.strip().startswith(("-", "–", "—"))]
 
 
 def milliseconds(stamp: str) -> int:
@@ -48,7 +54,13 @@ def batches(cues: list[dict], size: int, overlap: int) -> list[dict]:
 
 def format_lines(text: str, limit: int) -> str | None:
     """Return <=2 lines without cutting words, or request semantic shortening."""
-    words = unicodedata.normalize("NFC", text).split()
+    text = unicodedata.normalize("NFC", text)
+    if not any(char.isalnum() for char in text):
+        return text if len(text.splitlines()) <= 2 and all(len(line) <= limit for line in text.splitlines()) else None
+    if dialogue_lines(text) and len(text.splitlines()) > 1:
+        lines = [" ".join(line.split()) for line in text.splitlines() if line.strip()]
+        return "\n".join(lines) if len(lines) <= 2 and all(len(line) <= limit for line in lines) else None
+    words = text.split()
     flat = " ".join(words)
     if len(flat) <= limit:
         return flat
@@ -62,7 +74,7 @@ def format_lines(text: str, limit: int) -> str | None:
     return min(candidates)[1] if candidates else None
 
 
-def validate_translation(value: object, source: list[dict]) -> list[dict]:
+def validate_translation(value: object, source: list[dict], *, cjk_whitelist: str = "") -> list[dict]:
     rows = value.get("cues") if isinstance(value, dict) else None
     if not isinstance(rows, list) or len(rows) != len(source):
         raise ValueError("Model trả thiếu hoặc thừa câu phụ đề.")
@@ -72,14 +84,27 @@ def validate_translation(value: object, source: list[dict]) -> list[dict]:
             raise ValueError("Model trả ID không hợp lệ hoặc trùng ID.")
         text = row.get("text")
         if (not isinstance(text, str) or not text.strip() or len(text) > 4000
-                or re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", text)):
+                or re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f\ufffd]", text)):
             raise ValueError("Model trả nội dung phụ đề không hợp lệ.")
+        if any(char not in cjk_whitelist for char in CJK.findall(text)):
+            raise ValueError(f"Câu {row['id']} còn ký tự CJK; dùng tên Việt hoặc pinyin, không để nguyên chữ Hán.")
+        if TRANSLATOR_NOTE.search(text):
+            raise ValueError(f"Câu {row['id']} chứa ghi chú của người dịch.")
         by_id[row["id"]] = row
     result = []
     for cue in source:
         row = by_id.get(cue["id"], {})
         if row.get("start") != cue["start"] or row.get("end") != cue["end"]:
             raise ValueError(f"Model đổi ID hoặc timestamp ở câu {cue['id']}.")
+        if len(dialogue_lines(cue["text"])) >= 2:
+            if (len(dialogue_lines(row["text"])) != len(dialogue_lines(cue["text"]))
+                    or len(row["text"].splitlines()) != len(cue["text"].splitlines())):
+                raise ValueError(f"Câu {cue['id']} phải giữ riêng từng dòng và dấu gạch đầu dòng của người thoại.")
+        for marker in ("♪", "♫"):
+            if row["text"].count(marker) != cue["text"].count(marker):
+                raise ValueError(f"Câu {cue['id']} phải giữ ký hiệu lời bài hát {marker}.")
+        if not any(char.isalnum() for char in cue["text"]) and row["text"].strip() != cue["text"].strip():
+            raise ValueError(f"Câu {cue['id']} chỉ có ký hiệu; giữ nguyên nội dung.")
         result.append({**cue, "text": row["text"].strip()})
     return result
 

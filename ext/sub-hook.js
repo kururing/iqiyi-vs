@@ -3,7 +3,7 @@
   "use strict";
 
   function iqiyiSubtitleHook() {
-    var HOOK_VERSION = 48;
+    var HOOK_VERSION = 52;
     var SIDE = "http://127.0.0.1:18766";
     var nativeFetch = root && root.fetch ? root.fetch.bind(root) : null;
     function localFetch(input, options) {
@@ -171,12 +171,88 @@
     }
     var officialNativeControl = null;
     var officialRuntimeRequire = null;
+    var nativeWatermarkHidden = false;
+    function hideNativePlayerWatermark() {
+      if (nativeWatermarkHidden || !officialRuntimeRequire || !officialRuntimeRequire.m) return;
+      var modules = Object.keys(officialRuntimeRequire.m);
+      nativeWatermarkHidden = modules.map(function (id) {
+        var code = String(officialRuntimeRequire.m[id]);
+        if (code.indexOf("watermarkList") < 0 || code.indexOf("nodeHandlerVideoCover") < 0) return false;
+        try {
+          var exports = officialRuntimeRequire(id);
+          return Object.keys(exports).some(function (key) {
+            var proto = exports[key] && exports[key].prototype;
+            if (!proto || typeof proto.addWaterMark !== "function" ||
+                typeof proto.refreshWaterMark !== "function" || typeof proto.removeWaterMark !== "function") return false;
+            if (!proto.__iqiyiViWatermarkHidden) {
+              proto.addWaterMark = proto.refreshWaterMark = function () { return this.removeWaterMark(); };
+              proto.__iqiyiViWatermarkHidden = true;
+            }
+            return true;
+          });
+        } catch { return false; }
+      }).some(Boolean);
+      if (!nativeWatermarkHidden) return;
+      // Refresh the existing logo without changing playback or its position.
+      modules.some(function (id) {
+        if (String(officialRuntimeRequire.m[id]).indexOf("xplayerProgressTouch") < 0) return false;
+        try {
+          var exports = officialRuntimeRequire(id);
+          return Object.keys(exports).some(function (key) {
+            var store = exports[key];
+            if (!store || typeof store.getProp !== "function" || typeof store.forceUpdateProp !== "function" ||
+                ["play", "playing", "pause"].indexOf(store.getProp("playState")) < 0) return false;
+            store.forceUpdateProp("playState");
+            return true;
+          });
+        } catch { return false; }
+      });
+    }
+    var pauseAdController = null, clearPauseAd = null;
+    var clearedPauseVideos = new WeakSet();
+    function disablePauseAds() {
+      if (!officialRuntimeRequire || !officialRuntimeRequire.m) return;
+      if (!pauseAdController || !clearPauseAd) {
+        Object.keys(officialRuntimeRequire.m).forEach(function (id) {
+          var code = String(officialRuntimeRequire.m[id]);
+          var controller = !pauseAdController && code.indexOf("_videoAdHandler") >= 0 && code.indexOf("getAdnAds") >= 0;
+          var clear = !clearPauseAd && code.indexOf("Clear ad data") >= 0;
+          if (!controller && !clear) return;
+          try {
+            var exports = officialRuntimeRequire(id);
+            Object.keys(exports).forEach(function (key) {
+              var value = exports[key];
+              if (controller && value && typeof value.initVV === "function" && typeof value.getAdnAds === "function") pauseAdController = value;
+              if (clear && typeof value === "function" && String(value).indexOf("Clear ad data") >= 0) clearPauseAd = value;
+            });
+          } catch {}
+        });
+      }
+      var sdk = pauseAdController && pauseAdController.sdk;
+      var video = sdk && sdk.currentVV;
+      if (!video || typeof video.requestPauseAd !== "function" || typeof video.tryToStopPauseAd !== "function") return;
+      var proto = Object.getPrototypeOf(video);
+      if (!proto || typeof proto.requestPauseAd !== "function") return;
+      // Block only pause placements. Every episode uses this SDK prototype.
+      if (!proto.__iqiyiViPauseAdBlocked) {
+        proto.requestPauseAd = function () {};
+        proto.__iqiyiViPauseAdBlocked = true;
+      }
+      if (!clearPauseAd || clearedPauseVideos.has(video)) return;
+      video.tryToStopPauseAd();
+      // The normal ad cleanup also restores the native frame and player controls,
+      // without issuing play, seek, fullscreen or zoom commands.
+      clearPauseAd("ad_pause", "ad_pause_max");
+      clearedPauseVideos.add(video);
+    }
     function installOfficialSubtitleName() {
       // The PC player keeps its SDK and subtitle controller inside Webpack, not window.QySdk.
       var chunks = root && root.webpackChunk_iqiyi_webapp;
       if (!officialRuntimeRequire && chunks && chunks.push !== Array.prototype.push) {
         chunks.push([["iqiyiViOfficialSubtitle" + HOOK_VERSION], {}, function (require) { officialRuntimeRequire = require; }]);
       }
+      hideNativePlayerWatermark();
+      disablePauseAds();
       if (!officialNativeControl && officialRuntimeRequire && officialRuntimeRequire.m) {
         Object.keys(officialRuntimeRequire.m).some(function (id) {
           var code = String(officialRuntimeRequire.m[id]);
@@ -406,6 +482,8 @@
       var stopped = false, settings = {enabled:false}, sound = null, stream = "", tvid = "";
       var controller = null, provider = null, optionStore = null, originals = null, muted = false, desiredMute = false, desiredVolume = 50;
       var pending = false, polling = false, failed = "", lastPoll = 0, lastMessage = "";
+      var retryAt = 0, reconnects = 0, autoplayBlocked = false, lastErrorCode = 0;
+      var needsAlignment = true, driftSamples = 0, lastDrift = 0, seekCount = 0;
       var position = -1, positionAt = 0, lastBridgeScan = 0, lastContact = Date.now();
       var webVideo = null, webMuted = null, webOwnMute = null, webVolumeChanged = null, frameUrl = "", frameJob = null;
       var menuPatches = [], menuInstances = new Set(), menuScanAt = 0, uiSaving = false, uiError = "", connectionError = "", uiSignature = "";
@@ -460,7 +538,8 @@
           return response.json().then(function (data) { if (!response.ok) throw Error(data.error || "Không lưu được âm thanh."); return data; });
         }).then(function (state) {
           if (stopped) return;
-          settings = state; failed = ""; lastPoll = 0; lastMessage = ""; lastContact = Date.now(); shownNotices.clear();
+          settings = state; failed = ""; retryAt = 0; reconnects = 0; autoplayBlocked = false;
+          lastPoll = 0; lastMessage = ""; lastContact = Date.now(); shownNotices.clear();
           if (!state.enabled) stopSound();
           report(state.enabled ? "Đang tìm âm thanh Việt trên iq.com…" : "Đã chuyển sang tiếng gốc.");
         }).catch(function (error) {
@@ -535,6 +614,7 @@
         Object.defineProperties(this, {
           src:{get:function () { return source; },set:function (value) { source = value; }},
           paused:{get:function () { return data.paused; }}, readyState:{get:function () { return data.readyState; }}, seeking:{get:function () { return data.seeking; }},
+          error:{get:function () { return data.error; }},
           currentTime:{get:function () { return data.currentTime + (!data.paused && !data.seeking ? Math.min(1,(Date.now()-updated)/1000)*rate : 0); },
             set:function (value) { data.currentTime = value; data.seeking = true; updated = Date.now(); send({type:"seek",time:value}); }},
           muted:{get:function () { return mute; },set:function (value) { if (mute !== value) { mute = value; send({type:"config",muted:value}); } }},
@@ -681,8 +761,9 @@
         if (!bridge()) { report("Đang kết nối với bộ phát âm thanh iQIYI…"); return; }
         bindVolume();
         stream = state.stream;
+        needsAlignment = true; driftSamples = 0; autoplayBlocked = false;
         sound = iqPlayer ? new WebAudio() : new root.Audio();
-        sound.preload = "metadata";
+        sound.preload = "auto";
         sound.muted = true;
         var current = sound;
         current.src = iqPlayer ? frameUrl.replace(/\/audio-player\.html$/, "/audio-stream.mp4") + "?tvid=" + encodeURIComponent(tvid) + "&stream=" + encodeURIComponent(stream) :
@@ -693,14 +774,19 @@
         });
         current.addEventListener("error", function () {
           if (sound !== current) return;
-          failed = stream; stopSound(); report("Không phát được âm thanh Việt; đã trả lại tiếng gốc. Tắt rồi bật lại để thử.");
+          lastErrorCode = current.error && current.error.code || 0;
+          failed = stream;
+          retryAt = lastErrorCode === 2 && reconnects < 3 ? Date.now() + 2000 * Math.pow(2, reconnects++) : 0;
+          stopSound();
+          report(retryAt ? "Âm thanh Việt bị ngắt mạng; tạm dùng tiếng gốc và tự kết nối lại." :
+            "Không phát được âm thanh Việt; đã trả lại tiếng gốc. Tắt rồi bật lại để thử.");
         });
         current.load();
         report("Đã chọn tiếng Việt iq.com.");
       }
       function playSound() {
         var current = sound;
-        if (!current || pending) return;
+        if (!current || pending || autoplayBlocked) return;
         if (current.seeking) { current.muted = true; restore(); return; }
         if (!current.paused && current.readyState >= 3) {
           hush(); current.muted = desiredMute;
@@ -716,6 +802,7 @@
         }).catch(function (error) {
           if (sound !== current) return;
           current.muted = true; restore();
+          autoplayBlocked = error && error.name === "NotAllowedError";
           report(error && error.name === "NotAllowedError" ? "Bấm vào player để cho phép phát âm thanh Việt." : "Không phát được âm thanh Việt; tạm dùng tiếng gốc.");
         }).finally(function () { if (sound === current) pending = false; });
       }
@@ -725,9 +812,9 @@
         var info = iqPlayer && webEpisodeInfo();
         var playing = currentSubtitleTvid() || (iqPlayer ? String(info && (info.tvId || info.tvid) || "") : "");
         if (iqPlayer && sound && getWebVideo() !== webVideo) stopSound();
-        if (playing !== tvid) { clearAudioNotice(); shownNotices.clear(); stopSound(); tvid = playing; failed = ""; position = -1; lastPoll = 0; lastMessage = ""; settings = {enabled:false}; }
+        if (playing !== tvid) { clearAudioNotice(); shownNotices.clear(); stopSound(); tvid = playing; failed = ""; retryAt = 0; reconnects = 0; lastErrorCode = 0; seekCount = 0; position = -1; lastPoll = 0; lastMessage = ""; settings = {enabled:false}; }
         flushAudioNotice();
-        if (Date.now() - lastContact > 10000) { stopSound(); settings = {enabled:false}; }
+        if (Date.now() - lastContact > 15000) { stopSound(); settings = {enabled:false}; }
         if (Date.now() - lastPoll > 2000 && !polling) {
           polling = true; lastPoll = Date.now();
           var requested = tvid;
@@ -735,7 +822,7 @@
             if (!token && !iqPlayer) throw Error("No player token");
             return localFetch(SIDE + "/api/audio-state" + (requested ? "?tvid=" + encodeURIComponent(requested) : ""),
               {headers:{"X-Iqiyi-Token":token},signal:AbortSignal.timeout(5000)}).then(function (r) {
-              if (!r.ok) throw Error("Audio manager unavailable"); return r.json();
+              if (!r.ok) throw Object.assign(Error("Audio manager unavailable"), {status:r.status}); return r.json();
             }).then(function (state) {
               if (requested !== tvid || stopped) return;
               lastContact = Date.now(); settings = state; connectionError = "";
@@ -744,10 +831,13 @@
                 stopSound();
                 if (!state.enabled) failed = "";
                 if (state.enabled) report(state.loading ? "Đang tìm âm thanh Việt trên iq.com…" : state.error || "Tập này chưa có âm thanh Việt.");
-              } else if (state.stream !== stream && state.stream !== failed) createSound(state, token);
+              } else if (state.stream !== stream && (state.stream !== failed || retryAt && Date.now() >= retryAt)) createSound(state, token);
             });
-          }).catch(function () {
+          }).catch(function (error) {
             if (stopped || requested !== tvid) return;
+            // A status timeout must not tear down an otherwise healthy buffered stream.
+            if (sound && settings.enabled && Date.now() - lastContact <= 15000 &&
+                error.status !== 401 && error.status !== 403) return;
             stopSound();
             connectionError = iqPlayer ? "Chưa kết nối được tiện ích âm thanh. Tải lại tiện ích và trang phim." : "Dịch vụ âm thanh chưa sẵn sàng; đang dùng tiếng gốc.";
             if (settings.enabled) report(connectionError);
@@ -765,6 +855,7 @@
         var total = Number(iqPlayer ? player.duration : player.totalTime);
         var speed = iqPlayer ? player.playbackRate : optionStore && Number(optionStore.getProp("videoOptionSelectspeed")) / 100;
         if (!Number.isFinite(speed) || speed <= 0 || speed > 4) speed = 1;
+        var jumped = position >= 0 && Math.abs(time - position) > Math.max(1.5, (Date.now() - positionAt) / 1000 * speed + 0.75);
         if (time !== position) { position = time; positionAt = Date.now(); }
         var active = (state === "play" || state === "playing") && !(iqPlayer ? player.seeking : store.getProp("seeking")) &&
           Number.isFinite(time) && total > 0 && Date.now() - positionAt < 2000;
@@ -775,21 +866,29 @@
         }
         if (!iqPlayer) target += Math.min(0.75, (Date.now() - positionAt) / 1000) * speed;
         sound.playbackRate = speed;
-        if (Math.abs(sound.currentTime - target) > 0.65) {
+        if (sound.seeking) { sound.muted = true; restore(); return; }
+        lastDrift = target - sound.currentTime;
+        driftSamples = Math.abs(lastDrift) > 0.65 ? driftSamples + 1 : 0;
+        // Native time/PTS can jitter for one poll; seek only for a real jump or sustained drift.
+        if (needsAlignment || jumped || driftSamples >= 3) {
           sound.muted = true; restore();
-          try { sound.currentTime = target; } catch { return; }
+          try { sound.currentTime = target; needsAlignment = false; driftSamples = 0; seekCount++; } catch { return; }
         }
         playSound();
       }
-      function gesture() { if (sound && settings.enabled) tick(); }
+      function gesture() { autoplayBlocked = false; if (sound && settings.enabled) tick(); }
       var timer = root.setInterval(tick, 200);
       root.document.addEventListener("pointerdown", gesture);
+      root.document.addEventListener("keydown", gesture);
       root.__iqiyiAudioEngine = {status:function () {
         return {tvid:tvid,enabled:!!settings.enabled,sourceReady:!!sound,mutedOriginal:muted,
           time:sound && sound.currentTime,paused:!sound || sound.paused,volume:sound && sound.volume,
-          muted:sound && sound.muted,rate:sound && sound.playbackRate,message:lastMessage};
+          muted:sound && sound.muted,rate:sound && sound.playbackRate,message:lastMessage,
+          readyState:sound && sound.readyState,seeking:!!(sound && sound.seeking),drift:lastDrift,seeks:seekCount,
+          reconnects:reconnects,errorCode:lastErrorCode,autoplayBlocked:autoplayBlocked};
       },dispose:function () {
         stopped = true; clearAudioNotice(); root.clearInterval(timer); stopSound(); root.document.removeEventListener("pointerdown", gesture);
+        root.document.removeEventListener("keydown", gesture);
         menuPatches.forEach(function (undo) { undo(); }); menuInstances.clear();
       }};
       root.addEventListener("pagehide", root.__iqiyiAudioEngine.dispose, {once:true});

@@ -16,6 +16,69 @@ class Process(NamedTuple):
     command_line: str
 
 
+def localize_iqiyi_window_titles(translate) -> int:
+    """Update taskbar captions only; recheck ownership and text after catalog lookup."""
+    if os.name != "nt":
+        return 0
+    pids = {p.pid for p in list_processes(False) if p.name.lower() in {"qyclient.exe", "qyplayer.exe"}}
+    if not pids:
+        return 0
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    user32.EnumWindows.argtypes = [callback_type, wintypes.LPARAM]
+    user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+    user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+    user32.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+    user32.SendMessageTimeoutW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM,
+                                          wintypes.LPARAM, wintypes.UINT, wintypes.UINT,
+                                          ctypes.POINTER(ctypes.c_size_t)]
+    user32.SendMessageTimeoutW.restype = wintypes.LPARAM
+    windows = []
+
+    def caption(hwnd):
+        text = ctypes.create_unicode_buffer(1024)
+        user32.GetWindowTextW(hwnd, text, len(text))
+        return text.value
+
+    @callback_type
+    def visit(hwnd, _):
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value in pids:
+            raw = caption(hwnd)
+            kind = ctypes.create_unicode_buffer(256)
+            user32.GetClassNameW(hwnd, kind, len(kind))
+            if raw in {"爱奇艺", "爱奇艺视频"} or (kind.value == "QyWindow.GroupClass.BasicWindow" and
+                                                       any("\u3400" <= ch <= "\u9fff" for ch in raw)):
+                windows.append((hwnd, pid.value, raw))
+        return True
+
+    user32.EnumWindows(visit, 0)
+    if not windows:
+        return 0
+    titles = translate([raw for _, _, raw in windows])
+    if not isinstance(titles, list) or len(titles) != len(windows):
+        return 0
+    changed = 0
+    for (hwnd, owner, raw), translated in zip(windows, titles):
+        if raw in {"爱奇艺", "爱奇艺视频"}:
+            translated = "iQIYI"
+        if not isinstance(translated, str) or not translated.strip() or len(translated) > 1023 or translated == raw:
+            continue
+        if any("\u3400" <= ch <= "\u9fff" for ch in translated):
+            continue
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value != owner or caption(hwnd) != raw:
+            continue  # A new episode or a reused HWND must keep its own title.
+        text = ctypes.create_unicode_buffer(translated)
+        result = ctypes.c_size_t()
+        if user32.SendMessageTimeoutW(hwnd, 0x000C, 0, ctypes.cast(text, ctypes.c_void_p).value,
+                                      0x0003, 250, ctypes.byref(result)) and result.value:
+            changed += 1
+    return changed
+
+
 def focus_app_window(titles: tuple[str, ...], script: Path | None = None) -> bool:
     """Restore the manager host or its legacy browser window without reloading."""
     if os.name != "nt":

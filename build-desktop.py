@@ -19,7 +19,7 @@ SOURCES = (
     "iqiyi_common.py", "windows_runtime.py", "cdp.py", "app_integration.py",
     "iqcom_requests.py", "iqcom_session.py", "iqcom_audio.py", "proxy_support.py",
     "translation_ai.py", "translation_srt.py", "translation_pipeline.py", "translation_ui.html",
-    "README.md", "requirements.txt",
+    "README.md", "PERMISSIONS.md", "requirements.txt",
     "assets/iqiyi-logo.svg", "assets/iqiyi.ico",
 )
 EXTENSION = ("manifest.json", "content.js", "sub-hook.js", "proxy.js", "https-rules.json",

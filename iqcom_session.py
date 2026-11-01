@@ -348,9 +348,19 @@ class IqcomSession:
                 raise ValueError("Chưa lưu được phiên iq.com của trình duyệt hiện tại. Bấm Kiểm tra iq.com để thử lại.")
             self._poll()
             page = context.new_page()
+            page.add_init_script("""(() => {
+              // Only this private metadata page is nudged; all media requests stay blocked.
+              Object.defineProperty(document, 'hidden', {configurable:true,get:() => false});
+              Object.defineProperty(document, 'visibilityState', {configurable:true,get:() => 'visible'});
+              const probe = setInterval(() => {
+                const media = document.querySelector('video');
+                if (media) { media.muted = true; media.play().catch(() => {}); }
+              }, 500);
+              setTimeout(() => clearInterval(probe), 20000);
+            })();""")
             # Metadata/subtitles only: do not download the video or its segments.
             page.route("**/*", lambda route: route.abort() if route.request.resource_type in ("media", "image", "font") or
-                       re.search(r"\.(?:m4s|mp4|flv|f4v|ts)(?:\?|$)", route.request.url, re.I) else route.fallback())
+                       re.search(r"\.(?:m4s|mp4|amp4|aac|mp3|flv|f4v|ts)(?:\?|$)", route.request.url, re.I) else route.fallback())
             captured = []
 
             def capture(response):

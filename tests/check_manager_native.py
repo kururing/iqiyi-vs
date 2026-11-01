@@ -45,6 +45,14 @@ def check():
             assert form.Padding.Left == form.Padding.Top == form.Padding.Right == form.Padding.Bottom == 1
             assert bar.Parent.Left == bar.Parent.Top == 1
             assert form.ClientSize.Width - bar.Parent.Right == form.ClientSize.Height - bar.Parent.Bottom == 1
+            assert all(not control.TabStop for control in controls.values())
+            # WebView2 hands Tab traversal back to its WinForms host at either edge.
+            # Repeated forward/backward traversal must never select a caption button.
+            form.ActiveControl = form.webview
+            for forward in (True, False):
+                for _ in range(12):
+                    form.SelectNextControl(form.webview, forward, True, True, True)
+                    assert not any(control.ContainsFocus for control in controls.values()), "Tab selected a caption button"
             user32 = ctypes.WinDLL("user32")
             user32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
             user32.SendMessageW.restype = ctypes.c_ssize_t
@@ -60,8 +68,15 @@ def check():
             gdi32 = ctypes.WinDLL("gdi32")
             gdi32.GetPixel.argtypes = [wintypes.HDC, ctypes.c_int, ctypes.c_int]
             gdi32.GetPixel.restype = wintypes.DWORD
+            dwm = ctypes.WinDLL("dwmapi")
+            dwm.DwmGetWindowAttribute.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
 
             def check_dark_frame():
+                # GDI pixels exclude the compositor's outer 1px border. Check
+                # DWM too, so a dark client area cannot hide a remaining frame.
+                native_frame = wintypes.BOOL()
+                assert dwm.DwmGetWindowAttribute(hwnd, 1, ctypes.byref(native_frame), ctypes.sizeof(native_frame)) == 0
+                assert not native_frame.value, "DWM still draws its native frame outside the client area"
                 for active in (0, 1):
                     user32.SendMessageW(hwnd, 0x86, active, 0)  # Focus change
                     user32.SendMessageW(hwnd, 0x85, 1, 0)  # Explicit frame repaint
@@ -136,4 +151,4 @@ with tempfile.TemporaryDirectory(prefix="iq-titlebar-check-", ignore_cleanup_err
 assert done.is_set(), "Native check did not finish"
 if failures:
     raise failures[0]
-print("PASS: frame stays dark across focus changes, maximize/restore and minimize; taskbar bounds and titlebar controls work")
+print("PASS: Tab skips caption buttons; mouse actions, dark frame, taskbar bounds and titlebar controls work")

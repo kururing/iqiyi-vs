@@ -4,6 +4,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import gzip
+import http.client
 import io
 import json
 from pathlib import Path
@@ -11,6 +12,7 @@ import re
 import secrets
 import threading
 import time
+import urllib.error
 from urllib.parse import urlsplit
 from urllib.request import Request
 
@@ -116,17 +118,32 @@ class AudioSource:
             if index == 0:
                 yield self.init[low:high + 1]
                 continue
-            with audio_open(self.location(index), byte_range=(low, high)) as response:
-                expected = f"bytes {low}-{high}/{size}"
-                if response.status != 206 or response.headers.get("Content-Range") != expected:
-                    raise OSError("Máy chủ âm thanh không trả đúng đoạn cần phát; thử bật lại âm thanh Việt.")
-                remaining = high - low + 1
-                while remaining:
-                    chunk = response.read(min(65536, remaining))
-                    if not chunk:
-                        raise OSError("Đoạn âm thanh tải về bị gián đoạn.")
-                    remaining -= len(chunk)
-                    yield chunk
+            attempts = 0
+            while low <= high:
+                try:
+                    with audio_open(self.location(index), byte_range=(low, high)) as response:
+                        expected = f"bytes {low}-{high}/{size}"
+                        if (response.status != 206 or response.headers.get("Content-Range") != expected or
+                                response.headers.get("Content-Encoding", "identity").strip().lower() not in ("", "identity")):
+                            raise ValueError("Máy chủ âm thanh không trả đúng vùng dữ liệu; không phát đoạn sai.")
+                        while low <= high:
+                            chunk = response.read(min(65536, high - low + 1))
+                            if not chunk:
+                                raise OSError("Đoạn âm thanh tải về bị gián đoạn.")
+                            if len(chunk) > high - low + 1:
+                                raise ValueError("Đoạn âm thanh trả thừa dữ liệu.")
+                            low += len(chunk)
+                            yield chunk
+                except (OSError, http.client.HTTPException) as exc:
+                    attempts += 1
+                    code = exc.code if isinstance(exc, urllib.error.HTTPError) else None
+                    if attempts >= 3 or (code and code not in (401, 403, 408, 410, 429, 500, 502, 503, 504)):
+                        raise OSError("Âm thanh iq.com bị gián đoạn sau khi thử lại; hãy bật lại tiếng Việt.") from None
+                    if code in (401, 403, 410):
+                        with self.lock:
+                            self.locations.pop(index, None)
+                    # Continue at the first missing byte; replaying a prefix corrupts AAC/MP4.
+                    time.sleep(0.15 * attempts)
 
 
 class IqcomAudio:
@@ -205,7 +222,8 @@ class IqcomAudio:
             with self.lock:
                 if self.states.get(tvid) is state and state["session"] == self.session_version():
                     source = state["source"]
-                    if source and source.size == refreshed.size and source.init == refreshed.init:
+                    if (source and source.size == refreshed.size and source.init == refreshed.init
+                            and [p["b"] for p in source.parts] == [p["b"] for p in refreshed.parts]):
                         with source.lock:
                             source.base, source.parts, source.locations = refreshed.base, refreshed.parts, {}
                         state["expires"] = time.monotonic() + 900

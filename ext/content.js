@@ -1,6 +1,6 @@
 /* iqiyi-vi */
 (function () {
-  var ENGINE_VERSION = 234;
+  var ENGINE_VERSION = 245;
   var MANAGER_ONLY = window.__iqiyiViManagerOnly === true;
   if (window.__iqiyiVi && window.__iqiyiViVersion === ENGINE_VERSION && window.__iqiyiViMode === MANAGER_ONLY) {
     if (window.__iqiyiViReload) window.__iqiyiViReload();
@@ -15,7 +15,7 @@
       if (document.documentElement && !document.getElementById("iqiyi-vi-css")) {
         var style = document.createElement("style");
         style.id = "iqiyi-vi-css";
-        style.textContent = managerShortcutCSS();
+        style.textContent = playerOverlayCSS() + managerShortcutCSS();
         document.documentElement.appendChild(style);
       }
       installManagerShortcut();
@@ -72,6 +72,7 @@
     '[class*="thumbnailItemTitle"],[class*="filmFeed_title__"],[class*="filmFeed_desc__"],[class*="feedZaizhui_itemTitle__"],[class*="feedZaizhui_desc__"],.pcw-wrap';
   var FIXED_UI_TARGETS = [
     '.pcw-xyd-banner', '.pcw-box-welfare .banner-image',
+    '[class*="bannerV2_pointsInfo__"]',
     '[class*="metas_tag__"]',
     '[class*="info_starStats__"]', '[class*="aboutTa_label__"]',
     '[class*="NavHeader_channelItem__"]', '[class*="NavHeader_item__"]',
@@ -450,11 +451,15 @@
     "观影特权": "Quyền lợi xem phim",
     "福利特权": "Ưu đãi hội viên",
     "等级特权": "Quyền lợi theo hạng",
+    "会员特权": "Quyền lợi VIP",
+    "Đặc quyền thành viên": "Quyền lợi VIP",
     "个人标准会员": "Hội viên cá nhân tiêu chuẩn",
     "电视也能看": "Xem được cả trên TV",
     "加更礼免费看": "Xem miễn phí nội dung mở tập",
     "手机/平板/电脑": "Điện thoại / máy tính bảng / máy tính",
     "双11抢先购": "Ưu đãi sớm 11.11",
+    "双11狂欢购": "Ưu đãi 11.11",
+    "Cuộc mua sắm đôi 11": "Ưu đãi 11.11",
     "摇一摇": "Lắc nhận quà",
     "送亲友VIP": "Tặng VIP cho người thân",
     "师生特惠": "Ưu đãi giáo viên, học sinh",
@@ -583,6 +588,8 @@
     "惊悚": "Giật gân",
     "恐怖": "Kinh dị",
     "播放设置": "Cài đặt phát",
+    "播放实验室": "Tính năng phát thử nghiệm",
+    "chơi phòng thí nghiệm": "Tính năng phát thử nghiệm",
     "画面比例": "Tỷ lệ khung hình",
     "自动连播": "Tự phát tập tiếp",
     "跳过片头片尾": "Bỏ qua đầu và cuối phim",
@@ -1635,7 +1642,7 @@
     "绑定其他手机号": "Liên kết các số điện thoại di động khác",
     "打开本地文件": "Mở file máy",
     "小窗模式": "Cửa sổ nhỏ",
-    "窗口置顶": "Ghim cửa sổ",
+    "窗口置顶": "Luôn ở trên cùng",
     "画面缩放": "Thu phóng hình ảnh",
     "铺满(保持比例)": "Lấp đầy (giữ tỷ lệ)",
     "铺满(拉伸画面)": "Lấp đầy (kéo giãn)",
@@ -2426,7 +2433,24 @@
     } catch { return ""; }
   }
 
+  function upcomingTitleParts(node, value) {
+    var raw = String(value || "");
+    var combined = raw.match(/^(\s*)(?:即将播放|Sắp phát)[：:]\s*(\S[\s\S]*?)(\s*)$/);
+    if (combined) return {title:combined[2], combined:true, lead:combined[1], tail:combined[3]};
+    // SDK play_tail renders the label and bold video title as separate siblings.
+    for (var current = node, depth = 0; current && depth < 3; current = current.parentElement, depth++) {
+      var previous = current.previousSibling;
+      while (previous && !String(previous.textContent || previous.nodeValue || "").trim()) previous = previous.previousSibling;
+      if (previous) {
+        return /^(?:即将播放|Sắp phát)[：:]$/.test(String(previous.textContent || previous.nodeValue || "").trim()) ?
+          {title:raw, combined:false} : null;
+      }
+    }
+    return null;
+  }
+
   function isMovieTitleNode(node) {
+    if (upcomingTitleParts(node, node && (node.nodeValue || node.textContent))) return true;
     var el = node && node.nodeType === 3 ? node.parentElement : node;
     if (isActorNameNode(node)) return false;
     // Inline update notes and progress labels remain UI, even inside a title row.
@@ -2484,6 +2508,8 @@
   }
 
   function findInternationalTitleId(node) {
+    // The player/page ID belongs to the current video, not the upcoming one.
+    if (upcomingTitleParts(node, node && (node.nodeValue || node.textContent))) return "";
     var el = node && node.nodeType === 3 ? node.parentElement : node;
     var attrs = ["data-albumid", "data-album-id", "data-qipuid", "data-qipu-id", "data-tvid", "data-tv-id"];
     var pageTitle = false, titleNode = false;
@@ -2767,16 +2793,21 @@
     if (FIXED_COPY[raw.trim()] || (IS_RANKING_PAGE && /风云榜(?:[-–]爱奇艺风云榜)?$/.test(raw.trim()))) return false;
     setMetadataPending(node, field, false);
     if (requestInternationalActor(node, value, setter, field)) return true;
-    var movieTitle = isMovieTitleNode(node);
-    var original = movieTitle ? actorSourceText(node, raw, field) : raw;
+    var upcoming = upcomingTitleParts(node, raw);
+    var movieTitle = !!upcoming || isMovieTitleNode(node);
+    var original = upcoming ? upcoming.title : movieTitle ? actorSourceText(node, raw, field) : raw;
     if (!/[\u3400-\u9fff]/.test(original)) return movieTitle;
     if (!looksLikeTitle(original)) return movieTitle;
     var titleElement = node && node.nodeType === 3 ? node.parentElement : node;
     if (!movieTitle && (!titleElement || titleElement.tagName !== "TITLE")) return false;
     var titleContext = movieTitle || titleElement.tagName === "TITLE";
-    var id = findInternationalTitleId(node);
+    var id = upcoming ? "" : findInternationalTitleId(node);
     function setTitle(result, fallbackSource) {
       result = FIXED_COPY[result] || localizeTitleValue(result);
+      if (upcoming && upcoming.combined) {
+        result = upcoming.lead + "Sắp phát: " + result + upcoming.tail;
+        if (fallbackSource) fallbackSource = upcoming.lead + "Sắp phát: " + fallbackSource + upcoming.tail;
+      }
       setMetadataFallback(node, field, fallbackSource || (cjkCount(result) ? result : ""));
       if (result === raw) return;
       if (setter) setter(result);
@@ -2790,13 +2821,13 @@
     }
     var lookupName = (episodeTitle ? episodeTitle[1] : original).trim();
     if (!id && (!movieTitle || lookupName.length > 200)) {
-      if (titleContext) setTitle(raw);
+      if (titleContext) setTitle(upcoming ? original : raw);
       setMetadataPending(node, field, false);
       return titleContext;
     }
 
     function apply(payload) {
-      var result = raw, matched = false;
+      var result = upcoming ? original : raw, matched = false;
       if (findInternationalTitleId(node) === id && payload && payload.title && !cjkCount(payload.title)) {
         var source = payload.sourceTitle || "";
         var verifiedTitle = VERIFIED_TITLE_COPY[source];
@@ -2973,6 +3004,8 @@
     var t = orig.slice(lead.length, orig.length - tail.length);
     if (!t) return orig;
     if (FIXED_COPY[t]) return lead + FIXED_COPY[t] + tail;
+    var upcoming = t.match(/^(?:即将播放|Sắp phát)[：:]\s*(.+)$/);
+    if (upcoming) return lead + "Sắp phát: " + localizeTitleValue(upcoming[1]) + tail;
     var rankingInfoPrefix = t.match(/^(\d{4})\s*\/\s*(.*?)\s*\/$/);
     if (rankingInfoPrefix) {
       var infoGenres = rankingInfoPrefix[2].split(/\s+/);
@@ -3313,8 +3346,20 @@
     });
   }
 
+  function playerOverlayCSS() {
+    // The native SDK can mount both the fixed caption and its hover/fullscreen caption.
+    var fixedCaption = '[class*="XPlayer_root__"]:has(> [class*="XPlayer_headTop__"]:not([class*="XPlayer_invisible__"]):not([class*="XPlayer_headerNone__"]))';
+    return '.overlayAd-container,.maxPauseAd-container,.ad-pause{display:none!important;}' +
+      fixedCaption + ' [class*="XPlayer_longHead__"],' +
+      fixedCaption + ' [class*="XPlayer_longHeadXPlayer2026"]{display:none!important;}';
+  }
+
   function managerShortcutCSS() {
     return '[class*="backTop_sideTools__"]>[class*="backTop_backtopNew__"]{order:-1!important;flex-shrink:0!important;}' +
+      '[class*="configPage_bottomRightFloatingWidget__"]>[class*="configPage_backTop__"]{order:-2!important;flex-shrink:0!important;}' +
+      '[class*="configPage_bottomRightFloatingWidget__"]>#iqiyi-vi-manager{order:-1;}' +
+      '[class*="configPage_backTop__"]:hover,[class*="configPage_backTop__"]:focus-visible{width:max-content!important;max-width:calc(100vw - 32px);box-sizing:border-box;padding-left:12px!important;}' +
+      '[class*="configPage_backTop__"]:hover>[id="text"],[class*="configPage_backTop__"]:focus-visible>[id="text"]{width:max-content!important;max-width:none!important;overflow:visible!important;white-space:nowrap!important;flex-shrink:0!important;margin:0!important;}' +
       '[class*="backTop_backtopNew__"]:hover{width:max-content!important;max-width:calc(100vw - 40px);box-sizing:border-box;padding-left:12px!important;gap:8px;}' +
       '[class*="backTop_backtopNew__"]:hover>span{width:max-content!important;max-width:none!important;overflow:visible!important;white-space:nowrap!important;flex-shrink:0!important;}' +
       '#iqiyi-vi-manager{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;width:38px;height:38px;margin:0 0 12px;padding:0;border:0;border-radius:8px;background:rgba(41,44,51,.6);color:#ddd;cursor:pointer;-webkit-app-region:no-drag;}' +
@@ -3325,11 +3370,34 @@
       '#iqiyi-vi-manager:hover .iqiyi-vi-manager-tip,#iqiyi-vi-manager:focus-visible .iqiyi-vi-manager-tip{display:block;}';
   }
 
+  function vipCardCSS() {
+    var card = '[class*="bannerV2_userCard__"]';
+    return card + '{height:auto!important;min-height:285px;max-width:100%;padding-bottom:22px!important;}' +
+      card + ' [class*="bannerV2_row1__"]{padding:28px 24px 0!important;flex-shrink:0!important;}' +
+      card + ' [class*="bannerV2_row1__"]>div{min-width:0;flex:1;}' +
+      card + ' [class*="bannerV2_expireWrap__"]{max-width:calc(100% - 140px);}' +
+      card + ' [class*="bannerV2_userName__"]{height:auto!important;line-height:26px!important;margin-bottom:8px!important;}' +
+      card + ' [class*="bannerV2_name__"]{max-width:100%;overflow:hidden;text-overflow:ellipsis;}' +
+      card + ' [class*="bannerV2_expireInfo__"]{height:auto!important;min-height:20px;line-height:20px!important;font-size:14px!important;margin-bottom:0!important;}' +
+      card + ' [class*="bannerV2_renewButton__"]{box-sizing:border-box;width:max-content!important;min-width:170px;max-width:100%;height:auto!important;min-height:44px;padding:10px 18px!important;margin-top:24px;line-height:22px!important;font-size:16px!important;}' +
+      card + ' [class*="bannerV2_renewButton__"]>span{white-space:nowrap;}' +
+      card + ' [class*="bannerV2_VipMarketingBadge__"]{top:-12px!important;bottom:auto!important;right:8px!important;height:auto!important;line-height:18px!important;white-space:nowrap!important;}' +
+      card + ' [class*="bannerV2_levelLogo__"]{top:24px!important;right:12px!important;width:142px!important;height:auto!important;}' +
+      card + ' [class*="bannerV2_row2__"]{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:24px!important;padding:0 22px!important;}' +
+      card + ' [class*="bannerV2_pointsInfo__"],' + card + ' [class*="bannerV2_privilegeItem__"]{display:grid!important;grid-template-rows:40px auto;gap:10px;align-items:start!important;justify-content:stretch!important;width:100%;min-width:0;}' +
+      card + ' [class*="bannerV2_row2_1__"]{display:flex!important;align-items:baseline;justify-content:center;gap:4px;height:40px;margin:0!important;white-space:nowrap;}' +
+      card + ' [class*="bannerV2_pointsAmount__"]{font-size:30px!important;line-height:40px!important;}' +
+      card + ' [class*="bannerV2_pointsLabel__"]{font-size:14px!important;line-height:20px!important;margin:0!important;white-space:nowrap;}' +
+      card + ' [class*="bannerV2_privilegeIcon__"]{width:40px!important;height:40px!important;margin:0 auto!important;}' +
+      card + ' [class*="bannerV2_row2Text__"]{display:block;min-height:40px;max-width:100%;margin:0!important;font-size:14px!important;line-height:20px!important;white-space:normal!important;word-break:normal!important;overflow-wrap:break-word;text-align:center;}' +
+      '@media(max-width:600px){' + card + ' [class*="bannerV2_row2__"]{grid-template-columns:repeat(2,minmax(0,1fr));}}';
+  }
+
   function injectCSS() {
     if (!document.documentElement || document.getElementById("iqiyi-vi-css")) return;
     var s = document.createElement("style");
     s.id = "iqiyi-vi-css";
-    s.textContent =
+    s.textContent = playerOverlayCSS() + vipCardCSS() +
       '[data-iqiyi-vi-pending="1"]{visibility:hidden!important;}' +
       '#iqiyi-vi-search-suggestions{position:fixed;z-index:2147483646;background:#242628;border:1px solid #45484b;border-radius:10px;padding:8px;box-sizing:border-box;box-shadow:0 8px 28px #0008;color:#fff;max-height:60vh;overflow:auto;}' +
       '#iqiyi-vi-search-suggestions .iqiyi-vi-search-heading{font:12px/20px Arial,sans-serif;color:#bbb;padding:4px 8px;}' +
@@ -3656,9 +3724,28 @@
     });
   }
 
+  function localizeVipCard(scope) {
+    if (!scope || !scope.querySelectorAll) scope = document;
+    queryFixed(scope, '[class*="bannerV2_pointsInfo__"]').forEach(function (info) {
+      replaceFixedLabel('[class*="bannerV2_pointsLabel__"]', "điểm", info);
+      var footer = info.querySelector('[class*="bannerV2_row2Text__"]');
+      var coefficient = footer && footer.textContent.trim().match(/^(?:积分系数|Hệ số điểm|Hệ số:)\s*(\d+(?:[.,]\d+)?)%$/);
+      if (coefficient) replaceFixedLabel('[class*="bannerV2_row2Text__"]', "Hệ số: " + coefficient[1] + "%", info);
+      var amount = info.querySelector('[class*="bannerV2_pointsAmount__"]');
+      var unit = info.querySelector('[class*="bannerV2_pointsLabel__"]');
+      if (!amount || !unit) return;
+      amount.style.setProperty("font-size", "30px", "important");
+      var range = document.createRange(); range.selectNodeContents(amount);
+      var width = range.getBoundingClientRect().width;
+      var available = info.clientWidth - unit.getBoundingClientRect().width - 4;
+      if (available > 0 && width > available) amount.style.setProperty("font-size", Math.max(12, Math.floor(30 * available / width)) + "px", "important");
+    });
+  }
+
   function localizeFixedUI(scope) {
     scope = scope || document;
     localizeWalletPromotions(scope);
+    localizeVipCard(scope);
     var navigation = '[class*="NavHeader_channelItem__"],[class*="NavHeader_item__"]';
     queryFixed(scope, navigation).forEach(function (el) {
       var link = el.closest && el.closest("a[href]");
@@ -3799,6 +3886,34 @@
     var parts = raw.split(/\s*[-_|－–—]\s*/).filter(function (part, index) { return part && (!index || !suffix.test(part)); });
     var result = localizeTitleValue(parts.join(" – ")).replace(/\s*第(\d+)集/g, " · Tập $1");
     return /iQIYI/i.test(result) ? result : result + " – iQIYI";
+  }
+
+  function localizeWindowTitle(value) {
+    var raw = String(value || "").trim();
+    if (/^爱奇艺(?:视频)?$/.test(raw)) return "iQIYI";
+    var episode = raw.match(/^(.*?)\s*第(\d+)集(?:\s+(.+))?$/);
+    var source = episode ? episode[1].trim() : raw;
+    var translated = localizeTitleValue(source);
+    // Reuse the same catalog result as the on-screen title, including in fullscreen.
+    IQCOM_METADATA_CACHE.forEach(function (entry) {
+      var payload = entry.payload;
+      if (payload && payload.sourceTitle === source && payload.title && !cjkCount(payload.title)) {
+        translated = VERIFIED_TITLE_COPY[source] || payload.title;
+      }
+    });
+    if (cjkCount(translated)) {
+      document.querySelectorAll('[class*="webHead_title__"],[class*="meta_titleNotCloud"],[class*="meta_titleTextBlock"]').forEach(function (el) {
+        var node = el.firstChild, text = (el.textContent || "").trim();
+        if (node && node.nodeType === 3 && actorSourceText(node, text) === source && text && !cjkCount(text)) translated = text;
+      });
+    }
+    if (!translated || cjkCount(translated)) return null;
+    if (episode) {
+      translated += " · Tập " + episode[2];
+      var subtitle = episode[3] && tr(episode[3]);
+      if (subtitle && !cjkCount(subtitle)) translated += " · " + subtitle;
+    }
+    return translated + " – iQIYI";
   }
 
   function setDocumentTitle(title, raw, translated) {
@@ -4023,7 +4138,7 @@
 
   function installManagerShortcut() {
     if (!/(^|\.)iqiyi\.com$/i.test(location.hostname)) return;
-    var tools = document.querySelector('[class*="backTop_sideTools__"]');
+    var tools = document.querySelector('[class*="backTop_sideTools__"],[class*="configPage_bottomRightFloatingWidget__"]');
     if (!tools || document.getElementById("iqiyi-vi-manager")) return;
     var button = document.createElement("button");
     button.id = "iqiyi-vi-manager";
@@ -4298,6 +4413,7 @@
 
   window.__iqiyiVi = true;
   window.__iqiyiViVersion = ENGINE_VERSION;
+  window.__iqiyiViWindowTitle = localizeWindowTitle;
   window.__iqiyiViReload = function () {
     TEXT_CACHE.clear();
     run();
@@ -4314,6 +4430,7 @@
     document.addEventListener("compositionend", suggestVietnameseSearch, true);
   }
   window.addEventListener("resize", clearSearchSuggestions);
+  window.addEventListener("resize", localizeVipCard);
   window.addEventListener("scroll", clearSearchSuggestions, {passive:true});
   document.addEventListener("visibilitychange", scheduleRemainingLocalization);
   if (IS_RANKING_PAGE) window.addEventListener("scroll", scheduleRemainingLocalization, {passive:true, capture:true});
@@ -4343,6 +4460,7 @@
   if (window.__iqiyiViBridgeExpired) window.__iqiyiViPauseNetwork();
   window.__iqiyiViStop = function () {
     IQCOM_METADATA_STOPPED = true;
+    delete window.__iqiyiViWindowTitle;
     var managerShortcut = document.getElementById("iqiyi-vi-manager");
     if (managerShortcut) managerShortcut.remove();
     document.removeEventListener("keydown", handleVietnameseSearch, true);
@@ -4353,6 +4471,7 @@
     document.removeEventListener("compositionstart", suggestVietnameseSearch, true);
     document.removeEventListener("compositionend", suggestVietnameseSearch, true);
     window.removeEventListener("resize", clearSearchSuggestions);
+    window.removeEventListener("resize", localizeVipCard);
     window.removeEventListener("scroll", clearSearchSuggestions);
     clearSearchSuggestions();
     IQCOM_METADATA_RETRIES.clear();

@@ -60,7 +60,7 @@ def check_assets():
             engine.write_bytes(engine.read_bytes() + b"\nwindow.__iqiyiViCleanupProbe = true;\n")
             watcher.patch_lwa()
             watcher.patch_lwa()
-            assert (webapp / "lwa-vi.js").read_bytes() == engine.read_bytes()
+            assert (webapp / "lwa-vi.js").read_bytes() == common.ui_script(root, engine.read_bytes())
             assert (webapp / "index.html").read_bytes() == signed
             for name in ("harmonyos.html", "player_harmonyos.html", "future_platform.html"):
                 assert (webapp / name).read_bytes() == signed, "Repair signed page: " + name
@@ -79,7 +79,7 @@ def check_refresh():
     check = r"""
 const assert=require('node:assert/strict');
 let refreshBusy=false,refreshPending=false,refreshError='',lastRenderSignature='';
-let albumLists,discoveries,iqiyiSynced,iqiyiSources,episodeData;
+let albumLists,albumTranslation,discoveries,iqiyiSynced,iqiyiSources,episodeData;
 let payload={episodes:[{tvid:'1',provider:'iqiyi',title:'Episode 1'}],session:{synced:false}};
 const statusNode={textContent:''};
 async function apiFetch(){return {ok:true,json:async()=>payload}}
@@ -101,6 +101,9 @@ function render(){renders++;updateProviderChrome()}
   assert.equal(updates,3);assert.equal(renders,2);
   await refresh(true);
   assert.equal(updates,4);assert.equal(renders,3);
+  payload.albumTranslation={stage:'running',message:'Translating episode 1'};
+  await refresh(false);
+  assert.equal(renders,4,'Queue progress must update even when episode metadata is unchanged');
   assert.equal(refreshError,'');assert.equal(refreshBusy,false);
 })().catch(error=>{console.error(error);process.exitCode=1});
 """

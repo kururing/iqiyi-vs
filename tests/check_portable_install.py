@@ -85,6 +85,18 @@ def main():
             destination = bundle / 'ext' / name
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / 'ext' / name, destination)
+        builder.validate_extension(bundle / 'ext')
+        asset = bundle / 'ext' / 'audio-player.html'
+        contents = asset.read_bytes()
+        asset.unlink()
+        try:
+            builder.validate_extension(bundle / 'ext')
+        except FileNotFoundError:
+            pass
+        else:
+            raise AssertionError('Build validation accepted a missing extension resource')
+        finally:
+            asset.write_bytes(contents)
         (bundle / 'runtime').mkdir()
         for name in ('python.exe', 'pythonw.exe'):
             (bundle / 'runtime' / name).touch()  # Path selection only; never execute placeholder binaries.

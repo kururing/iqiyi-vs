@@ -30,7 +30,7 @@ from windows_runtime import run_elevated
 from iqcom_session import IqcomSession, has_vietnamese_track
 from iqcom_audio import IqcomAudio, byte_range
 from proxy_support import DesktopProxyRelay, check_iqiyi_proxy
-from launcher import apply_running_iqiyi_proxy, ensure_watcher
+from launcher import apply_running_iqiyi_proxy, ensure_watcher, restart_running_iqiyi
 from iqcom_requests import PUBLIC_METADATA, RequestCache, pooled_open, read_response, singleflight
 from translation_ai import PRESETS as TRANSLATION_PROVIDERS, list_models, model_config
 from translation_pipeline import TranslationJobs
@@ -140,7 +140,8 @@ _load_international_metadata_cache()
 def app_localization_status() -> dict:
     with APP_LOCALIZATION_LOCK:
         state = dict(APP_LOCALIZATION_STATE)
-    state["installed"] = app_integration.installed(ROOT) and not manager_only(ROOT)
+    state["installed"] = (app_integration.installed(ROOT) and not manager_only(ROOT)
+                          and not (ROOT / "watch-iqiyi-vi.disabled").exists())
     return state
 
 
@@ -163,10 +164,13 @@ def _run_app_localization(action: str) -> None:
         if result.returncode == 0:
             if action != "restore":
                 ensure_watcher()
-            message = ("Đã gỡ toàn bộ tích hợp. Đóng rồi mở lại iQIYI để hoàn tất."
+            proxy = DESKTOP_PROXY.url() if action != "restore" and current_player_proxy() else ""
+            restarted = restart_running_iqiyi(proxy, integrated=action != "restore")
+            message = ("Đã gỡ toàn bộ tích hợp."
                        if action == "restore" else
-                       "Đã cập nhật tiếng Việt. Đóng rồi mở lại iQIYI để nạp thay đổi." if action == "repair" else
-                       "Đã kết nối app iQIYI. Đóng rồi mở lại iQIYI để nạp thay đổi.")
+                       "Đã cập nhật tiếng Việt." if action == "repair" else "Đã kết nối app iQIYI.")
+            message += (" iQIYI đã tự mở lại với " + ("giao diện gốc." if action == "restore" else "giao diện tiếng Việt.")
+                        if restarted else " Giao diện sẽ được áp dụng khi mở iQIYI.")
             status = "done"
         elif result.returncode == 1223:
             message, status = ("Đã hủy yêu cầu quyền Administrator; thao tác có thể mới hoàn thành một phần. "
@@ -189,9 +193,6 @@ def start_app_localization(action: str) -> dict:
     with APP_LOCALIZATION_LOCK:
         if APP_LOCALIZATION_STATE.get("status") == "running":
             raise RuntimeError("Một thao tác iQIYI đang chạy.")
-        if action == "apply" and app_integration.installed(ROOT) and not manager_only(ROOT):
-            return {**APP_LOCALIZATION_STATE, "status":"done", "installed":True,
-                    "message":"Đã kết nối app iQIYI."}
         APP_LOCALIZATION_STATE.update(status="running", action=action,
                                       message=("Đang gỡ tích hợp…" if action == "restore"
                                                else "Đang kết nối app iQIYI…"),
@@ -819,8 +820,16 @@ def international_movie_title(identifier: str) -> dict:
             oldest = min(INTERNATIONAL_TITLE_CACHE, key=lambda key: INTERNATIONAL_TITLE_CACHE[key][0])
             INTERNATIONAL_TITLE_CACHE.pop(oldest, None)
             INTERNATIONAL_ALBUM_IDS.pop(oldest, None)
-        INTERNATIONAL_TITLE_CACHE[cache_key] = (time.monotonic() + (7 * 86400 if result["title"] else retry_lifetime), dict(result))
-        if result["title"]:
+        fresh_title = bool(result["title"])
+        previous = cached[1] if cached else {}
+        same_title = (not previous.get("sourceTitle") or not result["sourceTitle"] or
+                      title_key(previous["sourceTitle"]) == title_key(result["sourceTitle"]))
+        if same_title:
+            # Public names/artwork remain useful while a lookup is unavailable; keep retrying normally.
+            for field in ("title", "sourceTitle", "coverUrl"):
+                result[field] = result[field] or previous.get(field, "")
+        INTERNATIONAL_TITLE_CACHE[cache_key] = (time.monotonic() + (7 * 86400 if fresh_title else retry_lifetime), dict(result))
+        if fresh_title:
             _save_international_metadata_cache()
     return result
 
@@ -1688,7 +1697,8 @@ def international_series_metadata(item: dict) -> dict:
         if (not current or "coverUrl" not in cached[1]) and identifier not in INTERNATIONAL_TITLE_PENDING:
             INTERNATIONAL_TITLE_PENDING.add(identifier)
             TITLE_LOOKUP_POOL.submit(_load_international_series_title, identifier)
-        return dict(cached[1]) if current else {}
+        # Do not blank an existing card while the background lookup refreshes an expired entry.
+        return dict(cached[1]) if cached else {}
 
 
 def vietnamese_series_title(item: dict) -> str:
@@ -1943,7 +1953,8 @@ h1{font-size:24px;line-height:1.3;font-weight:650;margin:0}h3{font-size:16px;fon
 .statusBadge{display:inline-block;margin-left:6px;padding:2px 7px;border:1px solid var(--state-border);border-radius:5px;background:var(--state-bg);font-size:12px;font-weight:400;color:var(--state-color)}
 .needsAttention{color:#ffb7bd}.errorText{color:#ffb7bd;font-size:13px;margin-top:5px;overflow-wrap:anywhere}.actionNotice{color:#c0d1ff;margin-top:6px;font-size:13px}.progress{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin:8px 0}.progress i{display:block;height:100%;background:var(--focus)}
 .detail{grid-column:1/-1;min-width:0;max-height:min(320px,45vh);overflow:auto;overscroll-behavior:contain;margin-top:4px}.detail table{width:100%;border-collapse:collapse}.detail th,.detail td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--line)}.detail th{color:var(--muted);position:sticky;top:0;background:var(--panel);font-weight:500}.source{color:var(--text)}.vi{color:#b5caff}.pending,.empty{color:var(--muted)}.empty{padding:28px;text-align:center}
-.movieSearch{margin:0 0 20px;padding:18px;background:var(--panel);border-radius:8px}.movieSearch label{display:block;font-weight:600;margin-bottom:10px}.movieSearchControls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.movieSearch input{width:100%}.movieSearchHint,.searchResultMeta{color:var(--muted);font-size:13px;margin-top:5px}#movieSearchStatus{color:#c0d1ff;margin-top:8px}.searchResults{display:grid;gap:8px;margin-top:8px;max-height:min(46vh,420px);overflow-y:auto;overscroll-behavior:contain}.searchResult{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}.searchResult>div{min-width:0;overflow-wrap:anywhere}.searchResultTitle{font-weight:600}.discoveryActions{display:flex;gap:8px;flex-wrap:wrap}
+.movieSearch{margin:0 0 20px;padding:18px;background:var(--panel);border-radius:8px}.movieSearch label{display:block;font-weight:600;margin-bottom:10px}.movieSearchControls{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.movieSearch input{width:100%}.movieSearchHint,.searchResultMeta{color:var(--muted);font-size:13px;margin-top:5px}#movieSearchStatus{color:#c0d1ff;margin-top:8px}.searchResults{display:grid;gap:8px;margin-top:8px;max-height:min(46vh,420px);overflow-y:auto;overscroll-behavior:contain}.searchResult{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}.searchResult>div{min-width:0;overflow-wrap:anywhere}.searchResultTitle{font-weight:600}.discoveryActions{display:flex;gap:8px;flex-wrap:wrap}
+.movieQueryWrap{min-width:0}.movieSuggestions{position:absolute;z-index:10;left:0;right:0;top:calc(100% + 8px);max-height:320px;overflow-y:auto;padding:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;box-shadow:0 12px 24px #0006}.movieSuggestionHeading{padding:5px 8px;color:var(--muted);font-size:13px}.movieSuggestions button{display:block;width:100%;min-height:44px;text-align:left;white-space:normal;overflow-wrap:anywhere;background:transparent;color:var(--text);font-weight:400}.movieSuggestions button:hover,.movieSuggestions button:focus-visible{background:#ffffff12}.movieSuggestions button:focus-visible{outline-offset:-2px}
 .discoveryIdentity{display:flex;align-items:center;gap:14px;flex:1}.discoveryIdentity>div{min-width:0;flex:1;overflow-wrap:anywhere}.discoveryActions{flex-shrink:0}
 @media(max-width:760px){.discoveryIdentity{flex-basis:100%}.discoveryActions{margin-left:auto}}
 dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);padding:24px;box-shadow:0 20px 80px #0005}dialog::backdrop{background:#080a0dcc}
@@ -1971,7 +1982,7 @@ dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflo
  <section id="integrationPrompt" class="integrationPrompt" aria-label="Kết nối app iQIYI" hidden><strong>Kết nối app iQIYI</strong><button onclick="openIntegrationSettings()">Kết nối</button></section>
  <div class="libraryHeading"><div><h1>Thư viện phụ đề</h1><p><span id="countIqiyi">0</span> tập · Phụ đề gốc và bản dịch</p></div><button id="toggleAllAlbums" class="secondary" onclick="toggleAllAlbums()">Mở tất cả</button></div>
  __TRANSLATION_PANEL__
- <section id="movieSearch" class="movieSearch" role="search" aria-labelledby="movieSearchTitle" hidden><label id="movieSearchTitle" for="movieQuery">Tìm và thêm phim iQIYI</label><form id="movieSearchForm" autocomplete="off"><div class="movieSearchControls"><input id="movieQuery" name="iw_movie_q" type="text" maxlength="100" placeholder="Tên phim hoặc tên gốc tiếng Trung" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required><button id="movieSearchButton">Tìm</button></div></form><div id="movieSearchStatus" role="status" aria-live="polite"></div><div id="movieSearchResults" class="searchResults" aria-live="polite"></div></section>
+ <section id="movieSearch" class="movieSearch" role="search" aria-labelledby="movieSearchTitle" hidden><label id="movieSearchTitle" for="movieQuery">Tìm và thêm phim iQIYI</label><form id="movieSearchForm" autocomplete="off"><div class="movieSearchControls"><div class="movieQueryWrap"><input id="movieQuery" name="iw_movie_q" type="text" maxlength="100" placeholder="Tên phim tiếng Việt hoặc tiếng Trung" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-controls="movieSuggestions" aria-expanded="false" required><div id="movieSuggestions" class="movieSuggestions" role="region" aria-label="Gợi ý tên phim" hidden></div></div><button id="movieSearchButton">Tìm</button></div></form><div id="movieSearchStatus" role="status" aria-live="polite"></div><div id="movieSearchResults" class="searchResults" aria-live="polite"></div></section>
 
  <p id="librarySearchCount" class="settingsHint" role="status" aria-live="polite"></p>
  <div id="status" role="status" aria-live="polite"></div><section id="items"></section>
@@ -2009,6 +2020,7 @@ let allAlbumsOpen=false,iqiyiSynced=false,iqiyiSources={};
 let iqcomChecking=false,iqcomLoginPending=false;
 let discoveries=[],discoveriesSignature="";
 const discoveryBusy=new Set();
+const failedMovieCovers=new Set();
 function renderDiscoveries(){
  const count=document.getElementById("notificationsCount");count.textContent=String(discoveries.length);count.hidden=!discoveries.length;
  document.getElementById("notificationsButton").setAttribute("aria-label","Thông báo: "+discoveries.length+" phim chờ chấp nhận");
@@ -2048,31 +2060,79 @@ let appLocalizationPoll=0;
 function openIntegrationSettings(){document.getElementById("appSettings").showModal();document.getElementById("iqiyiIntegration").scrollIntoView({block:"center"})}
 let searchMoviesData=[];
 const addingAlbums=new Set(),movieSearchStatus=document.getElementById("movieSearchStatus");
+const movieQuery=document.getElementById("movieQuery"),movieSearchForm=document.getElementById("movieSearchForm"),movieSuggestions=document.getElementById("movieSuggestions"),movieSearchButton=document.getElementById("movieSearchButton");
+let movieSuggestionTimer=null,movieSuggestionVersion=0,movieSuggestionRequest=null,movieSearchVersion=0,movieSearchRequest=null,movieSkipFocus=false;
 document.getElementById("movieSearchForm").addEventListener("submit",event=>{event.preventDefault();searchMovies()});
-function toggleSearch(){const panel=document.getElementById("movieSearch"),q=document.getElementById("movieQuery");panel.hidden=!panel.hidden;document.getElementById("addMovieButton").setAttribute("aria-expanded",String(!panel.hidden));if(panel.hidden){q.value=""}else{q.focus()}}
-async function refreshAppLocalization(){clearTimeout(appLocalizationPoll);try{const r=await apiFetch("/api/app-localization"),x=await r.json();if(!r.ok)throw Error(x.error||"Không đọc được trạng thái iQIYI");const busy=x.status==="running",status=document.getElementById("appLocalizationStatus");document.getElementById("integrationPrompt").hidden=!!x.installed;const installButton=document.getElementById("localizeIqiyiButton");installButton.disabled=busy||!!x.installed;installButton.textContent="Kết nối app iQIYI";const connectionStatus=document.getElementById("iqiyiIntegrationStatus");connectionStatus.textContent=x.installed?"Đã kết nối":"Chưa kết nối";connectionStatus.className="settingsHint"+(x.installed?" connected":"");document.getElementById("restoreIqiyiButton").disabled=busy;status.className=busy?"running":x.status==="error"?"error":"";status.setAttribute("aria-busy",String(busy));status.textContent=x.status==="idle"?"":safeStatusText(x.message,"Không đọc được trạng thái tích hợp.");if(busy)appLocalizationPoll=setTimeout(refreshAppLocalization,1000)}catch(e){const status=document.getElementById("appLocalizationStatus");status.className="error";status.setAttribute("aria-busy","false");status.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}}
-async function runAppLocalization(action){if(action==="restore"&&!confirm("Gỡ toàn bộ script và nút quản lý khỏi app iQIYI, khôi phục giao diện gốc? Đóng rồi mở lại iQIYI sau khi hoàn tất."))return;const status=document.getElementById("appLocalizationStatus");document.getElementById("localizeIqiyiButton").disabled=true;document.getElementById("restoreIqiyiButton").disabled=true;status.className="running";status.setAttribute("aria-busy","true");status.textContent=action==="restore"?"Đang gỡ tích hợp…":"Đang kết nối app iQIYI…";try{const r=await apiFetch("/api/app-localization",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không chạy được thao tác");status.textContent=safeStatusText(x.message,status.textContent);refreshAppLocalization()}catch(e){status.className="error";status.setAttribute("aria-busy","false");status.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.");refreshAppLocalization()}}
+function toggleSearch(){const panel=document.getElementById("movieSearch"),q=document.getElementById("movieQuery");panel.hidden=!panel.hidden;document.getElementById("addMovieButton").setAttribute("aria-expanded",String(!panel.hidden));if(panel.hidden){cancelMovieSearch();q.value=""}else{q.focus()}}
+function clearMovieSuggestions(){clearTimeout(movieSuggestionTimer);++movieSuggestionVersion;movieSuggestionRequest?.abort();movieSuggestionRequest=null;movieSuggestions.replaceChildren();movieSuggestions.hidden=true;movieQuery.setAttribute("aria-expanded","false");movieQuery.removeAttribute("aria-busy")}
+function cancelMovieSearch(){clearMovieSuggestions();++movieSearchVersion;if(movieSearchRequest)movieSearchStatus.textContent="";movieSearchRequest?.abort();movieSearchRequest=null;movieSearchButton.disabled=false;movieSearchForm.removeAttribute("aria-busy")}
+function focusMovieQuery(){movieSkipFocus=true;movieQuery.focus();movieSkipFocus=false}
+function movieSearchKey(value){return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[đĐ]/g,"d").toLowerCase().replace(/[^a-z0-9]/g,"")}
+function movieSearchChoices(payload){
+ const choices=Array.isArray(payload?.suggestions)?payload.suggestions.slice():[];
+ if(payload?.query&&payload.query!==movieQuery.value.trim())choices.unshift({title:payload.title,query:payload.query});
+ const seen=new Set();return choices.filter(x=>x&&typeof x.title==="string"&&typeof x.query==="string"&&x.title.trim()&&x.title.length<=200&&x.query.length<=100&&/[\u3400-\u9fff\uf900-\ufaff]/.test(x.query)&&!seen.has(x.query)&&seen.add(x.query)).slice(0,5);
+}
+function showMovieSuggestions(choices,message,focusFirst=false){
+ movieSuggestions.replaceChildren();const heading=document.createElement("div");heading.className="movieSuggestionHeading";heading.setAttribute("role","status");heading.textContent=message||(choices.length?"Gợi ý phim từ iq.com":"Chưa có gợi ý phù hợp. Bạn có thể bấm Tìm.");movieSuggestions.append(heading);
+ choices.forEach(choice=>{const button=document.createElement("button");button.type="button";button.textContent=choice.title+(/^\d{4}$/.test(choice.year||"")?" · "+choice.year:"");button.addEventListener("click",()=>{movieQuery.value=choice.title;searchMovies(choice)});movieSuggestions.append(button)});
+ movieSuggestions.hidden=false;movieQuery.setAttribute("aria-expanded","true");if(focusFirst)movieSuggestions.querySelector("button")?.focus();
+}
+async function movieSearchJson(path,signal){const r=await apiFetch(path,{signal:AbortSignal.any([signal,AbortSignal.timeout(20000)])}),data=await r.json();if(!r.ok)throw Error(data.error||"Không tìm được phim");return data}
+function suggestMovies(event){
+ cancelMovieSearch();const query=movieQuery.value.trim();if(event?.isComposing||event?.type==="compositionstart"||!query||query.length>100||/[\u3400-\u9fff\uf900-\ufaff]/.test(query)||movieSearchKey(query).length<3)return;
+ showMovieSuggestions([],"Đang tìm gợi ý từ iq.com…");const version=movieSuggestionVersion;
+ movieSuggestionTimer=setTimeout(async()=>{const request=new AbortController();movieSuggestionRequest=request;movieQuery.setAttribute("aria-busy","true");try{const payload=await movieSearchJson("/api/international-search?q="+encodeURIComponent(query),request.signal);if(version!==movieSuggestionVersion||movieQuery.value.trim()!==query)return;showMovieSuggestions(movieSearchChoices(payload))}catch(error){if(version===movieSuggestionVersion&&error.name!=="AbortError")showMovieSuggestions([],"Chưa tải được gợi ý. Bạn có thể bấm Tìm.")}finally{if(version===movieSuggestionVersion)movieQuery.removeAttribute("aria-busy")}},300);
+}
+movieQuery.addEventListener("input",suggestMovies);
+movieQuery.addEventListener("compositionstart",suggestMovies);
+movieQuery.addEventListener("compositionend",suggestMovies);
+movieQuery.addEventListener("focus",event=>{if(!movieSkipFocus)suggestMovies(event)});
+movieSearchForm.addEventListener("keydown",event=>{
+ if(event.isComposing)return;
+ if(event.key==="Escape"){event.preventDefault();clearMovieSuggestions();focusMovieQuery();return}
+ if(event.key!=="ArrowDown"&&event.key!=="ArrowUp"||movieSuggestions.hidden)return;
+ const buttons=Array.from(movieSuggestions.querySelectorAll("button")),index=buttons.indexOf(event.target);let next;
+ if(event.target===movieQuery&&event.key==="ArrowDown")next=buttons[0];
+ else if(index>=0)next=event.key==="ArrowDown"?buttons[index+1]:buttons[index-1]||movieQuery;
+ if(next){event.preventDefault();if(next===movieQuery)focusMovieQuery();else next.focus()}
+});
+movieSearchForm.addEventListener("focusout",event=>{if(!movieSearchForm.contains(event.relatedTarget))clearMovieSuggestions()});
+document.addEventListener("click",event=>{if(!movieSearchForm.contains(event.target))clearMovieSuggestions()});
+async function refreshAppLocalization(){clearTimeout(appLocalizationPoll);try{const r=await apiFetch("/api/app-localization"),x=await r.json();if(!r.ok)throw Error(x.error||"Không đọc được trạng thái iQIYI");const busy=x.status==="running",status=document.getElementById("appLocalizationStatus");document.getElementById("integrationPrompt").hidden=!!x.installed;const installButton=document.getElementById("localizeIqiyiButton");installButton.disabled=busy;installButton.textContent=x.installed?"Kết nối lại app iQIYI":"Kết nối app iQIYI";const connectionStatus=document.getElementById("iqiyiIntegrationStatus");connectionStatus.textContent=x.installed?"Đã kết nối":"Chưa kết nối";connectionStatus.className="settingsHint"+(x.installed?" connected":"");document.getElementById("restoreIqiyiButton").disabled=busy;status.className=busy?"running":x.status==="error"?"error":"";status.setAttribute("aria-busy",String(busy));status.textContent=x.status==="idle"?"":safeStatusText(x.message,"Không đọc được trạng thái tích hợp.");if(busy)appLocalizationPoll=setTimeout(refreshAppLocalization,1000)}catch(e){const status=document.getElementById("appLocalizationStatus");status.className="error";status.setAttribute("aria-busy","false");status.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}}
+async function runAppLocalization(action){if(action==="restore"&&!confirm("Gỡ toàn bộ script và nút quản lý khỏi app iQIYI, khôi phục giao diện gốc? iQIYI đang mở sẽ tự khởi động lại."))return;const status=document.getElementById("appLocalizationStatus");document.getElementById("localizeIqiyiButton").disabled=true;document.getElementById("restoreIqiyiButton").disabled=true;status.className="running";status.setAttribute("aria-busy","true");status.textContent=action==="restore"?"Đang gỡ tích hợp…":"Đang kết nối app iQIYI…";try{const r=await apiFetch("/api/app-localization",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không chạy được thao tác");status.textContent=safeStatusText(x.message,status.textContent);refreshAppLocalization()}catch(e){status.className="error";status.setAttribute("aria-busy","false");status.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.");refreshAppLocalization()}}
 function renderMovieSearchResults(){
  const node=document.getElementById("movieSearchResults");
- node.innerHTML=searchMoviesData.map((movie,index)=>{
+ setMovieMarkup(node,searchMoviesData.map((movie,index)=>{
   const exists=episodeData.some(x=>(x.provider||"iqiyi")==="iqiyi"&&String(x.albumId||"")===movie.albumId),sync=albumLists[movie.albumId]||{},adding=addingAlbums.has(movie.albumId)||sync.stage==="loading",failed=sync.stage==="error";
-  const meta=[movie.year,movie.description].filter(Boolean).join(" · ");
-  return "<article class='searchResult'><div><div class='searchResultTitle'>"+esc(movie.title)+"</div>"+(meta?"<div class='searchResultMeta'>"+esc(meta)+"</div>":"")+(failed?"<div class='errorText'>"+esc(sync.message||"Không lấy được danh sách tập.")+"</div>":"")+"</div><button class='secondary' onclick='addSearchMovie("+index+")' "+(exists||adding?"disabled":"")+">"+(exists?"Trong thư viện":adding?"Đang lấy tập…":failed?"Thử lại":"Thêm phim")+"</button></article>";
- }).join("");
+  const meta=[movie.originalTitle,movie.year,movie.description].filter(Boolean).join(" · ");
+  return "<article class='searchResult' data-movie-key='search:"+esc(movie.albumId)+"'><div><div class='searchResultTitle'>"+esc(movie.title)+"</div>"+(meta?"<div class='searchResultMeta'>"+esc(meta)+"</div>":"")+(failed?"<div class='errorText'>"+esc(sync.message||"Không lấy được danh sách tập.")+"</div>":"")+"</div><button class='secondary' onclick='addSearchMovie("+index+")' "+(exists||adding?"disabled":"")+">"+(exists?"Trong thư viện":adding?"Đang lấy tập…":failed?"Thử lại":"Thêm phim")+"</button></article>";
+ }).join(""));
 }
-async function searchMovies(){
- const query=document.getElementById("movieQuery").value.trim(),button=document.getElementById("movieSearchButton");
+async function searchMovies(choice){
+ const query=movieQuery.value.trim(),button=movieSearchButton;
  if(!query)return;
- button.disabled=true;movieSearchStatus.textContent="Đang tìm trên iQIYI…";searchMoviesData=[];renderMovieSearchResults();
- try{const r=await apiFetch("/api/search?q="+encodeURIComponent(query)),x=await r.json();if(!r.ok)throw Error(x.error||"Không tìm được phim");searchMoviesData=Array.isArray(x.results)?x.results:[];movieSearchStatus.textContent=searchMoviesData.length?"Tìm thấy "+searchMoviesData.length+" phim.":"Không tìm thấy phim phù hợp.";renderMovieSearchResults()}
- catch(e){movieSearchStatus.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}
- finally{button.disabled=false}
+ cancelMovieSearch();const version=movieSearchVersion,request=new AbortController();movieSearchRequest=request;button.disabled=true;movieSearchForm.setAttribute("aria-busy","true");movieSearchStatus.textContent="Đang tìm trên iQIYI…";searchMoviesData=[];renderMovieSearchResults();
+ try{
+  let resolved=choice||{query,title:query};
+  if(!choice&&!/[\u3400-\u9fff\uf900-\ufaff]/.test(query)){
+   try{resolved=await movieSearchJson("/api/international-search?q="+encodeURIComponent(query),request.signal)}catch(error){if(request.signal.aborted)throw error}
+   if(version!==movieSearchVersion||movieQuery.value.trim()!==query)return;
+   if(resolved.query===query){const choices=movieSearchChoices(resolved);if(choices.length){showMovieSuggestions(choices,"Chọn phim bạn muốn tìm",true);movieSearchStatus.textContent="Có nhiều phim gần khớp. Hãy chọn tên phim trong gợi ý.";return}}
+  }
+  const target=typeof resolved.query==="string"&&resolved.query.trim()&&resolved.query.length<=100?resolved.query:query;
+  const x=await movieSearchJson("/api/search?q="+encodeURIComponent(target),request.signal);
+  if(version!==movieSearchVersion||movieQuery.value.trim()!==query)return;
+  searchMoviesData=(Array.isArray(x.results)?x.results:[]).map(movie=>movie.title===target&&resolved.title&&resolved.title!==target?{...movie,originalTitle:movie.title,title:resolved.title}:movie);
+  movieSearchStatus.textContent=searchMoviesData.length?"Tìm thấy "+searchMoviesData.length+" phim.":"Không tìm thấy phim phù hợp.";renderMovieSearchResults();
+ }catch(e){if(version===movieSearchVersion&&e.name!=="AbortError")movieSearchStatus.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}
+ finally{if(version===movieSearchVersion){button.disabled=false;movieSearchRequest=null;movieSearchForm.removeAttribute("aria-busy")}}
 }
 async function addSearchMovie(index){
  const movie=searchMoviesData[index];if(!movie||addingAlbums.has(movie.albumId))return;
  if(episodeData.some(x=>(x.provider||"iqiyi")==="iqiyi"&&String(x.albumId||"")===movie.albumId)){movieSearchStatus.textContent="Phim đã có trong thư viện.";return}
  addingAlbums.add(movie.albumId);movieSearchStatus.textContent="Đang thêm “"+movie.title+"”…";renderMovieSearchResults();
- try{const r=await apiFetch("/api/album/add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({albumId:movie.albumId,title:movie.title})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không thêm được phim");movieSearchStatus.textContent=safeStatusText(x.message,"Đã thêm phim vào thư viện.");await refresh(true)}
+ try{const r=await apiFetch("/api/album/add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({albumId:movie.albumId,title:movie.originalTitle||movie.title})}),x=await r.json();if(!r.ok)throw Error(x.error||"Không thêm được phim");movieSearchStatus.textContent=safeStatusText(x.message,"Đã thêm phim vào thư viện.");await refresh(true)}
  catch(e){movieSearchStatus.textContent=safeStatusText(e.message,"Đã xảy ra lỗi. Thông báo chưa có bản tiếng Việt.")}
  finally{addingAlbums.delete(movie.albumId);renderMovieSearchResults()}
 }
@@ -2149,8 +2209,9 @@ async function detail(id){
  account.classList.toggle("connected",iqiyiSynced);
 }
 function movieCoverMarkup(url,key){
+ try{const parsed=new URL(url,location.href);parsed.hash="";url=url?parsed.href:""}catch{url=""}
  const placeholder="<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5'><rect x='3' y='3' width='18' height='18' rx='2'/><path d='M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4'/></svg>";
- return "<span class='albumCover' data-cover-key='"+esc(key)+"' data-cover-url='"+esc(url||"")+"' aria-hidden='true'>"+placeholder+(url?"<img src='"+esc(url)+"' alt='' width='72' height='108' loading='lazy' decoding='async' referrerpolicy='no-referrer' onerror='this.remove()'>":"")+"</span>";
+ return "<span class='albumCover' data-cover-key='"+esc(key)+"' data-cover-url='"+esc(url||"")+"' aria-hidden='true'>"+placeholder+(url&&!failedMovieCovers.has(url)?"<img src='"+esc(url)+"' alt='' width='72' height='108' loading='lazy' decoding='async' referrerpolicy='no-referrer' onerror='failedMovieCovers.add(this.src);this.remove()'>":"")+"</span>";
 }
 function setMovieMarkup(node,html){
  const template=document.createElement("template");template.innerHTML=html;
@@ -2167,7 +2228,7 @@ function setMovieMarkup(node,html){
     if(!current.isEqualNode(fresh)){
      if(current.nodeType===1){
       if(!current.classList.contains("albumCover")||current.dataset.coverKey!==fresh.dataset.coverKey||current.dataset.coverUrl!==fresh.dataset.coverUrl){
-       for(const attr of Array.from(current.attributes))if(!fresh.hasAttribute(attr.name))current.removeAttribute(attr.name);
+       for(const attr of Array.from(current.attributes))if(!fresh.hasAttribute(attr.name)&&!(attr.name==="open"&&current.matches("details.menu,details.episodeLegendHelp")))current.removeAttribute(attr.name);
        for(const attr of Array.from(fresh.attributes))if(current.getAttribute(attr.name)!==attr.value)current.setAttribute(attr.name,attr.value);
        patch(current,fresh);
       }
@@ -2192,18 +2253,18 @@ function render(data){
  if(!providerRows.length)html+="<div class='platformEmpty'>"+"Mở iQIYI hoặc dùng Thêm phim để bắt đầu thư viện."+"</div>";
  else{
   groups.forEach((rows,key)=>{
-   if(query&&!rows.some(x=>normalizeMovieQuery(seriesDisplayName(x)+" "+seriesName(x)).includes(query)))return;
+   const visible=!query||rows.some(x=>normalizeMovieQuery(seriesDisplayName(x)+" "+seriesName(x)).includes(query));
    rows.sort((a,b)=>(orderOf(a)||9999)-(orderOf(b)||9999));
    const first=rows[0],original=seriesName(first),title=seriesDisplayName(first)||"Phim đang phát";
    const bulk=albumTranslation.episodeIds?.includes(first.tvid)?albumTranslation:null,bulkRunning=albumTranslation.stage==="running";
-   const shown=rows;visibleAlbums++;
+   const shown=rows;if(visible)visibleAlbums++;
    const list=albumLists[String(first.albumId||"")]||{},total=list.stage==="ready"?list.total:Math.max(rows.length,...rows.map(x=>Number(x.albumTotal)||0));
    const sourceCount=rows.filter(x=>x.downloaded).length;
    const issueCount=rows.filter(x=>["error","access"].includes(x.downloadProgress?.stage)||x.translation?.stage==="error").length;
    const open=albumIsOpen(key),listId="episode-list-"+String(first.albumId||first.tvid).replace(/[^a-z0-9_-]/gi,"-");
    const selected=shown.find(x=>x.tvid===selectedEpisodes.get(key))||shown[0];
    const grid=open?shown.map(x=>{const state=episodeState(x);return "<button id='episode-"+esc(x.tvid)+"' class='episodeChip "+state.style+"' aria-pressed='"+(x===selected)+"' aria-label='"+esc(episodeLabel(x)+": "+state.label)+"' title='"+esc(episodeLabel(x)+": "+state.label)+"' onclick=\"selectEpisode("+jsArg(key)+","+jsArg(x.tvid)+")\"><span>"+esc(orderOf(x)||"?")+"</span><small>"+esc(state.short)+"</small></button>"}).join(""):"";
-   html+="<section class='album' data-movie-key='"+esc(key)+"'><div class='albumHead'><button type='button' class='albumHeading' id='album-toggle-"+listId+"' aria-expanded='"+open+"' aria-controls='"+listId+"' onclick=\"toggleAlbum("+jsArg(key)+")\">"+movieCoverMarkup(rows.find(x=>x.albumCoverUrl)?.albumCoverUrl,key)+"<span class='albumIdentity'><span class='seriesTitle'>"+esc(title)+"</span>"+
+   html+="<section class='album' data-movie-key='"+esc(key)+"'"+(visible?"":" hidden")+"><div class='albumHead'><button type='button' class='albumHeading' id='album-toggle-"+listId+"' aria-expanded='"+open+"' aria-controls='"+listId+"' onclick=\"toggleAlbum("+jsArg(key)+")\">"+movieCoverMarkup(rows.find(x=>x.albumCoverUrl)?.albumCoverUrl,key)+"<span class='albumIdentity'><span class='seriesTitle'>"+esc(title)+"</span>"+
     (title!==original?"<span class='originalTitle'>"+esc(original)+"</span>":"")+
     "<span class='albumSummary'><strong>"+rows.length+(total>rows.length?" / "+total:"")+" tập</strong> · "+(sourceCount?sourceCount+" đã tải":"Chưa tải phụ đề")+(issueCount?"<span class='needsAttention'> · "+issueCount+" cần kiểm tra</span>":"")+"</span>"+
     (list.stage==="loading"?"<span class='albumSummary' role='status'>Đang lấy toàn bộ danh sách tập từ iQIYI…</span>":list.stage==="error"?"<span class='errorText'>Chưa lấy đủ danh sách tập: "+esc(list.message)+". App sẽ tự thử lại.</span>":"")+(bulk?"<span class='albumSummary' role='status'>"+esc(bulk.message)+"</span>":"")+"</span>"+

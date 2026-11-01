@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 
 from iqiyi_common import browser_proxy_token
 from app_integration import installed as integration_installed
-from app_integration import installer_args
+from app_integration import DEBUG_ARGS, PLAYBACK_ARGS, installer_args
 from iqiyi_common import python_executable as _python_executable
 from windows_runtime import command_line_args, list_processes, run_elevated, stop_background_browsers, terminate_process
 
@@ -193,18 +193,25 @@ def launch_iqiyi(open_ui: bool = False) -> int:
 
 def apply_running_iqiyi_proxy(proxy: str) -> dict:
     """Reconnect only the running player; keep the manager and subtitle workers alive."""
+    if not restart_running_iqiyi(proxy):
+        return {"status": "closed", "message": "iQIYI đang đóng; cấu hình sẽ được dùng khi mở iQIYI."}
+    return {"status": "restarted", "message": "iQIYI đã tự mở lại để áp dụng kết nối mới."}
+
+
+def restart_running_iqiyi(proxy: str = "", *, integrated: bool = True) -> bool:
+    """Reload native resources and WebViews without starting a closed player."""
     processes = list_processes()
     client = next((Path(process.path) for process in processes
                    if process.name.lower() == "qyclient.exe" and process.path), None)
     if client is None:
-        return {"status": "closed", "message": "iQIYI đang đóng; cấu hình sẽ được dùng khi mở iQIYI."}
+        return False
     if not client.is_file():
         raise RuntimeError("Không tìm thấy chương trình iQIYI đang chạy.")
-    start_iqiyi_client(client, proxy, processes)
-    return {"status": "restarted", "message": "iQIYI đã tự mở lại để áp dụng kết nối mới."}
+    start_iqiyi_client(client, proxy, processes, integrated=integrated)
+    return True
 
 
-def start_iqiyi_client(client: Path, proxy: str, processes=None) -> None:
+def start_iqiyi_client(client: Path, proxy: str, processes=None, *, integrated: bool = True) -> None:
     install_root = client.parent
     install_prefix = os.path.normcase(str(install_root).rstrip("\\/")) + os.sep
     qy_processes = [process for process in (list_processes() if processes is None else processes)
@@ -214,12 +221,24 @@ def start_iqiyi_client(client: Path, proxy: str, processes=None) -> None:
         print("Đang kết nối lại iQIYI với cấu hình mới...")
         for process in qy_processes:
             if not terminate_process(process.pid) and any(row.pid == process.pid for row in list_processes()):
-                raise RuntimeError("Không đóng được iQIYI để đổi kết nối. Đóng iQIYI rồi lưu lại proxy.")
+                raise RuntimeError("Không đóng được iQIYI để áp dụng thay đổi. Đóng hẳn iQIYI rồi thử lại.")
         time.sleep(1)
 
-    webview = webview_runtime()
     env = os.environ.copy()
-    browser_args = "--remote-debugging-port=9223 --remote-debugging-address=127.0.0.1"
+    if not integrated:
+        # Let the original WebView runtime and restored registry policy take over.
+        for key in tuple(env):
+            if key.upper() in {"WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "WEBVIEW2_WAIT_FOR_SCRIPT_DEBUGGER",
+                               "WEBVIEW2_BROWSER_EXECUTABLE_FOLDER"}:
+                env.pop(key)
+        try:
+            subprocess.Popen([str(client)], cwd=install_root, env=env)
+        except OSError as exc:
+            raise RuntimeError("Không mở lại được iQIYI với giao diện gốc.") from exc
+        return
+
+    webview = webview_runtime()
+    browser_args = " ".join((*DEBUG_ARGS, *PLAYBACK_ARGS))
     if proxy:
         env.update(HTTP_PROXY=proxy, HTTPS_PROXY=proxy, ALL_PROXY=proxy,
                    NO_PROXY="localhost,127.0.0.1,::1,.71edge.com,.ppsimg.com")

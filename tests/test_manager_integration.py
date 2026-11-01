@@ -20,6 +20,16 @@ from iqiyi_common import player_token
 
 
 class ManagerIntegrationTest(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = patch.object(app, 'ROOT', Path(temporary.name))
+        root.start()
+        self.addCleanup(root.stop)
+        restart = patch.object(app, 'restart_running_iqiyi', return_value=False)
+        self.restart = restart.start()
+        self.addCleanup(restart.stop)
+
     def test_installed_users_can_explicitly_update_native_localization(self):
         with patch.object(app_integration, 'installed', return_value=True), \
                 patch.object(app, 'APP_LOCALIZATION_STATE', {'status': 'idle'}), \
@@ -60,13 +70,47 @@ class ManagerIntegrationTest(unittest.TestCase):
             watcher.assert_called_once()
             self.assertEqual(app.APP_LOCALIZATION_STATE['status'], 'done')
 
-    def test_apply_is_idempotent_after_one_time_install(self):
+    def test_apply_reinstalls_ui_even_when_registry_is_already_connected(self):
         with patch.object(app_integration, 'installed', return_value=True), \
                 patch.object(app, 'APP_LOCALIZATION_STATE', {'status':'idle'}), \
                 patch.object(app.threading, 'Thread') as worker:
-            self.assertTrue(app.start_app_localization('apply')['installed'])
+            self.assertEqual(app.start_app_localization('apply')['status'], 'running')
             self.assertTrue(app.app_localization_status()['installed'])
-            worker.assert_not_called()
+            worker.assert_called_once_with(target=app._run_app_localization, args=('apply',),
+                                          name='iqiyi-localization', daemon=True)
+
+    def test_disabled_watcher_is_not_reported_as_connected(self):
+        (app.ROOT / 'watch-iqiyi-vi.disabled').write_text('restored')
+        with patch.object(app_integration, 'installed', return_value=True):
+            self.assertFalse(app.app_localization_status()['installed'])
+
+    def test_restart_follows_installation_and_watcher_with_current_proxy(self):
+        events = []
+        self.restart.side_effect = lambda *args, **kwargs: events.append('restart') or True
+        with patch.object(app, '_localization_command', side_effect=lambda action:
+                          events.append('install') or subprocess.CompletedProcess([], 0, '', '')), \
+                patch.object(app, 'ensure_watcher', side_effect=lambda: events.append('watcher')), \
+                patch.object(app, 'current_player_proxy', return_value='http://upstream.test:8080'), \
+                patch.object(app.DESKTOP_PROXY, 'url', return_value='http://127.0.0.1:18767'), \
+                patch.object(app, 'APP_LOCALIZATION_STATE', {}):
+            app._run_app_localization('apply')
+            self.assertEqual(events, ['install', 'watcher', 'restart'])
+            self.restart.assert_called_once_with('http://127.0.0.1:18767', integrated=True)
+            self.assertEqual(app.APP_LOCALIZATION_STATE['status'], 'done')
+            self.assertIn('tự mở lại', app.APP_LOCALIZATION_STATE['message'])
+
+    def test_failed_install_does_not_restart_and_failed_restart_is_reported(self):
+        with patch.object(app, '_localization_command', return_value=subprocess.CompletedProcess([], 1, '', 'failed')), \
+                patch.object(app, 'APP_LOCALIZATION_STATE', {}):
+            app._run_app_localization('apply')
+            self.restart.assert_not_called()
+            self.assertEqual(app.APP_LOCALIZATION_STATE['status'], 'error')
+        self.restart.side_effect = RuntimeError('Không đóng được iQIYI')
+        with patch.object(app, '_localization_command', return_value=subprocess.CompletedProcess([], 0, '', '')), \
+                patch.object(app, 'ensure_watcher'), patch.object(app, 'APP_LOCALIZATION_STATE', {}):
+            app._run_app_localization('apply')
+            self.assertEqual(app.APP_LOCALIZATION_STATE['status'], 'error')
+            self.assertIn('Không đóng được iQIYI', app.APP_LOCALIZATION_STATE['message'])
 
     def test_native_settings_can_open_window_without_exposing_admin_routes(self):
         server = app.SubtitleHTTPServer(('127.0.0.1', 0), app.Handler)
@@ -92,7 +136,7 @@ class ManagerIntegrationTest(unittest.TestCase):
             with patch.object(desktop, 'open_window') as open_window:
                 with post() as response:
                     self.assertEqual(response.status, 403)
-                for origin in ['https://www.iqiyi.com', 'https://attacker.test', 'chrome-extension://'+'a'*32]:
+                for origin in ['https://www.iqiyi.com', 'https://attacker.test', 'chrome-extension://'+'a'*31]:
                     with post(origin=origin, token=token) as response:
                         self.assertEqual(response.status, 403)
                 open_window.assert_not_called()
@@ -103,6 +147,15 @@ class ManagerIntegrationTest(unittest.TestCase):
                 with post(origin=None, token=token) as response:
                     self.assertEqual(response.status, 200, 'Native WebView requests can omit Origin')
                 self.assertEqual(open_window.call_count, 2)
+                extension = 'chrome-extension://'+'a'*32
+                for invalid in (None, 'wrong-token', server.api_token):
+                    with post(origin=extension, token=invalid) as response:
+                        self.assertEqual(response.status, 403)
+                with post(origin=extension, token=token) as response:
+                    self.assertEqual(response.status, 200, 'The extension can open the native app with its player-only token')
+                self.assertEqual(open_window.call_count, 3)
+                with post('/api/translation/cancel', origin=extension, token=token) as response:
+                    self.assertEqual(response.status, 403)
                 with post('/api/translation/cancel', token=token) as response:
                     self.assertEqual(response.status, 403, 'The player token gains no manager permissions')
             with patch.object(desktop, 'open_window', side_effect=OSError('window unavailable')):

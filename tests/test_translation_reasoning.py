@@ -13,10 +13,12 @@ from translation_pipeline import PIPELINE_DEFAULTS, pipeline
 class TranslationReasoningTest(unittest.TestCase):
     def test_context_translation_and_qc_effort(self):
         for provider, name, expected in (
-                ("gemini", "gemini-3.5-flash-lite", ("high", "medium", "medium")),
-                ("gemini", "models/gemini-3.8-flash", ("high", "medium", "medium")),
-                ("gemini", "gemini-2.5-flash-lite", (None, None, None)),
-                ("custom", "gemini-3.8-flash", (None, None, None))):
+                ("gemini", "gemini-3.5-flash-lite", ("high", "medium", "high", "medium")),
+                ("gemini", "models/gemini-3.8-flash", ("high", "medium", "high", "medium")),
+                ("gemini", "gemini-3-flash-preview", ("high", "medium", "high", "medium")),
+                ("gemini", "gemini-2.5-flash-lite", (None, None, None, None)),
+                ("custom", "fixture-reasoning", ("high", "high", "high", "high")),
+                ("custom", "gemini-3.8-flash", (None, None, None, None))):
             requests = []
 
             def respond(request, cancel):
@@ -34,12 +36,16 @@ class TranslationReasoningTest(unittest.TestCase):
 
             with self.subTest(provider=provider, model=name), tempfile.TemporaryDirectory() as directory:
                 model = model_config({"provider": provider, "model": name,
-                                      "base_url": "http://127.0.0.1/v1", "api_key": ""})
+                                      "base_url": "http://127.0.0.1/v1", "api_key": "",
+                                      "reasoning_effort": "high" if name == "fixture-reasoning" else "auto"})
                 config = {**PIPELINE_DEFAULTS, "context_model": model, "translation_model": model}
                 cues = [{"id": 1, "start": "00:00:01,000", "end": "00:00:02,000", "text": "你好"}]
                 with patch("translation_ai.read_api_response", side_effect=respond):
                     pipeline(cues, config, Path(directory), lambda **_: None, threading.Event())
                 self.assertEqual(tuple(body.get("reasoning_effort") for body in requests), expected)
+                self.assertEqual([body["max_tokens"] for body in requests], [12288, 8192, 12288, 8192])
+                expected_temperature = 0.2 if name == "gemini-2.5-flash-lite" else None
+                self.assertEqual([body.get("temperature") for body in requests], [expected_temperature] * 4)
                 self.assertEqual(json.loads(requests[-1]["messages"][-1]["content"])["task"], "shorten")
                 self.assertNotIn("_reasoning_effort", model)
                 self.assertTrue((Path(directory) / "translated.srt").exists())

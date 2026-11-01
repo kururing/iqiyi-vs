@@ -59,7 +59,7 @@ def check_browser():
         episodes.append({"tvid": str(index), "provider": "iqiyi", "albumId": str(index), "albumTitle": title,
                          "order": 1, "downloaded": False, "cues": 0, "downloadAvailable": True})
     errors, downloads, unexpected = [], [], []
-    state = {"fail": False, "models": [], "job1_stage": "error", "hold_status": False, "held": [], "starts": []}
+    state = {"fail": False, "models": [], "job1_stage": "error", "job1_progress": {}, "hold_status": False, "held": [], "starts": [], "album": {}, "album_starts": []}
 
     def route_handler(route):
         parsed = urlsplit(route.request.url)
@@ -70,11 +70,19 @@ def check_browser():
             route.fulfill(content_type="image/x-icon", body=(ROOT / 'assets/iqiyi.ico').read_bytes())
             return
         if parsed.path == "/api/episodes":
-            payload = {"episodes": episodes, "albums": {}, "discoveries": [], "session": {}, "iqcomSession": {}}
+            payload = {"episodes": episodes, "albums": {}, "albumTranslation": state["album"], "discoveries": [], "session": {}, "iqcomSession": {}}
         elif parsed.path == "/api/translation/providers":
             payload = {"providers": app.TRANSLATION_PROVIDERS, "active_id": None}
         elif parsed.path == "/api/translation/models":
             payload = {"models": state["models"]}
+        elif parsed.path == "/api/translation/album":
+            state["album_starts"].append(json.loads(route.request.post_data))
+            state["album"] = {"stage": "running", "episodeIds": [str(n) for n in range(1, 7)],
+                              "currentJobId": JOB1, "message": "Đang dịch 1/6: Phim kiểm tra · Tập 1"}
+            payload = state["album"]
+        elif parsed.path == "/api/translation/album/cancel":
+            state["album"] = {**state["album"], "stage": "cancelled", "message": "Đã dừng lượt dịch."}
+            payload = state["album"]
         elif parsed.path == "/api/app-localization":
             payload = {"status": "idle"}
         elif parsed.path == "/api/iqiyi-proxy":
@@ -83,6 +91,8 @@ def check_browser():
             job_id = parse_qs(parsed.query)["id"][0]
             payload = {"id": job_id, "stage": "complete" if job_id == JOB2 else state["job1_stage"], "message": "Đã lưu", "episode_id": "2" if job_id == JOB2 else "1", "episode_label": "Phim kiểm tra · Tập " + ("2" if job_id == JOB2 else "1"), "memory_available": True, "step": 5 if job_id == JOB2 else 2,
                        "preview": [{"id": 1, "start": "00:00:01,000", "end": "00:00:02,000", "text": "Xin chào."}]}
+            if job_id == JOB1:
+                payload.update(state["job1_progress"])
             if job_id == JOB1 and state["hold_status"]:
                 state["held"].append((route, payload))
                 return
@@ -117,7 +127,7 @@ def check_browser():
         expect(page.locator(".overview")).not_to_be_visible()
         page.screenshot(path=str(output / "library-desktop.png"))
         page.locator("#libraryQuery").fill("truong an")
-        expect(page.locator(".album")).to_have_count(1)
+        expect(page.locator(".album:visible")).to_have_count(1)
         page.locator("#libraryClearSearch").click()
         page.get_by_role("button", name="Thêm phim", exact=True).click()
         expect(page.locator("#movieQuery")).to_be_visible()
@@ -251,6 +261,15 @@ def check_browser():
         page.evaluate("showTranslationJob('" + JOB1 + "')")
         expect(page.locator("#translationProgress")).to_be_visible()
         expect(page.locator("#translationEpisodeLabel")).to_have_text("Phim kiểm tra · Tập 1")
+        # Name discovery and QC report actual per-stage completion counts.
+        state["job1_stage"] = "qc"
+        for completed, label in ((10, "Đã gom tên"), (2, "Đã kiểm định")):
+            state["job1_progress"] = {"step": 4, "total_batches": 24, "saved_batches": 24,
+                                      "completed_batches": completed, "message": f"{label} {completed}/24 batch…"}
+            page.evaluate("showTranslationJob('" + JOB1 + "')")
+            expect(page.locator("#translationProgress")).to_have_attribute("max", "24")
+            expect(page.locator("#translationProgress")).to_have_attribute("value", str(completed))
+            expect(page.locator("#translationStatus")).to_have_text(f"{label} {completed}/24 batch…")
         page.keyboard.press("Escape")
         album.locator(".albumHeading").click()
         album.locator("#episode-2").click()
@@ -290,6 +309,17 @@ def check_browser():
             page.locator("#" + role + "Provider").select_option(provider_id)
             page.locator("#" + role + "ModelSelect").select_option("fixture-model")
         page.locator("#translationSaveSettings").click()
+        album.get_by_role("button", name="Dịch toàn bộ tập", exact=True).click()
+        expect(album.get_by_role("button", name="Dừng dịch loạt", exact=True)).to_be_visible()
+        expect(album.get_by_text("Đang dịch 1/6: Phim kiểm tra · Tập 1", exact=True)).to_be_visible()
+        expect(page.locator(".album").filter(has=page.get_by_text("Trường An ký", exact=True)).get_by_role("button", name="Dịch toàn bộ tập", exact=True)).to_be_disabled()
+        assert state["album_starts"][-1]["tvid"] == "1"
+        assert state["album_starts"][-1]["translation_model"]["model"] == "fixture-model"
+        album.get_by_role("button", name="Tiến độ dịch loạt", exact=True).click()
+        expect(page.locator("#translationEpisodeLabel")).to_have_text("Phim kiểm tra · Tập 1")
+        page.keyboard.press("Escape")
+        album.get_by_role("button", name="Dừng dịch loạt", exact=True).click()
+        expect(album.get_by_role("button", name="Dịch toàn bộ tập", exact=True)).to_be_enabled()
         album.locator("#episode-3").click()
         album.get_by_role("button", name="Dịch", exact=True).click()
         expect(page.locator("#translationStatus")).to_contain_text("Đang có phiên dịch")

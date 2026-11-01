@@ -7,7 +7,7 @@ const source = fs.readFileSync(path.join(__dirname, '../ext/content.js'), 'utf8'
 let css = '';
 const context = vm.createContext({IS_RANKING_PAGE:false, document:{documentElement:{},
   getElementById:()=>null, createElement:()=>({}), head:{appendChild:el=>{css=el.textContent;}}}});
-vm.runInContext(source.slice(source.indexOf('  function injectCSS('), source.indexOf('  function setUiAttribute(')), context);
+vm.runInContext(source.slice(source.indexOf('  function playerOverlayCSS('), source.indexOf('  function setUiAttribute(')), context);
 context.injectCSS();
 const labels = ['Ai cũng có thể nhận VIP', 'Đổi điểm China Mobile lấy VIP',
   'Nhận thẻ VIP tháng miễn phí mỗi tháng', 'Vay lần đầu, tặng 1 tháng VIP'];

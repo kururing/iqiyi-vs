@@ -70,6 +70,44 @@ class MovieCoversTest(unittest.TestCase):
             self.assertEqual(app.series_cover_url(item), "https://pic3.iqiyipic.com/poster.jpg")
             self.assertEqual(submit.call_count, 1)
 
+    def test_expired_metadata_remains_visible_during_one_background_refresh(self):
+        cached = {"12345601": (time.monotonic() - 1, {"title": "Tên Việt đã xác minh",
+                  "sourceTitle": "测试剧", "coverUrl": "https://pic3.iqiyipic.com/poster.jpg"})}
+        with patch.object(app, "INTERNATIONAL_TITLE_CACHE", cached), \
+                patch.object(app, "INTERNATIONAL_TITLE_PENDING", set()), \
+                patch.object(app.TITLE_LOOKUP_POOL, "submit") as submit:
+            for _ in range(4):
+                self.assertEqual(app.vietnamese_series_title({"albumId": "12345601"}), "Tên Việt đã xác minh")
+                self.assertEqual(app.series_cover_url({"albumId": "12345601"}), "https://pic3.iqiyipic.com/poster.jpg")
+            submit.assert_called_once_with(app._load_international_series_title, "12345601")
+
+    def test_failed_refresh_keeps_known_artwork_without_delaying_retry(self):
+        cached = {"12345601": (0, {"title": "Tên Việt đã xác minh", "sourceTitle": "测试剧",
+                                  "coverUrl": "https://pic3.iqiyipic.com/poster.jpg"})}
+        with patch.object(app, "INTERNATIONAL_TITLE_CACHE", cached), \
+                patch.object(app, "public_iqiyi_json", side_effect=OSError("temporary timeout")), \
+                patch.object(app.time, "monotonic", return_value=100):
+            result = app.international_movie_title("12345601")
+        self.assertEqual(result["title"], "Tên Việt đã xác minh")
+        self.assertEqual(result["coverUrl"], "https://pic3.iqiyipic.com/poster.jpg")
+        self.assertEqual(cached["12345601"][0], 110, "Retaining known metadata must not suppress the next retry")
+
+    def test_new_source_identity_does_not_inherit_an_unrelated_cached_title(self):
+        cached = {"12345601": (0, {"title": "Tên cũ", "sourceTitle": "旧剧",
+                                  "coverUrl": "https://pic3.iqiyipic.com/old.jpg"})}
+
+        def upstream(url):
+            if "/album/album/" in url:
+                return {"code": "A00000", "data": {"name": "新剧", "imageUrl": "https://pic3.iqiyipic.com/new.jpg"}}
+            return {"code": 0, "data": {"epg": []}}
+
+        with patch.object(app, "INTERNATIONAL_TITLE_CACHE", cached), \
+                patch.object(app, "public_iqiyi_json", side_effect=upstream):
+            result = app.international_movie_title("12345601")
+        self.assertEqual(result["sourceTitle"], "新剧")
+        self.assertEqual(result["title"], "")
+        self.assertEqual(result["coverUrl"], "https://pic3.iqiyipic.com/new.jpg")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -343,7 +343,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   updateTranslationEpisode(state);
   document.querySelectorAll(".translationSteps li").forEach((li,i)=>{if(i+1===state.step)li.setAttribute("aria-current","step");else li.removeAttribute("aria-current")});
   const progress=el("translationProgress");progress.hidden=!running;
-  if(state.stage==="translation"){progress.max=state.total_batches||1;progress.value=state.completed_batches||0}else progress.removeAttribute("value");
+  if(["translation","qc"].includes(state.stage)){progress.max=state.total_batches||1;progress.value=state.completed_batches||0}else progress.removeAttribute("value");
   document.querySelectorAll("[data-artifact]").forEach(b=>b.hidden=b.dataset.artifact==="memory.json"?!state.memory_available:state.stage!=="complete");
   el("translationViewMemory").hidden=!state.memory_available;
   el("translationPreviewBox").hidden=state.stage!=="complete";

@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import struct
+from array import array
 from html import escape, unescape
 import os
 import re
@@ -43,6 +46,81 @@ PPSTREAM_INI = Path(os.environ.get("APPDATA", "")) / "IQIYI Video" / "LStyle" / 
 
 UI_ENGINE = ROOT / "ext" / "content.js"
 WRAPPER_APP = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs/iQIYI/resources/app"
+
+# QyPlayer 14.10.5.10340 overwrites these four skin labels when opening its menu.
+# Match the complete DLL before changing its display-string references.
+NATIVE_MENU_SOURCE_SHA256 = "2355fd61b859c443504ec860f0ce6b24ce9fc984fde476f62f53df21d0112d50"
+NATIVE_MENU_PATCHED_SHA256 = "c3fc75a8f319a7899daf863ecd5640404cb5ac0a66abf83ba1a94db0f9b274b2"
+NATIVE_MENU_STRINGS = (
+    (0x1C0E9B, 0x58F568, "全屏", "Toàn màn hình"),
+    (0x1C0E01, 0x58F558, "退出全屏", "Thoát toàn màn hình"),
+    (0x1C142F, 0x58F630, "窗口置顶", "Luôn ở trên cùng"),
+    (0x1C123E, 0x58F620, "取消置顶", "Bỏ ghim"),
+)
+
+
+def native_menu_bytes(raw: bytes) -> bytes | None:
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest == NATIVE_MENU_PATCHED_SHA256:
+        return raw
+    if digest != NATIVE_MENU_SOURCE_SHA256:
+        return None  # Never apply offsets from this build to another version.
+    result = bytearray(raw)
+    data_raw, data_rva, data_size, raw_size = 5068800, 5074944, 2503042, 2503168
+    text_raw, text_rva = 1024, 4096
+    cursor = data_raw + (data_size + 7) // 8 * 8
+    pool_end = cursor + sum(len(vi.encode("utf-8")) + 1 for _, _, _, vi in NATIVE_MENU_STRINGS)
+    if pool_end > data_raw + raw_size or any(raw[cursor:pool_end]):
+        raise ValueError("Không có vùng trống an toàn cho nhãn menu native.")
+    for reference, original, zh, vi in NATIVE_MENU_STRINGS:
+        expected = data_rva + original - data_raw
+        actual = text_rva + reference - text_raw + 7 + struct.unpack_from("<i", raw, reference + 3)[0]
+        if (raw[reference:reference + 3] != b"\x48\x8d\x15" or actual != expected or
+                raw[original:original + len(zh.encode()) + 1] != zh.encode() + b"\0"):
+            raise ValueError("Tham chiếu nhãn menu native không khớp; giữ nguyên chương trình.")
+        value = vi.encode("utf-8") + b"\0"
+        result[cursor:cursor + len(value)] = value
+        target = data_rva + cursor - data_raw
+        struct.pack_into("<i", result, reference + 3, target - (text_rva + reference - text_raw + 7))
+        cursor += len(value)
+    struct.pack_into("<I", result, 624, cursor - data_raw)  # .rdata VirtualSize, inside existing raw padding.
+    checksum_offset = struct.unpack_from("<I", raw, 60)[0] + 24 + 64
+    struct.pack_into("<I", result, checksum_offset, 0)
+    checksum = sum(array("H", result))
+    checksum = (checksum & 0xFFFF) + (checksum >> 16)
+    checksum = (checksum & 0xFFFF) + (checksum >> 16)
+    struct.pack_into("<I", result, checksum_offset, (checksum + len(result)) & 0xFFFFFFFF)
+    return bytes(result)
+
+
+def patch_native_menu_labels(install: Path, *, restore=False) -> bool:
+    path = install / "player.dll"
+    backup = BACKUP / "native" / install.name / "player.dll"
+    if not path.is_file():
+        return False
+    raw = path.read_bytes()
+    if restore:
+        if not backup.is_file():
+            return False
+        original = backup.read_bytes()
+        if hashlib.sha256(original).hexdigest() != NATIVE_MENU_SOURCE_SHA256:
+            raise ValueError("Bản sao lưu menu native không khớp; giữ nguyên chương trình.")
+        if raw == original:
+            return False
+        if hashlib.sha256(raw).hexdigest() != NATIVE_MENU_PATCHED_SHA256:
+            return False  # The app may already have updated; keep its new DLL.
+        patched = original
+    else:
+        patched = native_menu_bytes(raw)
+        if patched is None or patched == raw:
+            return False
+        if backup.exists() and backup.read_bytes() != raw:
+            raise ValueError("Bản sao lưu menu native đã tồn tại nhưng không khớp.")
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        if not backup.exists():
+            shutil.copy2(path, backup)
+    atomic_write(path, patched)
+    return True
 
 
 def find_skin() -> Path | None:
@@ -602,6 +680,7 @@ def _main() -> int:
             n = 0
             for skin in find_skins():
                 print(f"Skin: {skin}")
+                n += int(patch_native_menu_labels(skin.parent, restore=True))
                 n += restore_tree(skin_backup_dir(skin), skin)
                 if BACKUP.exists() and not skin_backup_dir(skin).exists():
                     print("Bo qua backup skin cu khong ro phien ban de tranh ghi de sai resource.")
@@ -683,6 +762,8 @@ def _main() -> int:
     print(f"Nhan Viet soan san: {len(mapping)} chuoi")
     try:
         files, hits, skipped = apply_skin(skin, mapping)
+        if patch_native_menu_labels(skin.parent):
+            print("Đã sửa nhãn menu native: toàn màn hình và ghim cửa sổ.")
     except PermissionError:
         print("Can quyen Administrator de ghi skin Program Files.")
         print("Trang chu LWA (AppData) da duoc gan, khong can admin.")
